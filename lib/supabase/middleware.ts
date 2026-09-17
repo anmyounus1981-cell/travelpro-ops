@@ -1,13 +1,14 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { supabasePublishableKey, supabaseUrl } from "./config";
 
 type CookieWrite = { name: string; value: string; options?: Record<string, unknown> };
 
 export async function updateSession(request: NextRequest) {
   const supabaseResponse = NextResponse.next({ request });
 
-  const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
-  const anonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+  const url = supabaseUrl;
+  const anonKey = supabasePublishableKey;
 
   // If Supabase isn't configured, skip the auth refresh and pass through.
   // Without this guard createServerClient throws "Your project's URL and Key
