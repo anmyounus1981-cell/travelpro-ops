@@ -20,3 +20,12 @@ insert into clients (id,company_name,contact_name,contact_email,contact_phone) v
 insert into cases (case_number,client_id,assigned_to,origin,destination,departure_date,return_date,trip_type,passenger_count,cabin_class,status,intake_source,next_action,next_action_deadline) values ('TP-260917-001','10000000-0000-0000-0000-000000000001','00000000-0000-0000-0000-000000000001','DAC','DXB','2026-10-15','2026-10-20','roundtrip',2,'Economy','new','whatsapp','Prepare fare options',now()+interval '1 day'), ('TP-260917-002','10000000-0000-0000-0000-000000000002','00000000-0000-0000-0000-000000000001','DAC','CAN','2026-10-22','2026-10-29','roundtrip',4,'Economy','in_progress','email','Collect passport copies',now()+interval '8 hours'), ('TP-260917-003','10000000-0000-0000-0000-000000000003','00000000-0000-0000-0000-000000000001','DAC','KUL','2026-11-02',null,'oneway',1,'Business','quoted','manual','Client follow-up',now()+interval '2 days') on conflict (case_number) do nothing;
 create or replace function prevent_audit_change() returns trigger language plpgsql as $$ begin raise exception 'audit logs are append-only'; end $$;
 drop trigger if exists audit_logs_immutable on audit_logs; create trigger audit_logs_immutable before update or delete on audit_logs for each row execute function prevent_audit_change();
+
+insert into storage.buckets (id,name,public,file_size_limit,allowed_mime_types) values
+('passports','passports',false,5242880,array['image/jpeg','image/png','image/webp']),
+('payment-evidence','payment-evidence',false,5242880,array['image/jpeg','image/png','image/webp','application/pdf']),
+('e-tickets','e-tickets',false,10485760,array['application/pdf','image/jpeg','image/png'])
+on conflict (id) do nothing;
+drop policy if exists demo_storage_read on storage.objects; drop policy if exists demo_storage_insert on storage.objects;
+create policy demo_storage_read on storage.objects for select using (bucket_id in ('passports','payment-evidence','e-tickets'));
+create policy demo_storage_insert on storage.objects for insert with check (bucket_id in ('passports','payment-evidence','e-tickets'));
