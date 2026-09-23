@@ -18,3 +18,104 @@ export async function createReminder(fd:FormData){const db=await createClient();
 export async function createServiceCase(fd:FormData){const db=await createClient();const bookingId=text(fd,"booking_id");const{data,error}=await db.from("service_cases").insert({booking_id:bookingId||null,case_id:text(fd,"case_id")||null,type:text(fd,"type"),request_details:text(fd,"request_details"),status:"requested"}).select("id").single();if(error)throw error;await audit("service_case.requested","service_case",data.id,{type:text(fd,"type")});revalidatePath("/")}
 export async function transitionServiceCase(fd:FormData){const db=await createClient(),id=text(fd,"id");const{data:serviceCase}=await db.from("service_cases").select("status").eq("id",id).single();if(!serviceCase)throw new Error("Service case not found");const status=text(fd,"status")||(serviceCase.status==="requested"?"in_review":"completed");const{error}=await db.from("service_cases").update({status,result_summary:text(fd,"result_summary")||null}).eq("id",id);if(error)throw error;await audit(`service_case.${status}`,"service_case",id);revalidatePath("/")}
 export async function createCaseFromInquiry(fd:FormData){const raw=text(fd,"inquiry"),draft=triageInquiry(raw),clientId=text(fd,"client_id");if(draft.missing_fields.includes("route"))throw new Error("Route is missing. Review the inquiry and use manual case entry.");const db=await createClient();const caseNumber=`TP-AI-${crypto.randomUUID().slice(0,6).toUpperCase()}`;const{data,error}=await db.from("cases").insert({case_number:caseNumber,client_id:clientId,assigned_to:"00000000-0000-0000-0000-000000000001",origin:draft.origin,destination:draft.destination,departure_date:text(fd,"departure_date"),trip_type:"oneway",passenger_count:draft.passenger_count,cabin_class:"Economy",notes:`Source inquiry: ${raw}\nMissing: ${draft.missing_fields.join(", ")||"none"}\nConfidence: ${Math.round(draft.confidence*100)}%`,status:"new",intake_source:"whatsapp",escalation_flag:draft.escalation_flags.length>0,escalation_reason:draft.escalation_flags.join(", ")||null,next_action:draft.missing_fields.length?"Collect missing information":"Prepare fare options"}).select("id").single();if(error)throw error;await audit("case.ai_draft_confirmed","case",data.id,{confidence:draft.confidence,flags:draft.escalation_flags});revalidatePath("/")}
+
+export async function convertInquiryToCase(fd: FormData) {
+  const inquiryId = text(fd, "inquiry_id");
+  const clientId = text(fd, "client_id");
+
+  if (!inquiryId) {
+    throw new Error("Inquiry is required");
+  }
+
+  if (!clientId) {
+    throw new Error("Please select a client");
+  }
+
+  const db = await createClient();
+
+  const { data: inquiry, error: inquiryError } = await db
+    .from("inquiries")
+    .select(
+      "id, source, raw_message, parsed_fields, status, converted_case_id"
+    )
+    .eq("id", inquiryId)
+    .single();
+
+  if (inquiryError || !inquiry) {
+    throw inquiryError ?? new Error("Inquiry not found");
+  }
+
+  if (inquiry.status === "converted" || inquiry.converted_case_id) {
+    throw new Error("This inquiry has already been converted");
+  }
+
+  const parsed = (inquiry.parsed_fields ?? {}) as Record<string, unknown>;
+
+  const origin = String(parsed.origin ?? "").trim().toUpperCase();
+  const destination = String(parsed.destination ?? "").trim().toUpperCase();
+  const departureDate = String(parsed.departureDate ?? "").trim();
+  const returnDate = String(parsed.returnDate ?? "").trim();
+  const passengerCount = Number(parsed.passengerCount ?? 1);
+  const cabinClass = String(parsed.cabinClass ?? "economy").toLowerCase();
+
+  if (!origin || !destination || !departureDate) {
+    throw new Error(
+      "Origin, destination, and departure date must be confirmed before conversion"
+    );
+  }
+
+  const caseNumber =
+    `TP-${new Date().toISOString().slice(2, 10).replaceAll("-", "")}-` +
+    crypto.randomUUID().slice(0, 4).toUpperCase();
+
+  const { data: newCase, error: caseError } = await db
+    .from("cases")
+    .insert({
+      case_number: caseNumber,
+      client_id: clientId,
+      assigned_to: "00000000-0000-0000-0000-000000000001",
+      origin,
+      destination,
+      departure_date: departureDate,
+      return_date: returnDate || null,
+      trip_type: returnDate ? "roundtrip" : "oneway",
+      passenger_count:
+        Number.isInteger(passengerCount) && passengerCount > 0
+          ? passengerCount
+          : 1,
+      cabin_class: cabinClass,
+      notes: `Converted from ${inquiry.source} inquiry.\n\n${inquiry.raw_message}`,
+      status: "new",
+      intake_source: inquiry.source,
+      next_action: "Prepare fare options",
+      next_action_deadline: new Date(
+        Date.now() + 24 * 60 * 60 * 1000
+      ).toISOString(),
+    })
+    .select("id")
+    .single();
+
+  if (caseError || !newCase) {
+    throw caseError ?? new Error("Case could not be created");
+  }
+
+  const { error: updateError } = await db
+    .from("inquiries")
+    .update({
+      status: "converted",
+      converted_case_id: newCase.id,
+    })
+    .eq("id", inquiryId);
+
+  if (updateError) {
+    throw updateError;
+  }
+
+  await audit("inquiry.converted", "inquiry", inquiryId, {
+    case_id: newCase.id,
+    case_number: caseNumber,
+  });
+
+  revalidatePath("/inbox");
+  revalidatePath("/");
+}
