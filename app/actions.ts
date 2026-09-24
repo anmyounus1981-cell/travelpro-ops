@@ -118,4 +118,89 @@ export async function convertInquiryToCase(fd: FormData) {
 
   revalidatePath("/inbox");
   revalidatePath("/");
+}export async function updateClientRecord(fd: FormData) {
+  const id = text(fd, "id");
+  const companyName = text(fd, "company_name");
+  const contactName = text(fd, "contact_name");
+
+  if (!id) {
+    throw new Error("Client ID is required");
+  }
+
+  if (!companyName) {
+    throw new Error("Company name is required");
+  }
+
+  const db = await createClient();
+
+  const { error } = await db
+    .from("clients")
+    .update({
+      company_name: companyName,
+      contact_name: contactName,
+      contact_email: text(fd, "contact_email") || null,
+      contact_phone: text(fd, "contact_phone") || null,
+    })
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  await audit("client.updated", "client", id, {
+    company_name: companyName,
+  });
+
+  revalidatePath("/clients");
+  revalidatePath("/");
+}export async function deleteClientRecord(fd: FormData) {
+  const id = text(fd, "id");
+
+  if (!id) {
+    throw new Error("Client ID is required");
+  }
+
+  const db = await createClient();
+
+  const [
+    { count: caseCount, error: caseCheckError },
+    { count: travellerCount, error: travellerCheckError },
+  ] = await Promise.all([
+    db
+      .from("cases")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", id),
+    db
+      .from("travellers")
+      .select("id", { count: "exact", head: true })
+      .eq("client_id", id),
+  ]);
+
+  if (caseCheckError) {
+    throw caseCheckError;
+  }
+
+  if (travellerCheckError) {
+    throw travellerCheckError;
+  }
+
+  if ((caseCount ?? 0) > 0 || (travellerCount ?? 0) > 0) {
+    throw new Error(
+      "This client cannot be deleted because it has cases or travellers.",
+    );
+  }
+
+  const { error } = await db
+    .from("clients")
+    .delete()
+    .eq("id", id);
+
+  if (error) {
+    throw error;
+  }
+
+  await audit("client.deleted", "client", id);
+
+  revalidatePath("/clients");
+  revalidatePath("/");
 }
