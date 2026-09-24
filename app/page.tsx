@@ -3,8 +3,23 @@ import { getDashboard, getOperations } from "@/lib/data/operations";
 import { Workflow } from "./workflow";
 export const dynamic="force-dynamic";
 const statuses=["new","in_progress","quoted","confirmed","booked","ticketed","closed"];
+
+
+const navItems = [
+  { label: "Dashboard", href: "/" },
+  { label: "Cases", href: "/#cases" },
+  { label: "Clients", href: "/clients" },
+  { label: "Travellers", href: "/travellers" },
+  { label: "Quotations", href: "/quotations" },
+  { label: "Bookings", href: "/bookings" },
+  { label: "Payments", href: "/payments" },
+  { label: "Tickets", href: "/tickets" },
+  { label: "Service Cases", href: "/service-cases" },
+  { label: "Reminders", href: "/reminders" },
+  { label: "Audit Log", href: "/audit-log" },
+];
 export default async function Home({searchParams}:{searchParams:Promise<{q?:string}>}){let data,ops;try{[data,ops]=await Promise.all([getDashboard(),getOperations()])}catch{return <main className="error-page"><h1>TravelPro Ops</h1><p>Database connection is not configured. Pull the Vercel environment and apply the Supabase migration.</p></main>}const q=((await searchParams).q||"").toLowerCase();if(q)data.cases=data.cases.filter((c)=>`${c.case_number} ${c.clients?.company_name} ${c.origin} ${c.destination} ${c.status}`.toLowerCase().includes(q));const active=data.cases.filter((c)=>!["ticketed","closed"].includes(c.status)).length;return <div className="shell">
-<aside><div className="brand">TP<span>TravelPro Ops</span></div><nav>{["Dashboard","Cases","Clients","Travellers","Quotations","Bookings","Payments","Tickets","Service Cases","Reminders","Audit Log"].map((n,i)=><a key={n} className={i===0?"active":""} href={i<2?"#cases":"#workflow"}>{n}</a>)}</nav><p className="guardrail">Human-controlled payment & ticketing</p></aside>
+<aside><div className="brand">TP<span>TravelPro Ops</span></div><nav>{navItems.map((item, i) => <a key={item.label} className={i === 0 ? "active" : ""} href={item.href}>{item.label}</a>)}</nav><p className="guardrail">Human-controlled payment & ticketing</p></aside>
 <main><header><div><p className="eyebrow">OWNER WORKSPACE</p><h1>Operations dashboard</h1><p>From inquiry to ticket, every approval stays under human control.</p></div><a className="primary" href="#new-case">+ New case</a></header><form className="search"><input name="q" defaultValue={q} placeholder="Search case, client, route, or status"/><button>Search</button></form>
 <section className="metrics"><article><span>Active cases</span><strong>{active}</strong><small>Needs operational action</small></article><article><span>TTL reminders</span><strong>{data.reminders.length}</strong><small>Scheduled follow-ups</small></article><article><span>Total cases</span><strong>{data.cases.length}</strong><small>Persistent records</small></article><article className="safe"><span>Automation guardrail</span><strong>Human</strong><small>Payments & GDS actions</small></article></section>
 <section id="cases" className="panel"><div className="panel-head"><div><p className="eyebrow">LIVE QUEUE</p><h2>Cases</h2></div><span>{data.cases.length} records</span></div><div className="table-wrap"><table><thead><tr><th>Case</th><th>Client</th><th>Route</th><th>Departure</th><th>Status</th><th>Next action</th><th>Update</th></tr></thead><tbody>{data.cases.map((c)=><tr key={c.id}><td><b>{c.case_number}</b></td><td>{c.clients?.company_name}</td><td><b>{c.origin}</b> → <b>{c.destination}</b></td><td>{c.departure_date}</td><td><span className={`badge ${c.status}`}>{c.status.replaceAll("_"," ")}</span></td><td>{c.next_action||"—"}</td><td><form action={updateCaseStatus}><input type="hidden" name="id" value={c.id}/><select name="status" defaultValue={c.status}>{statuses.map(s=><option key={s}>{s}</option>)}</select><button>Save</button></form></td></tr>)}</tbody></table></div></section>
