@@ -1,3 +1,4 @@
+import { randomUUID } from "node:crypto";
 import { NextResponse } from "next/server";
 
 import {
@@ -125,12 +126,16 @@ export async function POST(request: Request) {
 
     const supabase = await createClient();
 
-  const parsingStatus =
+    const parsingStatus =
     parsed.confidence >= 0.6 ? "parsed" : "needs_review";
 
-  const { data, error } = await supabase
+  const inquiryId = randomUUID();
+  const createdAt = new Date().toISOString();
+
+  const { error } = await supabase
     .from("inquiries")
     .insert({
+      id: inquiryId,
       source,
       source_message_id: cleanOptionalText(
         payload.sourceMessageId,
@@ -156,13 +161,10 @@ export async function POST(request: Request) {
       parser_confidence: parsed.confidence,
       channel_metadata: payload.channelMetadata ?? {},
       status: "new",
-    })
-    .select(
-      "id, source, status, parsed_fields, created_at",
-    )
-    .single();
+      created_at: createdAt,
+    });
 
-      if (error) {
+  if (error) {
     console.error(
       "Inquiry insert failed:",
       error.message,
@@ -177,7 +179,13 @@ export async function POST(request: Request) {
   return NextResponse.json(
     {
       message: "Inquiry received successfully.",
-      inquiry: data,
+      inquiry: {
+        id: inquiryId,
+        source,
+        status: "new",
+        parsed_fields: parsed,
+        created_at: createdAt,
+      },
     },
     { status: 201 },
   );
