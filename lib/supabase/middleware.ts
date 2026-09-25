@@ -2,46 +2,133 @@ import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
 import { supabasePublishableKey, supabaseUrl } from "./config";
 
-type CookieWrite = { name: string; value: string; options?: Record<string, unknown> };
+type CookieWrite = {
+  name: string;
+  value: string;
+  options?: Record<string, unknown>;
+};
+
+const publicRoutes = new Set([
+  "/login",
+  "/api/health",
+  "/api/v1/inquiry",
+  "/api/stripe/webhooks",
+]);
+
+function isPublicRoute(pathname: string) {
+  return publicRoutes.has(pathname);
+}
+
+function unauthorizedResponse(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.json(
+      { error: "Authentication required." },
+      { status: 401 },
+    );
+  }
+
+  const loginUrl = request.nextUrl.clone();
+  loginUrl.pathname = "/login";
+  loginUrl.search = "";
+  loginUrl.searchParams.set("error", "authentication_required");
+
+  return NextResponse.redirect(loginUrl);
+}
+
+function forbiddenResponse(request: NextRequest) {
+  if (request.nextUrl.pathname.startsWith("/api/")) {
+    return NextResponse.json(
+      { error: "Owner access required." },
+      { status: 403 },
+    );
+  }
+
+  const loginUrl = request.nextUrl.clone();
+  loginUrl.pathname = "/login";
+  loginUrl.search = "";
+  loginUrl.searchParams.set("error", "unauthorized");
+
+  return NextResponse.redirect(loginUrl);
+}
 
 export async function updateSession(request: NextRequest) {
-  const supabaseResponse = NextResponse.next({ request });
+  const pathname = request.nextUrl.pathname;
+  const routeIsPublic = isPublicRoute(pathname);
 
-  const url = supabaseUrl;
-  const anonKey = supabasePublishableKey;
+  let response = NextResponse.next({ request });
 
-  // If Supabase isn't configured, skip the auth refresh and pass through.
-  // Without this guard createServerClient throws "Your project's URL and Key
-  // are required", crashing the edge middleware on every route (500
-  // MIDDLEWARE_INVOCATION_FAILED).
-  if (!url || !anonKey) {
-    return supabaseResponse;
+  if (!supabaseUrl || !supabasePublishableKey) {
+    if (routeIsPublic) {
+      return response;
+    }
+
+    return new NextResponse("Authentication service is not configured.", {
+      status: 503,
+    });
   }
 
   try {
-    let response = supabaseResponse;
-    const supabase = createServerClient(url, anonKey, {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll();
-        },
-        setAll(cookiesToSet: CookieWrite[]) {
-          cookiesToSet.forEach(({ name, value }) =>
-            request.cookies.set(name, value),
-          );
-          response = NextResponse.next({ request });
-          cookiesToSet.forEach(({ name, value, options }) =>
-            response.cookies.set(name, value, options),
-          );
+    const supabase = createServerClient(
+      supabaseUrl,
+      supabasePublishableKey,
+      {
+        cookies: {
+          getAll() {
+            return request.cookies.getAll();
+          },
+          setAll(cookiesToSet: CookieWrite[]) {
+            cookiesToSet.forEach(({ name, value }) =>
+              request.cookies.set(name, value),
+            );
+
+            response = NextResponse.next({ request });
+
+            cookiesToSet.forEach(({ name, value, options }) =>
+              response.cookies.set(name, value, options),
+            );
+          },
         },
       },
-    });
+    );
 
-    // Refresh session so it doesn't expire while user is active
-    await supabase.auth.getUser();
+    const {
+      data: { user },
+      error: userError,
+    } = await supabase.auth.getUser();
+
+    if (routeIsPublic) {
+      return response;
+    }
+
+    if (userError || !user) {
+      return unauthorizedResponse(request);
+    }
+
+    const { data: owner, error: ownerError } = await supabase
+      .from("app_users")
+      .select("id")
+      .eq("auth_user_id", user.id)
+      .eq("role", "owner")
+      .maybeSingle();
+
+    if (ownerError) {
+      return new NextResponse("Authorization service is unavailable.", {
+        status: 503,
+      });
+    }
+
+    if (!owner) {
+      return forbiddenResponse(request);
+    }
+
     return response;
   } catch {
-    // Never let an auth hiccup crash the entire edge middleware
-    return supabaseResponse;
+    if (routeIsPublic) {
+      return response;
+    }
+
+    return new NextResponse("Authentication service is unavailable.", {
+      status: 503,
+    });
   }
 }
