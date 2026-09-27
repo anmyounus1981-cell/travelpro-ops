@@ -2,6 +2,25 @@
 import { revalidatePath } from "next/cache"; import { redirect } from "next/navigation"; import { createClient } from "@/lib/supabase/server"; import { audit } from "@/lib/data/operations";
 import { parseGdsItinerary, triageInquiry } from "@/lib/ai/tools";
 const text=(fd:FormData,key:string)=>String(fd.get(key)??"").trim();
+function parseDhakaDateTime(value: string): Date {
+  if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
+    return new Date(NaN);
+  }
+
+  const date = new Date(`${value}+06:00`);
+
+  if (Number.isNaN(date.getTime())) {
+    return date;
+  }
+
+  const dhakaValue = new Date(
+    date.getTime() + 6 * 60 * 60 * 1000,
+  )
+    .toISOString()
+    .slice(0, 16);
+
+  return dhakaValue === value ? date : new Date(NaN);
+}
 export async function createCase(fd:FormData){const clientId=text(fd,"client_id");if(!clientId)throw new Error("Client is required");const db=await createClient();const caseNumber=`TP-${new Date().toISOString().slice(2,10).replaceAll("-","")}-${crypto.randomUUID().slice(0,4).toUpperCase()}`;const {data,error}=await db.from("cases").insert({case_number:caseNumber,client_id:clientId,assigned_to:"00000000-0000-0000-0000-000000000001",origin:text(fd,"origin").toUpperCase(),destination:text(fd,"destination").toUpperCase(),departure_date:text(fd,"departure_date"),return_date:text(fd,"return_date")||null,trip_type:text(fd,"trip_type"),passenger_count:Number(text(fd,"passenger_count")),cabin_class:text(fd,"cabin_class"),notes:text(fd,"notes"),intake_source:text(fd,"intake_source"),next_action:"Prepare fare options",next_action_deadline:new Date(Date.now()+86400000).toISOString()}).select("id").single();if(error)throw error;await audit("case.created","case",data.id,{case_number:caseNumber});revalidatePath("/");redirect(`/?case=${data.id}`)}
 export async function updateCaseStatus(fd:FormData){const id=text(fd,"id"),status=text(fd,"status");const db=await createClient();const {error}=await db.from("cases").update({status}).eq("id",id);if(error)throw error;await audit("case.status_changed","case",id,{status});revalidatePath("/")}
 
@@ -45,7 +64,7 @@ export async function createBooking(fd: FormData) {
   const pnr = text(fd, "pnr").toUpperCase();
   const ttlSource = text(fd, "ttl_source");
   const quotedAmount = Number(text(fd, "quoted_amount"));
-  const ttlDate = new Date(text(fd, "ttl"));
+  const ttlDate = parseDhakaDateTime(text(fd, "ttl"));
 
   if (!caseId) {
     throw new Error("Case is required");
@@ -427,7 +446,7 @@ export async function recordTicket(fd: FormData) {
 export async function createReminder(fd: FormData) {
   const db = await createClient();
   const ownerId = await requireOwnerId(db);
-  const dueDate = new Date(text(fd, "due_at"));
+  const dueDate = parseDhakaDateTime(text(fd, "due_at"));
 
   if (
     Number.isNaN(dueDate.getTime()) ||
