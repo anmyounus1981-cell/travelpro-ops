@@ -437,7 +437,28 @@ export async function createReminder(fd: FormData) {
       "Reminder due date must be a valid future date and time",
     );
   }
+  if (
+    text(fd, "entity_type") === "booking" &&
+    text(fd, "reminder_type") === "ttl"
+  ) {
+    const { data: booking, error: bookingError } = await db
+      .from("bookings")
+      .select("status, ttl")
+      .eq("id", text(fd, "entity_id"))
+      .single();
 
+    if (bookingError || !booking) {
+      throw new Error("Booking not found");
+    }
+
+    if (booking.status !== "unticketed") {
+      throw new Error("TTL reminders require an unticketed booking");
+    }
+
+    if (dueDate.getTime() >= new Date(booking.ttl).getTime()) {
+      throw new Error("Reminder must be due before the booking TTL");
+    }
+  }
   const { data: reminder, error: reminderError } = await db
     .from("reminders")
     .insert({

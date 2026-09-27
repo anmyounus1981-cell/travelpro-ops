@@ -29,6 +29,19 @@ type Reminder = {
   created_at: string;
 };
 
+type OwnerAlert = {
+  id: string;
+  alert_type: string;
+  severity: string;
+  entity_type: string;
+  entity_id: string;
+  title: string;
+  message: string;
+  status: string;
+  due_at: string | null;
+  created_at: string;
+};
+
 const fieldStyle = {
   display: "block",
   width: "100%",
@@ -47,7 +60,14 @@ function formatDateTime(value: string) {
   }).format(new Date(value));
 }
 
-function reminderState(value: string) {
+function reminderState(value: string, status: string | null) {
+  if (status !== "scheduled") {
+    return {
+      label: (status || "Unknown").replaceAll("_", " "),
+      background: "#eef1f5",
+      color: "#42546d",
+    };
+  }
   const difference = new Date(value).getTime() - Date.now();
   const hours = difference / 3_600_000;
 
@@ -77,7 +97,7 @@ function reminderState(value: string) {
 export default async function RemindersPage() {
   const db = await createClient();
 
-  const [reminderResult, caseResult, bookingResult] =
+  const [reminderResult, caseResult, bookingResult, alertResult] =
     await Promise.all([
       db
         .from("reminders")
@@ -95,6 +115,15 @@ export default async function RemindersPage() {
         .from("bookings")
         .select("id, case_id, pnr, status")
         .order("created_at", { ascending: false }),
+
+      db
+        .from("owner_alerts")
+        .select(
+          "id, alert_type, severity, entity_type, entity_id, title, message, status, due_at, created_at",
+        )
+        .in("status", ["unread", "read"])
+        .order("created_at", { ascending: false })
+        .limit(100),
     ]);
 
   if (reminderResult.error) {
@@ -109,14 +138,23 @@ export default async function RemindersPage() {
     throw bookingResult.error;
   }
 
+  if (alertResult.error) {
+    throw alertResult.error;
+  }
   const reminders =
     (reminderResult.data ?? []) as unknown as Reminder[];
+
+  const alerts =
+    (alertResult.data ?? []) as unknown as OwnerAlert[];
 
   const cases =
     (caseResult.data ?? []) as unknown as TravelCase[];
 
   const bookings =
     (bookingResult.data ?? []) as unknown as Booking[];
+  const unticketedBookings = bookings.filter(
+    (booking) => booking.status === "unticketed",
+  );
 
   const casesById = new Map(
     cases.map((travelCase) => [travelCase.id, travelCase]),
@@ -373,7 +411,7 @@ export default async function RemindersPage() {
                   Select a booking
                 </option>
 
-                {bookings.map((booking) => {
+                {unticketedBookings.map((booking) => {
                   const travelCase = casesById.get(booking.case_id);
 
                   return (
@@ -435,7 +473,7 @@ export default async function RemindersPage() {
 
             <button
               type="submit"
-              disabled={bookings.length === 0}
+              disabled={unticketedBookings.length === 0}
               style={{
                 marginTop: "16px",
                 width: "100%",
@@ -446,10 +484,10 @@ export default async function RemindersPage() {
                 color: "#ffffff",
                 fontWeight: 800,
                 cursor:
-                  bookings.length === 0
+                  unticketedBookings.length === 0
                     ? "not-allowed"
                     : "pointer",
-                opacity: bookings.length === 0 ? 0.55 : 1,
+                opacity: unticketedBookings.length === 0 ? 0.55 : 1,
               }}
             >
               Schedule booking reminder
@@ -457,6 +495,50 @@ export default async function RemindersPage() {
           </form>
         </section>
       </div>
+      <section
+        style={{
+          padding: "24px",
+          marginBottom: "32px",
+          background: "#ffffff",
+          border: "1px solid #c9d5e3",
+          borderRadius: "18px",
+        }}
+      >
+        <h2 style={{ margin: "0 0 8px" }}>Owner alerts</h2>
+        <p style={{ margin: "0 0 20px", color: "#52647a" }}>
+          {alerts.length} open alerts requiring owner attention
+        </p>
+
+        {alerts.length === 0 ? (
+          <p style={{ margin: 0, color: "#52647a" }}>
+            No open owner alerts.
+          </p>
+        ) : (
+          <div style={{ display: "grid", gap: "12px" }}>
+            {alerts.map((alert) => (
+              <article
+                key={alert.id}
+                style={{
+                  padding: "16px",
+                  border: "1px solid #d5dee9",
+                  borderRadius: "10px",
+                }}
+              >
+                <strong>{alert.title}</strong>
+                <p style={{ margin: "8px 0", color: "#42546d" }}>
+                  {alert.message}
+                </p>
+                <small>
+                  {alert.severity.toUpperCase()} · {alert.status}
+                  {alert.due_at
+                    ? ` · Due ${formatDateTime(alert.due_at)}`
+                    : ""}
+                </small>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
 
       <section
         style={{
@@ -506,7 +588,7 @@ export default async function RemindersPage() {
             }}
           >
             {reminders.map((reminder) => {
-              const state = reminderState(reminder.due_at);
+              const state = reminderState(reminder.due_at, reminder.status);
 
               const linkedCase =
                 reminder.entity_type === "case"
