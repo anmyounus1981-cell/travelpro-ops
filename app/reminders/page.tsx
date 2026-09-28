@@ -302,25 +302,22 @@ export default async function RemindersPage() {
 
             <label style={{ display: "block", marginTop: "14px" }}>
               Reminder type
-              <select
-                name="reminder_type"
-                required
-                defaultValue="client_follow_up"
-                style={fieldStyle}
-              >
-                <option value="client_follow_up">
-                  Client follow-up
-                </option>
-                <option value="document_collection">
-                  Document collection
-                </option>
-                <option value="quotation_follow_up">
-                  Quotation follow-up
-                </option>
-                <option value="payment_follow_up">
-                  Payment follow-up
-                </option>
-              </select>
+             <select
+  name="reminder_type"
+  required
+  defaultValue="client_response"
+  style={fieldStyle}
+>
+  <option value="client_response">
+    Client or quotation follow-up
+  </option>
+  <option value="missing_docs">
+    Document collection
+  </option>
+  <option value="payment">
+    Payment follow-up
+  </option>
+</select>
             </label>
 
             <label style={{ display: "block", marginTop: "14px" }}>
@@ -427,24 +424,16 @@ export default async function RemindersPage() {
             <label style={{ display: "block", marginTop: "14px" }}>
               Reminder type
               <select
-                name="reminder_type"
-                required
-                defaultValue="ttl"
-                style={fieldStyle}
-              >
-                <option value="ttl">
-                  Ticketing time limit
-                </option>
-                <option value="payment_follow_up">
-                  Payment follow-up
-                </option>
-                <option value="ticket_delivery">
-                  Ticket delivery
-                </option>
-                <option value="travel_reminder">
-                  Travel reminder
-                </option>
-              </select>
+  name="reminder_type"
+  required
+  defaultValue="ttl"
+  style={fieldStyle}
+>
+  <option value="ttl">Ticketing time limit</option>
+  <option value="payment">Payment follow-up</option>
+  <option value="missing_docs">Missing documents</option>
+  <option value="client_response">Client response</option>
+</select>
             </label>
 
             <label style={{ display: "block", marginTop: "14px" }}>
