@@ -526,24 +526,14 @@ export default async function RemindersPage() {
                 <div style={{ display: "flex", gap: "10px", marginTop: "14px" }}>
   <form action={updateOwnerAlert}>
     <input type="hidden" name="id" value={alert.id} />
-    <button
-      type="submit"
-      name="status"
-      value="acknowledged"
-    >
-      Acknowledge
-    </button>
+    <input type="hidden" name="status" value="acknowledged" />
+    <button type="submit">Acknowledge</button>
   </form>
 
   <form action={updateOwnerAlert}>
     <input type="hidden" name="id" value={alert.id} />
-    <button
-      type="submit"
-      name="status"
-      value="dismissed"
-    >
-      Dismiss
-    </button>
+    <input type="hidden" name="status" value="dismissed" />
+    <button type="submit">Dismiss</button>
   </form>
 </div>
               </article>
