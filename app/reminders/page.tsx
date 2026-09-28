@@ -1,5 +1,5 @@
 import Link from "next/link";
-import { createReminder } from "@/app/actions";
+import { createReminder, updateOwnerAlert } from "@/app/actions";
 import { createClient } from "@/lib/supabase/server";
 
 export const dynamic = "force-dynamic";
@@ -523,6 +523,29 @@ export default async function RemindersPage() {
                     ? ` · Due ${formatDateTime(alert.due_at)}`
                     : ""}
                 </small>
+                <div style={{ display: "flex", gap: "10px", marginTop: "14px" }}>
+  <form action={updateOwnerAlert}>
+    <input type="hidden" name="id" value={alert.id} />
+    <button
+      type="submit"
+      name="status"
+      value="acknowledged"
+    >
+      Acknowledge
+    </button>
+  </form>
+
+  <form action={updateOwnerAlert}>
+    <input type="hidden" name="id" value={alert.id} />
+    <button
+      type="submit"
+      name="status"
+      value="dismissed"
+    >
+      Dismiss
+    </button>
+  </form>
+</div>
               </article>
             ))}
           </div>
