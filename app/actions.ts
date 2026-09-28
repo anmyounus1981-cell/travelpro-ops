@@ -514,6 +514,51 @@ export async function createReminder(fd: FormData) {
   revalidatePath("/");
   revalidatePath("/reminders");
 }
+export async function updateOwnerAlert(fd: FormData) {
+  const id = text(fd, "id");
+  const requestedStatus = text(fd, "status");
+
+  if (!id) {
+    throw new Error("Alert ID is required");
+  }
+
+  if (
+    requestedStatus !== "acknowledged" &&
+    requestedStatus !== "dismissed"
+  ) {
+    throw new Error("Invalid alert action");
+  }
+
+  const db = await createClient();
+  await requireOwnerId(db);
+
+  const now = new Date().toISOString();
+  const { data: alert, error } = await db
+    .from("owner_alerts")
+    .update({
+      status: requestedStatus,
+      updated_at: now,
+      ...(requestedStatus === "acknowledged"
+        ? { acknowledged_at: now }
+        : { dismissed_at: now }),
+    })
+    .eq("id", id)
+    .in("status", ["unread", "read"])
+    .select("id")
+    .maybeSingle();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!alert) {
+    throw new Error("Open alert not found");
+  }
+
+  await audit(`owner_alert.${requestedStatus}`, "owner_alert", id);
+  revalidatePath("/reminders");
+}
+
 export async function createServiceCase(fd:FormData){const db=await createClient();const bookingId=text(fd,"booking_id");const{data,error}=await db.from("service_cases").insert({booking_id:bookingId||null,case_id:text(fd,"case_id")||null,type:text(fd,"type"),request_details:text(fd,"request_details"),status:"requested"}).select("id").single();if(error)throw error;await audit("service_case.requested","service_case",data.id,{type:text(fd,"type")});revalidatePath("/")}
 export async function transitionServiceCase(fd:FormData){const db=await createClient(),id=text(fd,"id");const{data:serviceCase}=await db.from("service_cases").select("status").eq("id",id).single();if(!serviceCase)throw new Error("Service case not found");const status=text(fd,"status")||(serviceCase.status==="requested"?"in_review":"completed");const{error}=await db.from("service_cases").update({status,result_summary:text(fd,"result_summary")||null}).eq("id",id);if(error)throw error;await audit(`service_case.${status}`,"service_case",id);revalidatePath("/")}
 export async function createCaseFromInquiry(fd:FormData){const raw=text(fd,"inquiry"),draft=triageInquiry(raw),clientId=text(fd,"client_id");if(draft.missing_fields.includes("route"))throw new Error("Route is missing. Review the inquiry and use manual case entry.");const db=await createClient();const caseNumber=`TP-AI-${crypto.randomUUID().slice(0,6).toUpperCase()}`;const{data,error}=await db.from("cases").insert({case_number:caseNumber,client_id:clientId,assigned_to:"00000000-0000-0000-0000-000000000001",origin:draft.origin,destination:draft.destination,departure_date:text(fd,"departure_date"),trip_type:"oneway",passenger_count:draft.passenger_count,cabin_class:"Economy",notes:`Source inquiry: ${raw}\nMissing: ${draft.missing_fields.join(", ")||"none"}\nConfidence: ${Math.round(draft.confidence*100)}%`,status:"new",intake_source:"whatsapp",escalation_flag:draft.escalation_flags.length>0,escalation_reason:draft.escalation_flags.join(", ")||null,next_action:draft.missing_fields.length?"Collect missing information":"Prepare fare options"}).select("id").single();if(error)throw error;await audit("case.ai_draft_confirmed","case",data.id,{confidence:draft.confidence,flags:draft.escalation_flags});revalidatePath("/")}
