@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { addTraveller } from "@/app/actions";
 import { createClient } from "@/lib/supabase/server";
+import { PassportUpload } from "./passport-upload";
 
 export const dynamic = "force-dynamic";
 
@@ -102,6 +103,25 @@ export default async function TravellersPage() {
           confirmation.
         </p>
       </header>
+
+      <section
+        style={{
+          padding: "24px",
+          marginBottom: "32px",
+          border: "1px solid #cbd5e1",
+          borderRadius: "16px",
+          background: "#ffffff",
+        }}
+      >
+        <h2 style={{ marginTop: 0 }}>Passport upload</h2>
+
+        <p style={{ color: "#475569" }}>
+          Upload a passport image to start a draft.
+          Every extracted field requires owner review before confirmation.
+        </p>
+
+        <PassportUpload clients={clients} />
+      </section>
 
       <section
         style={{
