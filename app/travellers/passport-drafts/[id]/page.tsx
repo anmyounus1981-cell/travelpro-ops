@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
+import { PassportReviewForm } from "../review-form";
 
 export const dynamic = "force-dynamic";
 
@@ -111,7 +112,26 @@ export default async function PassportDraftPage({
         <p>
           Image access expires after five minutes. Refresh to load it again.
         </p>
-      </section>
+            </section>
+
+      {["uploaded", "awaiting_review", "extraction_failed"].includes(
+        draft.status,
+      ) ? (
+        <section
+          style={{
+            marginTop: "24px",
+            padding: "24px",
+            border: "1px solid #cbd5e1",
+            borderRadius: "16px",
+            background: "#ffffff",
+          }}
+        >
+          <h2 style={{ marginTop: 0 }}>Owner field review</h2>
+          <PassportReviewForm draftId={draft.id} />
+        </section>
+      ) : (
+        <p>This draft is {draft.status}. Confirmation is unavailable.</p>
+      )}
     </main>
   );
 }
