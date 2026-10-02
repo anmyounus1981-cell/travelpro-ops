@@ -2,6 +2,8 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PassportReviewForm } from "../review-form";
+import { PassportExtractionForm } from "../extraction-form";
+import { readPassportFields } from "../passport-fields";
 
 export const dynamic = "force-dynamic";
 
@@ -46,7 +48,7 @@ export default async function PassportDraftPage({
 
   const { data: draft, error: draftError } = await db
     .from("passport_extraction_drafts")
-    .select("id, client_id, image_path, status")
+    .select("id, client_id, image_path, status, extracted_fields, updated_at")
     .eq("id", id)
     .maybeSingle();
 
@@ -114,6 +116,20 @@ export default async function PassportDraftPage({
         </p>
             </section>
 
+{["uploaded", "extraction_failed"].includes(draft.status) && (
+  <section
+    style={{
+      marginTop: "24px",
+      padding: "24px",
+      border: "1px solid #cbd5e1",
+      borderRadius: "16px",
+      background: "#ffffff",
+    }}
+  >
+    <h2 style={{ marginTop: 0 }}>Passport extraction</h2>
+    <PassportExtractionForm draftId={draft.id} />
+  </section>
+)}
       {["uploaded", "awaiting_review", "extraction_failed"].includes(
         draft.status,
       ) ? (

@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useActionState, useState } from "react";
 import { confirmPassportDraft } from "./actions";
+import type { PassportFields } from "./passport-fields";
 
 const fields = [
   { key: "full_name", label: "Full name", type: "text", maxLength: 200 },
@@ -19,7 +20,13 @@ const fields = [
 
 type FieldKey = (typeof fields)[number]["key"];
 
-export function PassportReviewForm({ draftId }: { draftId: string }) {
+export function PassportReviewForm({
+  draftId,
+  initialFields,
+}: {
+  draftId: string;
+  initialFields?: PassportFields;
+}) {
   const [state, formAction, pending] = useActionState(
     confirmPassportDraft,
     { error: "", success: false },
@@ -77,6 +84,7 @@ export function PassportReviewForm({ draftId }: { draftId: string }) {
             <input
               id={`review_${field.key}`}
               name={field.key}
+              defaultValue={initialFields?.[field.key] ?? ""}
               type={field.type}
               maxLength={"maxLength" in field ? field.maxLength : undefined}
               required
