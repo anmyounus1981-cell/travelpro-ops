@@ -116,7 +116,8 @@ export default async function PassportDraftPage({
         </p>
             </section>
 
-{["uploaded", "extraction_failed"].includes(draft.status) && (
+{process.env.PASSPORT_OCR_ENABLED === "true" &&
+  ["uploaded", "extraction_failed"].includes(draft.status) && (
   <section
     style={{
       marginTop: "24px",
@@ -143,7 +144,11 @@ export default async function PassportDraftPage({
           }}
         >
           <h2 style={{ marginTop: 0 }}>Owner field review</h2>
-          <PassportReviewForm draftId={draft.id} />
+          <PassportReviewForm
+  key={`${draft.id}:${draft.updated_at}`}
+  draftId={draft.id}
+  initialFields={readPassportFields(draft.extracted_fields)}
+/>
         </section>
       ) : (
         <p>This draft is {draft.status}. Confirmation is unavailable.</p>

@@ -23,6 +23,12 @@ export async function extractPassportDraft(
     return { error: "Invalid passport draft.", success: false };
   }
 
+    if (process.env.PASSPORT_OCR_ENABLED !== "true") {
+    return {
+      error: "Automatic extraction is disabled. Use manual field review.",
+      success: false,
+    };
+  }
   const db = await createClient();
   const {
     data: { user },
