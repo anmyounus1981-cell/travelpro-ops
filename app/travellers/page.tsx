@@ -2,6 +2,7 @@ import Link from "next/link";
 
 import { addTraveller } from "@/app/actions";
 import { createClient } from "@/lib/supabase/server";
+import { PassportUpload } from "./passport-upload";
 
 export const dynamic = "force-dynamic";
 
@@ -63,6 +64,22 @@ export default async function TravellersPage() {
   const travellers =
     (travellerData ?? []) as unknown as Traveller[];
 
+  const { data: draftData, error: draftError } = await db
+    .from("passport_extraction_drafts")
+    .select("id, client_id, status, created_at")
+    .order("created_at", { ascending: false })
+    .limit(50);
+
+  if (draftError) {
+    throw new Error(`Unable to load passport drafts: ${draftError.message}`);
+  }
+
+  const drafts = (draftData ?? []) as unknown as {
+    id: string;
+    client_id: string;
+    status: string;
+    created_at: string;
+  }[];
   const clientNames = new Map(
     clients.map((client) => [
       client.id,
@@ -102,6 +119,79 @@ export default async function TravellersPage() {
           confirmation.
         </p>
       </header>
+
+      <section
+        style={{
+          padding: "24px",
+          marginBottom: "32px",
+          border: "1px solid #cbd5e1",
+          borderRadius: "16px",
+          background: "#ffffff",
+        }}
+      >
+        <h2 style={{ marginTop: 0 }}>Passport draft queue</h2>
+
+        <p>{drafts.length} recent drafts, showing up to 50</p>
+
+        {drafts.length === 0 ? (
+          <p>No passport drafts uploaded.</p>
+        ) : (
+          <div style={{ display: "grid", gap: "12px" }}>
+            {drafts.map((draft) => (
+              <article
+                key={draft.id}
+                style={{
+                  padding: "16px",
+                  border: "1px solid #e2e8f0",
+                  borderRadius: "8px",
+                }}
+              >
+                <strong>
+                  {clientNames.get(draft.client_id) || "Unknown client"}
+                </strong>
+
+                <p>
+                  Status: {draft.status.replaceAll("_", " ")}
+                </p>
+
+                <small>
+                  Uploaded:{" "}
+                  {new Intl.DateTimeFormat("en-GB", {
+                    dateStyle: "medium",
+                    timeStyle: "short",
+                    timeZone: "Asia/Dhaka",
+                  }).format(new Date(draft.created_at))}
+                </small>
+                <p style={{ marginBottom: 0 }}>
+                  <Link
+                    href={`/travellers/passport-drafts/${draft.id}`}
+                  >
+                    Open draft
+                  </Link>
+                </p>
+              </article>
+            ))}
+          </div>
+        )}
+      </section>
+      <section
+        style={{
+          padding: "24px",
+          marginBottom: "32px",
+          border: "1px solid #cbd5e1",
+          borderRadius: "16px",
+          background: "#ffffff",
+        }}
+      >
+        <h2 style={{ marginTop: 0 }}>Passport upload</h2>
+
+        <p style={{ color: "#475569" }}>
+          Upload a passport image to start a draft.
+          Every extracted field requires owner review before confirmation.
+        </p>
+
+        <PassportUpload clients={clients} />
+      </section>
 
       <section
         style={{
