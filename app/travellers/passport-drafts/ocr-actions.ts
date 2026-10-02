@@ -127,10 +127,50 @@ export async function extractPassportDraft(
     revalidatePath(`/travellers/passport-drafts/${draftId}`);
 
     return { error: "", success: true };
-  } catch {
+    } catch (error: unknown) {
+    const details =
+      error !== null && typeof error === "object"
+        ? (error as Record<string, unknown>)
+        : {};
+
+    const status =
+      typeof details.status === "number"
+        ? details.status
+        : null;
+
+    const knownCodes = [
+      "insufficient_quota",
+      "invalid_api_key",
+      "model_not_found",
+      "rate_limit_exceeded",
+      "permission_denied",
+      "invalid_image",
+      "invalid_image_format",
+      "invalid_request_error",
+    ];
+
+    let code =
+      typeof details.code === "string" &&
+      knownCodes.includes(details.code)
+        ? details.code
+        : "extraction_failed";
+
+    if (
+      error instanceof Error &&
+      error.message === "OCR provider is not configured."
+    ) {
+      code = "provider_not_configured";
+    }
+
+    console.error("Passport OCR failed", {
+      code,
+      status,
+    });
+
     return {
-      error:
-        "OCR failed. Check provider configuration, API access and billing, or enter the fields manually.",
+      error: `OCR failed: ${code}${
+        status === null ? "" : ` (HTTP ${status})`
+      }. Manual review remains available.`,
       success: false,
     };
   }
