@@ -288,20 +288,6 @@ export default async function TravellersPage() {
           </label>
 
           <label>
-            Passport confidence
-            <input
-              name="passport_number_confidence"
-              type="number"
-              min="0"
-              max="1"
-              step="0.01"
-              defaultValue="1"
-              required
-              style={fieldStyle}
-            />
-          </label>
-
-          <label>
             Passport image
             <input
               name="passport"

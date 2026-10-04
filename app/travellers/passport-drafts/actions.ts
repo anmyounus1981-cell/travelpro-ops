@@ -72,8 +72,22 @@ export async function confirmPassportDraft(
   );
 
   if (error) {
-    return { error: error.message, success: false };
+  if (
+    error.code === "23505" &&
+    error.message.includes("travellers_client_passport_unique")
+  ) {
+    return {
+      error:
+        "This passport already exists for the selected client. Review the existing traveller instead.",
+      success: false,
+    };
   }
+
+  return {
+    error: "Unable to confirm passport draft. Please try again.",
+    success: false,
+  };
+}
 
   if (!travellerId) {
     return {
