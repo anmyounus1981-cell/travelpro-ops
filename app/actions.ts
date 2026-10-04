@@ -26,7 +26,91 @@ export async function updateCaseStatus(fd:FormData){const id=text(fd,"id"),statu
 
 async function upload(fd:FormData,key:string,bucket:string){const file=fd.get(key);if(!(file instanceof File)||!file.size)return null;const allowed=bucket==="passports"?file.type.startsWith("image/"):(file.type.startsWith("image/")||file.type==="application/pdf");if(!allowed)throw new Error(bucket==="passports"?"Please upload an image file":"Please upload an image or PDF");const db=await createClient();const path=`${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,"-")}`;const{error}=await db.storage.from(bucket).upload(path,file,{contentType:file.type});if(error)throw error;return path}
 export async function createClientRecord(fd:FormData){const db=await createClient();const{data,error}=await db.from("clients").insert({company_name:text(fd,"company_name"),contact_name:text(fd,"contact_name"),contact_email:text(fd,"contact_email"),contact_phone:text(fd,"contact_phone")}).select("id").single();if(error)throw error;await audit("client.created","client",data.id);revalidatePath("/")}
-export async function addTraveller(fd:FormData){const db=await createClient();const path=await upload(fd,"passport","passports");const{data,error}=await db.from("travellers").insert({client_id:text(fd,"client_id"),full_name:text(fd,"full_name"),passport_number:text(fd,"passport_number"),passport_number_confidence:Number(text(fd,"passport_number_confidence")||"1"),passport_number_source:path?"manual_after_upload":"manual",dob:text(fd,"dob")||null,dob_confidence:1,dob_source:"manual",expiry_date:text(fd,"expiry_date")||null,expiry_date_confidence:1,expiry_date_source:"manual",nationality:text(fd,"nationality"),nationality_confidence:1,nationality_source:"manual",verification_status:"client_confirmed"}).select("id").single();if(error)throw error;if(path)await db.from("documents").insert({entity_type:"traveller",entity_id:data.id,file_path:path,file_type:"passport"});await audit("traveller.client_confirmed","traveller",data.id,{passport_uploaded:Boolean(path)});revalidatePath("/")}
+export async function addTraveller(fd: FormData) {
+  const db = await createClient();
+  const ownerId = await requireOwnerId(db);
+
+  const clientId = text(fd, "client_id");
+  const fullName = text(fd, "full_name");
+  const passportNumber = text(fd, "passport_number").toUpperCase();
+
+  if (!clientId || !fullName) {
+    throw new Error("Client and full name are required");
+  }
+
+  const path = await upload(fd, "passport", "passports");
+
+  const { data, error } = await db
+    .from("travellers")
+    .insert({
+      client_id: clientId,
+      full_name: fullName,
+      passport_number: passportNumber || null,
+      passport_number_confidence: null,
+      passport_number_source: path ? "manual_after_upload" : "manual",
+      dob: text(fd, "dob") || null,
+      dob_confidence: null,
+      dob_source: "manual",
+      expiry_date: text(fd, "expiry_date") || null,
+      expiry_date_confidence: null,
+      expiry_date_source: "manual",
+      nationality: text(fd, "nationality") || null,
+      nationality_confidence: null,
+      nationality_source: "manual",
+      verification_status: "client_confirmed",
+      user_id: ownerId,
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    if (path) {
+      const { error: cleanupError } = await db.storage
+        .from("passports")
+        .remove([path]);
+
+      if (cleanupError) {
+        console.error("Unable to remove unused passport upload");
+      }
+    }
+
+    if (
+      error.code === "23505" &&
+      error.message.includes("travellers_client_passport_unique")
+    ) {
+      throw new Error(
+        "This passport already exists for the selected client. Review the existing traveller instead.",
+      );
+    }
+
+    throw new Error("Unable to create traveller");
+  }
+
+  if (path) {
+    const { error: documentError } = await db
+      .from("documents")
+      .insert({
+        entity_type: "traveller",
+        entity_id: data.id,
+        file_path: path,
+        file_type: "passport",
+        user_id: ownerId,
+      });
+
+    if (documentError) {
+      throw new Error(
+        "Traveller was created, but the passport document link failed. Do not submit again.",
+      );
+    }
+  }
+
+  await audit("traveller.client_confirmed", "traveller", data.id, {
+    passport_uploaded: Boolean(path),
+  });
+
+  revalidatePath("/");
+  revalidatePath("/travellers");
+}
 export async function createQuotation(fd:FormData){const db=await createClient();const raw=text(fd,"itinerary_text"),segments=parseGdsItinerary(raw);const{data,error}=await db.from("quotations").insert({case_id:text(fd,"case_id"),itinerary_text:raw,parsed_segments:segments,parsed_segments_confidence:segments.length?.9:0,parsed_segments_source:"deterministic_parser",parsed_segments_review_status:"confirmed",base_fare:Number(text(fd,"base_fare")),taxes:Number(text(fd,"taxes")),service_fee:Number(text(fd,"service_fee")),baggage_info:text(fd,"baggage_info"),fare_conditions:text(fd,"fare_conditions"),expiry_date:text(fd,"expiry_date")}).select("id").single();if(error)throw error;await audit("quotation.created","quotation",data.id,{segments:segments.length});revalidatePath("/")}
 export async function transitionQuotation(fd:FormData){const db=await createClient(),id=text(fd,"id");const{data:quote}=await db.from("quotations").select("status,case_id").eq("id",id).single();if(!quote)throw new Error("Quotation not found");const requested=text(fd,"status"),status=requested||(quote.status==="draft"?"approved":"sent");if(status==="sent"&&quote.status!=="approved")throw new Error("Quotation must be approved before sending");const{error}=await db.from("quotations").update({status,approved_by:status==="approved"?"00000000-0000-0000-0000-000000000001":undefined}).eq("id",id);if(error)throw error;if(status==="approved")await db.from("cases").update({status:"quoted"}).eq("id",quote.case_id);await audit(`quotation.${status}`,"quotation",id);revalidatePath("/")}
 async function requireOwnerId(
