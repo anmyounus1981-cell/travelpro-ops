@@ -104,12 +104,69 @@ export async function addTraveller(fd: FormData) {
     }
   }
 
-  await audit("traveller.client_confirmed", "traveller", data.id, {
-    passport_uploaded: Boolean(path),
-  });
+  try {
+    await audit("traveller.client_confirmed", "traveller", data.id, {
+      passport_uploaded: Boolean(path),
+    });
+  } catch {
+    revalidatePath("/");
+    revalidatePath("/travellers");
+
+    throw new Error(
+      "Traveller was created, but audit recording failed. Do not submit again.",
+    );
+  }
 
   revalidatePath("/");
   revalidatePath("/travellers");
+}
+type TravellerFormState = {
+  error: string;
+  success: boolean;
+};
+
+export async function addTravellerWithFeedback(
+  _previousState: TravellerFormState,
+  formData: FormData,
+): Promise<TravellerFormState> {
+  try {
+    await addTraveller(formData);
+
+    return { error: "", success: true };
+  } catch (error: unknown) {
+    const message = error instanceof Error ? error.message : "";
+
+    const savedWarnings = [
+      "Traveller was created, but the passport document link failed. Do not submit again.",
+      "Traveller was created, but audit recording failed. Do not submit again.",
+    ];
+
+    if (savedWarnings.includes(message)) {
+      revalidatePath("/");
+      revalidatePath("/travellers");
+
+      return {
+        error: message,
+        success: true,
+      };
+    }
+
+    const safeMessages = [
+      "Authentication required",
+      "Owner access required",
+      "Client and full name are required",
+      "Please upload an image file",
+      "This passport already exists for the selected client. Review the existing traveller instead.",
+      "Unable to create traveller",
+    ];
+
+    return {
+      error: safeMessages.includes(message)
+        ? message
+        : "Unable to complete the request. Check the traveller directory before submitting again.",
+      success: false,
+    };
+  }
 }
 export async function createQuotation(fd:FormData){const db=await createClient();const raw=text(fd,"itinerary_text"),segments=parseGdsItinerary(raw);const{data,error}=await db.from("quotations").insert({case_id:text(fd,"case_id"),itinerary_text:raw,parsed_segments:segments,parsed_segments_confidence:segments.length?.9:0,parsed_segments_source:"deterministic_parser",parsed_segments_review_status:"confirmed",base_fare:Number(text(fd,"base_fare")),taxes:Number(text(fd,"taxes")),service_fee:Number(text(fd,"service_fee")),baggage_info:text(fd,"baggage_info"),fare_conditions:text(fd,"fare_conditions"),expiry_date:text(fd,"expiry_date")}).select("id").single();if(error)throw error;await audit("quotation.created","quotation",data.id,{segments:segments.length});revalidatePath("/")}
 export async function transitionQuotation(fd:FormData){const db=await createClient(),id=text(fd,"id");const{data:quote}=await db.from("quotations").select("status,case_id").eq("id",id).single();if(!quote)throw new Error("Quotation not found");const requested=text(fd,"status"),status=requested||(quote.status==="draft"?"approved":"sent");if(status==="sent"&&quote.status!=="approved")throw new Error("Quotation must be approved before sending");const{error}=await db.from("quotations").update({status,approved_by:status==="approved"?"00000000-0000-0000-0000-000000000001":undefined}).eq("id",id);if(error)throw error;if(status==="approved")await db.from("cases").update({status:"quoted"}).eq("id",quote.case_id);await audit(`quotation.${status}`,"quotation",id);revalidatePath("/")}

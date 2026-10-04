@@ -1,6 +1,6 @@
 import Link from "next/link";
 
-import { addTraveller } from "@/app/actions";
+import { TravellerForm } from "./traveller-form";
 import { createClient } from "@/lib/supabase/server";
 import { PassportUpload } from "./passport-upload";
 
@@ -209,112 +209,7 @@ export default async function TravellersPage() {
           field before saving.
         </p>
 
-        <form
-          action={addTraveller}
-          style={{
-            display: "grid",
-            gridTemplateColumns:
-              "repeat(auto-fit, minmax(220px, 1fr))",
-            gap: "16px",
-          }}
-        >
-          <label>
-            Corporate client
-            <select
-              name="client_id"
-              required
-              defaultValue=""
-              style={fieldStyle}
-            >
-              <option value="" disabled>
-                Select client
-              </option>
-
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.company_name || "Unnamed client"}
-                </option>
-              ))}
-            </select>
-          </label>
-
-          <label>
-            Full name
-            <input
-              name="full_name"
-              required
-              placeholder="SURNAME/FIRST NAME MR"
-              style={fieldStyle}
-            />
-          </label>
-
-          <label>
-            Passport number
-            <input
-              name="passport_number"
-              required
-              style={fieldStyle}
-            />
-          </label>
-
-          <label>
-            Date of birth
-            <input
-              name="dob"
-              type="date"
-              required
-              style={fieldStyle}
-            />
-          </label>
-
-          <label>
-            Passport expiry date
-            <input
-              name="expiry_date"
-              type="date"
-              required
-              style={fieldStyle}
-            />
-          </label>
-
-          <label>
-            Nationality
-            <input
-              name="nationality"
-              required
-              placeholder="Bangladeshi"
-              style={fieldStyle}
-            />
-          </label>
-
-          <label>
-            Passport image
-            <input
-              name="passport"
-              type="file"
-              accept="image/*"
-              style={fieldStyle}
-            />
-          </label>
-
-          <div style={{ alignSelf: "end" }}>
-            <button
-              type="submit"
-              style={{
-                width: "100%",
-                padding: "13px 20px",
-                border: 0,
-                borderRadius: "8px",
-                background: "#0f766e",
-                color: "#ffffff",
-                fontWeight: 700,
-                cursor: "pointer",
-              }}
-            >
-              Confirm traveller
-            </button>
-          </div>
-        </form>
+      <TravellerForm clients={clients} />
       </section>
 
       <section
