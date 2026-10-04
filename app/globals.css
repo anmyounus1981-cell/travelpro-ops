@@ -35,3 +35,11 @@ aside > form button {
 aside > form button:hover {
   background: #193e50;
 }
+
+/* Keep checkboxes and radio buttons at their natural size. */
+input[type="checkbox"],
+input[type="radio"] {
+  width: auto;
+  padding: 0;
+  vertical-align: middle;
+}
