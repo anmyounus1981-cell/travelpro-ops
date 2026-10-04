@@ -354,6 +354,7 @@ export default async function TravellersPage() {
                 Nationality
               </th>
               <th style={{ padding: "14px 20px" }}>Status</th>
+              <th style={{ padding: "14px 20px" }}>Actions</th>
             </tr>
           </thead>
 
@@ -393,9 +394,15 @@ export default async function TravellersPage() {
                   {traveller.nationality || "Not provided"}
                 </td>
 
-                <td style={{ padding: "16px 20px" }}>
+                                <td style={{ padding: "16px 20px" }}>
                   {traveller.verification_status ||
                     "Pending review"}
+                </td>
+
+                <td style={{ padding: "16px 20px" }}>
+                  <Link href={`/travellers/${traveller.id}/review`}>
+                    Review / Edit
+                  </Link>
                 </td>
               </tr>
             ))}
@@ -403,7 +410,7 @@ export default async function TravellersPage() {
             {travellers.length === 0 && (
               <tr>
                 <td
-                  colSpan={7}
+                  colSpan={8}
                   style={{
                     padding: "32px 20px",
                     textAlign: "center",

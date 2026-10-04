@@ -1,0 +1,194 @@
+"use client";
+
+import Link from "next/link";
+import { useActionState, useState } from "react";
+import { correctTraveller } from "./actions";
+
+const fields = [
+  { key: "full_name", label: "Full name", type: "text", maxLength: 200 },
+  {
+    key: "passport_number",
+    label: "Passport number",
+    type: "text",
+    maxLength: 30,
+  },
+  { key: "dob", label: "Date of birth", type: "date" },
+  { key: "expiry_date", label: "Passport expiry date", type: "date" },
+  {
+    key: "nationality",
+    label: "Nationality",
+    type: "text",
+    maxLength: 100,
+  },
+] as const;
+
+type FieldKey = (typeof fields)[number]["key"];
+
+type ReviewDetails = {
+  full_name: string;
+  passport_number: string | null;
+  dob: string | null;
+  expiry_date: string | null;
+  nationality: string | null;
+  verification_status: string | null;
+};
+
+export function TravellerCorrectionForm({
+  travellerId,
+  initialDetails,
+}: {
+  travellerId: string;
+  initialDetails: ReviewDetails;
+}) {
+  const [state, formAction, pending] = useActionState(
+    correctTraveller,
+    { error: "", success: false },
+  );
+
+  const [checked, setChecked] = useState<Record<FieldKey, boolean>>({
+    full_name: false,
+    passport_number: false,
+    dob: false,
+    expiry_date: false,
+    nationality: false,
+  });
+
+  const allChecked = fields.every((field) => checked[field.key]);
+
+  if (state.success) {
+    return (
+      <div role="status">
+        <p>Traveller corrections saved. Owner review recorded.</p>
+        <Link href="/travellers">Return to traveller directory</Link>
+      </div>
+    );
+  }
+
+  return (
+    <form action={formAction}>
+      <input type="hidden" name="traveller_id" value={travellerId} />
+      <input
+        type="hidden"
+        name="expected_fields"
+        value={JSON.stringify(initialDetails)}
+      />
+
+      <p>
+        Compare all five fields with the passport.
+        Check each box only after reviewing the corresponding field.
+      </p>
+
+      <fieldset
+        disabled={pending}
+        style={{ border: 0, padding: 0, margin: 0 }}
+      >
+        {fields.map((field) => (
+          <div
+            key={field.key}
+            style={{
+              marginBottom: "20px",
+              padding: "16px",
+              border: "1px solid #cbd5e1",
+              borderRadius: "8px",
+            }}
+          >
+            <label
+              htmlFor={`correction_${field.key}`}
+              style={{ display: "block", fontWeight: 700 }}
+            >
+              {field.label}
+            </label>
+
+            <input
+              id={`correction_${field.key}`}
+              name={field.key}
+              type={field.type}
+              defaultValue={initialDetails[field.key] ?? ""}
+              maxLength={"maxLength" in field ? field.maxLength : undefined}
+              required
+              onChange={() =>
+                setChecked((previous) => ({
+                  ...previous,
+                  [field.key]: false,
+                }))
+              }
+              style={{
+                display: "block",
+                boxSizing: "border-box",
+                width: "100%",
+                margin: "8px 0 12px",
+                padding: "12px",
+                border: "1px solid #cbd5e1",
+                borderRadius: "8px",
+              }}
+            />
+
+            <label>
+              <input
+                type="checkbox"
+                name={`checked_${field.key}`}
+                checked={checked[field.key]}
+                required
+                onChange={(event) =>
+                  setChecked((previous) => ({
+                    ...previous,
+                    [field.key]: event.target.checked,
+                  }))
+                }
+              />{" "}
+              Checked against passport
+            </label>
+          </div>
+        ))}
+
+        <label
+          htmlFor="correction_reason"
+          style={{ display: "block", fontWeight: 700 }}
+        >
+          Correction reason
+        </label>
+
+        <textarea
+          id="correction_reason"
+          name="reason"
+          required
+          maxLength={500}
+          rows={3}
+          placeholder="Explain why these details need correction"
+          style={{
+            display: "block",
+            boxSizing: "border-box",
+            width: "100%",
+            margin: "8px 0 20px",
+            padding: "12px",
+            border: "1px solid #cbd5e1",
+            borderRadius: "8px",
+          }}
+        />
+
+        <button
+          type="submit"
+          disabled={!allChecked || pending}
+          style={{
+            padding: "13px 20px",
+            border: 0,
+            borderRadius: "8px",
+            background: "#0f766e",
+            color: "#ffffff",
+            fontWeight: 700,
+            opacity: allChecked && !pending ? 1 : 0.55,
+            cursor: allChecked && !pending ? "pointer" : "not-allowed",
+          }}
+        >
+          {pending ? "Saving..." : "Save reviewed corrections"}
+        </button>
+      </fieldset>
+
+      {state.error && (
+        <p role="alert" style={{ color: "#b91c1c" }}>
+          {state.error}
+        </p>
+      )}
+    </form>
+  );
+}
