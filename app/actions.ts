@@ -28,48 +28,103 @@ async function upload(fd:FormData,key:string,bucket:string){const file=fd.get(ke
 export async function createClientRecord(fd:FormData){const db=await createClient();const{data,error}=await db.from("clients").insert({company_name:text(fd,"company_name"),contact_name:text(fd,"contact_name"),contact_email:text(fd,"contact_email"),contact_phone:text(fd,"contact_phone")}).select("id").single();if(error)throw error;await audit("client.created","client",data.id);revalidatePath("/")}
 export async function addTraveller(fd: FormData) {
   const db = await createClient();
-  const ownerId = await requireOwnerId(db);
+  await requireOwnerId(db);
 
   const clientId = text(fd, "client_id");
   const fullName = text(fd, "full_name");
   const passportNumber = text(fd, "passport_number").toUpperCase();
+  const dob = text(fd, "dob");
+  const expiryDate = text(fd, "expiry_date");
+  const nationality = text(fd, "nationality");
 
-  if (!clientId || !fullName) {
-    throw new Error("Client and full name are required");
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      clientId,
+    )
+  ) {
+    throw new Error("Select a valid client");
+  }
+
+  if (!fullName || fullName.length > 200) {
+    throw new Error("Full name must contain 1 to 200 characters");
+  }
+
+  if (!passportNumber || passportNumber.length > 30) {
+    throw new Error("Passport number must contain 1 to 30 characters");
+  }
+
+  if (!nationality || nationality.length > 100) {
+    throw new Error("Nationality must contain 1 to 100 characters");
+  }
+
+  const validDate = (value: string) => {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith("0000")) {
+      return false;
+    }
+
+    const date = new Date(`${value}T00:00:00.000Z`);
+
+    return (
+      !Number.isNaN(date.getTime()) &&
+      date.toISOString().slice(0, 10) === value
+    );
+  };
+
+  const dhakaToday = new Date(Date.now() + 6 * 60 * 60 * 1000)
+    .toISOString()
+    .slice(0, 10);
+
+  if (!validDate(dob) || dob > dhakaToday) {
+    throw new Error("Date of birth must be valid and not in the future");
+  }
+
+  if (!validDate(expiryDate) || expiryDate <= dob) {
+    throw new Error("Passport expiry date must be after date of birth");
   }
 
   const path = await upload(fd, "passport", "passports");
 
-  const { data, error } = await db
-    .from("travellers")
-    .insert({
-      client_id: clientId,
-      full_name: fullName,
-      passport_number: passportNumber || null,
-      passport_number_confidence: null,
-      passport_number_source: path ? "manual_after_upload" : "manual",
-      dob: text(fd, "dob") || null,
-      dob_confidence: null,
-      dob_source: "manual",
-      expiry_date: text(fd, "expiry_date") || null,
-      expiry_date_confidence: null,
-      expiry_date_source: "manual",
-      nationality: text(fd, "nationality") || null,
-      nationality_confidence: null,
-      nationality_source: "manual",
-      verification_status: "client_confirmed",
-      user_id: ownerId,
-    })
-    .select("id")
-    .single();
+  let result;
+
+  try {
+    result = await db.rpc("create_traveller_atomic", {
+      p_client_id: clientId,
+      p_full_name: fullName,
+      p_passport_number: passportNumber,
+      p_dob: dob,
+      p_expiry_date: expiryDate,
+      p_nationality: nationality,
+      p_image_path: path,
+    });
+  } catch {
+    throw new Error(
+      "Creation outcome is unknown. Check the traveller directory before submitting again.",
+    );
+  }
+
+  const { data: travellerId, error } = result;
 
   if (error) {
-    if (path) {
-      const { error: cleanupError } = await db.storage
-        .from("passports")
-        .remove([path]);
+    const definiteFailure =
+      /^[0-9A-Z]{5}$/.test(error.code ?? "") ||
+      error.code === "PGRST202";
 
-      if (cleanupError) {
+    if (!definiteFailure) {
+      throw new Error(
+        "Creation outcome is unknown. Check the traveller directory before submitting again.",
+      );
+    }
+
+    if (path) {
+      try {
+        const { error: cleanupError } = await db.storage
+          .from("passports")
+          .remove([path]);
+
+        if (cleanupError) {
+          console.error("Unable to remove unused passport upload");
+        }
+      } catch {
         console.error("Unable to remove unused passport upload");
       }
     }
@@ -83,46 +138,50 @@ export async function addTraveller(fd: FormData) {
       );
     }
 
-    throw new Error("Unable to create traveller");
-  }
-
-  if (path) {
-    const { error: documentError } = await db
-      .from("documents")
-      .insert({
-        entity_type: "traveller",
-        entity_id: data.id,
-        file_path: path,
-        file_type: "passport",
-        user_id: ownerId,
-      });
-
-    if (documentError) {
-      throw new Error(
-        "Traveller was created, but the passport document link failed. Do not submit again.",
-      );
-    }
-  }
-
-  try {
-    await audit("traveller.client_confirmed", "traveller", data.id, {
-      passport_uploaded: Boolean(path),
-    });
-  } catch {
-    revalidatePath("/");
-    revalidatePath("/travellers");
+    const safeMessages = [
+      "Owner access required",
+      "Client not found",
+      "Full name must contain 1 to 200 characters",
+      "Passport number must contain 1 to 30 characters",
+      "Nationality must contain 1 to 100 characters",
+      "Date of birth must not be in the future",
+      "Passport expiry date must be after date of birth",
+      "Passport image not found or inaccessible",
+    ];
 
     throw new Error(
-      "Traveller was created, but audit recording failed. Do not submit again.",
+      safeMessages.includes(error.message)
+        ? error.message
+        : "Unable to create traveller",
     );
   }
 
-  revalidatePath("/");
-  revalidatePath("/travellers");
+  if (
+    typeof travellerId !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      travellerId,
+    )
+  ) {
+    throw new Error(
+      "Creation outcome is unknown. Check the traveller directory before submitting again.",
+    );
+  }
+
+  try {
+    revalidatePath("/");
+    revalidatePath("/travellers");
+    revalidatePath("/audit-log");
+  } catch {
+    throw new Error(
+      "Traveller was created. Refresh the directory to see it. Do not submit again.",
+    );
+  }
 }
+
 type TravellerFormState = {
   error: string;
   success: boolean;
+  blocked?: boolean;
 };
 
 export async function addTravellerWithFeedback(
@@ -132,39 +191,62 @@ export async function addTravellerWithFeedback(
   try {
     await addTraveller(formData);
 
-    return { error: "", success: true };
+    return { error: "", success: true, blocked: false };
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : "";
 
-    const savedWarnings = [
-      "Traveller was created, but the passport document link failed. Do not submit again.",
-      "Traveller was created, but audit recording failed. Do not submit again.",
-    ];
+    if (
+      message ===
+      "Creation outcome is unknown. Check the traveller directory before submitting again."
+    ) {
+      return {
+        error: message,
+        success: false,
+        blocked: true,
+      };
+    }
 
-    if (savedWarnings.includes(message)) {
-      revalidatePath("/");
-      revalidatePath("/travellers");
-
+    if (
+      message ===
+      "Traveller was created. Refresh the directory to see it. Do not submit again."
+    ) {
       return {
         error: message,
         success: true,
+        blocked: true,
       };
     }
 
     const safeMessages = [
       "Authentication required",
       "Owner access required",
-      "Client and full name are required",
+      "Select a valid client",
+      "Client not found",
       "Please upload an image file",
+      "Full name must contain 1 to 200 characters",
+      "Passport number must contain 1 to 30 characters",
+      "Nationality must contain 1 to 100 characters",
+      "Date of birth must be valid and not in the future",
+      "Date of birth must not be in the future",
+      "Passport expiry date must be after date of birth",
+      "Passport image not found or inaccessible",
       "This passport already exists for the selected client. Review the existing traveller instead.",
       "Unable to create traveller",
     ];
 
+    if (safeMessages.includes(message)) {
+      return {
+        error: message,
+        success: false,
+        blocked: false,
+      };
+    }
+
     return {
-      error: safeMessages.includes(message)
-        ? message
-        : "Unable to complete the request. Check the traveller directory before submitting again.",
+      error:
+        "Unable to complete the request. Check the traveller directory before submitting again.",
       success: false,
+      blocked: true,
     };
   }
 }

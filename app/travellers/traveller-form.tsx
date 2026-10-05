@@ -25,7 +25,7 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
     { error: "", success: false },
   );
 
-  if (state.success) {
+    if (state.success || state.blocked) {
     return (
       <div role="status">
         {state.error ? (
