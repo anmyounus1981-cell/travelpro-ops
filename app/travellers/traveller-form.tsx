@@ -76,11 +76,19 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
           </label>
 
           <label>
-            Full name
+            Given Name
             <input
-              name="full_name"
-              required
-              maxLength={200}
+              name="given_name"
+              maxLength={100}
+              style={fieldStyle}
+            />
+          </label>
+
+          <label>
+            Surname / Last Name
+            <input
+              name="surname"
+              maxLength={100}
               style={fieldStyle}
             />
           </label>

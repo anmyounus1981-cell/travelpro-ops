@@ -274,6 +274,41 @@ function formatDate(value: string) {
       ))}
     </select>
   </label>
+  <label className={styles.clientSelector}>
+    Confirmed adults (ADT)
+    <input
+      name="adult_count"
+      type="number"
+      min="0"
+      step="1"
+      required
+      disabled={inquiry.status === "converted"}
+    />
+  </label>
+
+  <label className={styles.clientSelector}>
+    Confirmed children (CHD)
+    <input
+      name="child_count"
+      type="number"
+      min="0"
+      step="1"
+      required
+      disabled={inquiry.status === "converted"}
+    />
+  </label>
+
+  <label className={styles.clientSelector}>
+    Confirmed infants (INF)
+    <input
+      name="infant_count"
+      type="number"
+      min="0"
+      step="1"
+      required
+      disabled={inquiry.status === "converted"}
+    />
+  </label>
 
   <button
     className={styles.convertButton}

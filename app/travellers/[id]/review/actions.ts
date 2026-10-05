@@ -25,8 +25,9 @@ export async function correctTraveller(
     return { error: "Invalid traveller.", success: false };
   }
 
-  const fields = [
-    "full_name",
+    const fields = [
+    "given_name",
+    "surname",
     "passport_number",
     "dob",
     "expiry_date",
@@ -40,9 +41,44 @@ export async function correctTraveller(
     ]),
   );
 
-  if (fields.some((field) => !checks[field] || !text(field))) {
+  if (fields.some((field) => !checks[field])) {
     return {
-      error: "Complete and check all five passport fields.",
+      error: "Review and confirm all six passport fields.",
+      success: false,
+    };
+  }
+
+  const givenName = text("given_name").toUpperCase();
+  const surname = text("surname").toUpperCase();
+
+  if (!givenName && !surname) {
+    return {
+      error: "Enter the passport given name or surname.",
+      success: false,
+    };
+  }
+
+  if (givenName.length > 100 || surname.length > 100) {
+    return {
+      error: "Each name field must be at most 100 characters.",
+      success: false,
+    };
+  }
+
+  if ([givenName, surname].filter(Boolean).join(" ").length > 200) {
+    return {
+      error: "Combined name must be at most 200 characters.",
+      success: false,
+    };
+  }
+
+  if (
+    ["passport_number", "dob", "expiry_date", "nationality"].some(
+      (field) => !text(field),
+    )
+  ) {
+    return {
+      error: "Complete all remaining passport fields.",
       success: false,
     };
   }
@@ -96,7 +132,8 @@ export async function correctTraveller(
     {
       p_traveller_id: travellerId,
       p_expected_fields: expectedFields,
-      p_full_name: text("full_name"),
+      p_given_name: givenName || null,
+      p_surname: surname || null,
       p_passport_number: text("passport_number"),
       p_dob: text("dob"),
       p_expiry_date: text("expiry_date"),
@@ -119,8 +156,10 @@ export async function correctTraveller(
 
     const safeMessages = [
       "Owner access required",
-      "Review and confirm all five passport fields",
-      "Full name must contain 1 to 200 characters",
+      "Review and confirm all six passport fields",
+      "Enter the passport given name or surname",
+      "Each name field must be at most 100 characters",
+      "Combined name must be at most 200 characters",
       "Passport number must contain 1 to 30 characters",
       "Nationality must contain 1 to 100 characters",
       "Date of birth must not be in the future",

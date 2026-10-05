@@ -5,7 +5,18 @@ import { useActionState, useState } from "react";
 import { correctTraveller } from "./actions";
 
 const fields = [
-  { key: "full_name", label: "Full name", type: "text", maxLength: 200 },
+  {
+    key: "given_name",
+    label: "Given Name",
+    type: "text",
+    maxLength: 100,
+  },
+  {
+    key: "surname",
+    label: "Surname / Last Name",
+    type: "text",
+    maxLength: 100,
+  },
   {
     key: "passport_number",
     label: "Passport number",
@@ -25,6 +36,8 @@ const fields = [
 type FieldKey = (typeof fields)[number]["key"];
 
 type ReviewDetails = {
+  given_name: string | null;
+  surname: string | null;
   full_name: string;
   passport_number: string | null;
   dob: string | null;
@@ -46,7 +59,8 @@ export function TravellerCorrectionForm({
   );
 
   const [checked, setChecked] = useState<Record<FieldKey, boolean>>({
-    full_name: false,
+    given_name: false,
+    surname: false,
     passport_number: false,
     dob: false,
     expiry_date: false,
@@ -74,8 +88,10 @@ export function TravellerCorrectionForm({
       />
 
       <p>
-        Compare all five fields with the passport.
-        Check each box only after reviewing the corresponding field.
+        Compare all six fields with the passport.
+        Leave a name field blank only if it is blank on the passport.
+        Check each box after reviewing the corresponding field,
+        including a blank name field.
       </p>
 
       <fieldset
@@ -105,7 +121,9 @@ export function TravellerCorrectionForm({
               type={field.type}
               defaultValue={initialDetails[field.key] ?? ""}
               maxLength={"maxLength" in field ? field.maxLength : undefined}
-              required
+              required={
+                field.key !== "given_name" && field.key !== "surname"
+              }
               onChange={() =>
                 setChecked((previous) => ({
                   ...previous,

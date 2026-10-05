@@ -2,6 +2,9 @@ import Link from "next/link";
 import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { TravellerCorrectionForm } from "./review-form";
+import { travellerDisplayName } from "../../passport-drafts/passport-fields";
+import { PassengerAssignmentForm } from "./passenger-form";
+import { loadPassengerAssignmentData } from "./passenger-data";
 
 export const dynamic = "force-dynamic";
 
@@ -47,7 +50,7 @@ export default async function TravellerReviewPage({
   const { data: traveller, error: travellerError } = await db
     .from("travellers")
     .select(
-      "id, client_id, full_name, passport_number, dob, expiry_date, nationality, verification_status",
+      "id, client_id, given_name, surname, full_name, passport_number, dob, expiry_date, nationality, verification_status",
     )
     .eq("id", id)
     .maybeSingle();
@@ -69,9 +72,16 @@ export default async function TravellerReviewPage({
   if (clientError) {
     throw new Error("Unable to load traveller client.");
   }
+  const passengerData = await loadPassengerAssignmentData(
+    db,
+    traveller.client_id,
+    traveller.id,
+  );
 
-  const details = [
-    ["Full name", traveller.full_name],
+    const details: [string, string | null][] = [
+    ["Full name", travellerDisplayName(traveller)],
+    ["Given Name", traveller.given_name],
+    ["Surname / Last Name", traveller.surname],
     ["Passport number", traveller.passport_number],
     ["Date of birth", traveller.dob],
     ["Passport expiry date", traveller.expiry_date],
@@ -134,6 +144,8 @@ export default async function TravellerReviewPage({
         <TravellerCorrectionForm
           travellerId={traveller.id}
           initialDetails={{
+            given_name: traveller.given_name,
+            surname: traveller.surname,
             full_name: traveller.full_name,
             passport_number: traveller.passport_number,
             dob: traveller.dob,
@@ -142,6 +154,59 @@ export default async function TravellerReviewPage({
             verification_status: traveller.verification_status,
           }}
         />
+      </section>
+            <section
+        style={{
+          marginTop: "24px",
+          padding: "24px",
+          border: "1px solid #cbd5e1",
+          borderRadius: "16px",
+          background: "#ffffff",
+        }}
+      >
+        <h2 style={{ marginTop: 0 }}>Case passenger assignment</h2>
+
+        <p style={{ marginBottom: "20px" }}>
+          Passenger type is calculated from the reviewed date of birth
+          and the selected case departure date.
+        </p>
+
+        <PassengerAssignmentForm
+          travellerId={traveller.id}
+          dob={traveller.dob}
+          verified={traveller.verification_status === "verified"}
+          cases={passengerData.cases}
+        />
+
+        <h3 style={{ marginTop: "28px" }}>Existing assignments</h3>
+
+        {passengerData.assignments.length === 0 ? (
+          <p>This traveller has no case assignments.</p>
+        ) : (
+          <ul style={{ paddingLeft: "20px" }}>
+            {passengerData.assignments.map((assignment) => (
+              <li
+                key={assignment.id}
+                style={{ marginBottom: "16px" }}
+              >
+                <strong>{assignment.caseNumber}</strong>
+                <p>Departure: {assignment.departureDate}</p>
+                <p>
+                  Passenger type: {assignment.passengerType}
+                  {" · "}Age at departure:{" "}
+                  {assignment.ageAtDeparture ?? "Not recorded"}
+                </p>
+
+                {assignment.passengerType === "INF" && (
+                  <p>
+                    Accompanying adult:{" "}
+                    {assignment.accompanyingAdultName || "Not recorded"}
+                  </p>
+                )}
+              </li>
+            ))}
+          </ul>
+        )}
       </section>
     </main>
   );
