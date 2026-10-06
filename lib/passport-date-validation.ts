@@ -63,7 +63,17 @@ export function validatePassportDates(
       "Passport expiry date must be valid and after date of birth.",
     );
   }
+  if (expiryDate < referenceDate) {
+    return fail(
+      "Passport has expired. Enter the renewed passport details before confirming.",
+    );
+  }
 
+  if (expiryDate === referenceDate) {
+    return fail(
+      "Passport expires today. Enter the renewed passport details before confirming.",
+    );
+  }
   return {
     error: "",
     ageNeedsConfirmation: classification.age > 100,

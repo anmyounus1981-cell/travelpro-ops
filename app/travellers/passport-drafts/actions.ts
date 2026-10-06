@@ -163,6 +163,8 @@ export async function confirmPassportDraft(
         "Age at departure must not exceed 130 years",
         "Confirm the DOB against the passport because age exceeds 100 years.",
         "Confirm the expiry against the passport because it is more than 10 years from today.",
+        "Passport has expired. Enter the renewed passport details before confirming.",
+        "Passport expires today. Enter the renewed passport details before confirming.",
       ];
 
       return fail(

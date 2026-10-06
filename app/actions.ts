@@ -321,6 +321,8 @@ export async function addTravellerWithFeedback(
       "Confirm the DOB against the passport because age exceeds 100 years.",
       "Confirm the expiry against the passport because it is more than 10 years from today.",
       "Unable to create traveller",
+      "Passport has expired. Enter the renewed passport details before confirming.",
+      "Passport expires today. Enter the renewed passport details before confirming.",
     ];
 
     if (safeMessages.includes(message)) {

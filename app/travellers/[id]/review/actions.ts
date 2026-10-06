@@ -216,6 +216,8 @@ export async function correctTraveller(
       "Confirm the DOB against the passport because age exceeds 100 years.",
       "Confirm the expiry against the passport because it is more than 10 years from today.",
       "Traveller has case assignments. Review passenger assignments before changing DOB, client or verification status",
+      "Passport has expired. Enter the renewed passport details before confirming.",
+      "Passport expires today. Enter the renewed passport details before confirming.",
     ];
 
     return {
