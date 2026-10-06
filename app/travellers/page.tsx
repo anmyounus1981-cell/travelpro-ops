@@ -3,6 +3,7 @@ import Link from "next/link";
 import { TravellerForm } from "./traveller-form";
 import { createClient } from "@/lib/supabase/server";
 import { PassportUpload } from "./passport-upload";
+import { travellerDisplayName } from "./passport-drafts/passport-fields";
 
 export const dynamic = "force-dynamic";
 
@@ -14,6 +15,8 @@ type Client = {
 type Traveller = {
   id: string;
   client_id: string;
+  given_name: string | null;
+  surname: string | null;
   full_name: string;
   passport_number: string | null;
   dob: string | null;
@@ -45,7 +48,7 @@ export default async function TravellersPage() {
     db
       .from("travellers")
       .select(
-        "id, client_id, full_name, passport_number, dob, expiry_date, nationality, verification_status",
+        "id, client_id, given_name, surname, full_name, passport_number, dob, expiry_date, nationality, verification_status",
       )
       .order("full_name", { ascending: true }),
   ]);
@@ -265,7 +268,7 @@ export default async function TravellersPage() {
                     fontWeight: 700,
                   }}
                 >
-                  {traveller.full_name}
+                  {travellerDisplayName(traveller)}
                 </td>
 
                 <td style={{ padding: "16px 20px" }}>

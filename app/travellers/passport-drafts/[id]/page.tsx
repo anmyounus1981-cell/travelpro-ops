@@ -3,7 +3,7 @@ import { notFound, redirect } from "next/navigation";
 import { createClient } from "@/lib/supabase/server";
 import { PassportReviewForm } from "../review-form";
 import { PassportExtractionForm } from "../extraction-form";
-import { readPassportFields } from "../passport-fields";
+import { readPassportReviewFields } from "../passport-fields";
 
 export const dynamic = "force-dynamic";
 
@@ -48,7 +48,9 @@ export default async function PassportDraftPage({
 
   const { data: draft, error: draftError } = await db
     .from("passport_extraction_drafts")
-    .select("id, client_id, image_path, status, extracted_fields, updated_at")
+    .select(
+      "id, client_id, image_path, status, given_name, surname, extracted_fields, updated_at",
+    )
     .eq("id", id)
     .maybeSingle();
 
@@ -144,11 +146,19 @@ export default async function PassportDraftPage({
           }}
         >
           <h2 style={{ marginTop: 0 }}>Owner field review</h2>
-          <PassportReviewForm
-  key={`${draft.id}:${draft.updated_at}`}
-  draftId={draft.id}
-  initialFields={readPassportFields(draft.extracted_fields)}
-/>
+                   <PassportReviewForm
+            key={`${draft.id}:${draft.updated_at}`}
+            draftId={draft.id}
+            initialFields={{
+              ...readPassportReviewFields(draft.extracted_fields),
+              given_name:
+                draft.given_name ??
+                readPassportReviewFields(draft.extracted_fields).given_name,
+              surname:
+                draft.surname ??
+                readPassportReviewFields(draft.extracted_fields).surname,
+            }}
+          />
         </section>
       ) : (
         <p>This draft is {draft.status}. Confirmation is unavailable.</p>

@@ -1,9 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { addTravellerWithFeedback } from "@/app/actions";
-
+import {
+  dhakaToday,
+  validatePassportDates,
+} from "@/lib/passport-date-validation";
 type Client = {
   id: string;
   company_name: string | null;
@@ -24,7 +27,26 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
     addTravellerWithFeedback,
     { error: "", success: false },
   );
+  const [dob, setDob] = useState("");
+  const [expiryDate, setExpiryDate] = useState("");
+  const [today, setToday] = useState("");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [expiryConfirmed, setExpiryConfirmed] = useState(false);
 
+  useEffect(() => {
+    setToday(dhakaToday());
+  }, []);
+
+  const dateValidation =
+    today && dob && expiryDate
+      ? validatePassportDates(dob, expiryDate, today)
+      : null;
+
+  const dateChecksPassed =
+    Boolean(dateValidation) &&
+    !dateValidation?.error &&
+    (!dateValidation?.ageNeedsConfirmation || ageConfirmed) &&
+    (!dateValidation?.expiryNeedsConfirmation || expiryConfirmed);
     if (state.success || state.blocked) {
     return (
       <div role="status">
@@ -76,11 +98,19 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
           </label>
 
           <label>
-            Full name
+            Given Name
             <input
-              name="full_name"
-              required
-              maxLength={200}
+              name="given_name"
+              maxLength={100}
+              style={fieldStyle}
+            />
+          </label>
+
+          <label>
+            Surname / Last Name
+            <input
+              name="surname"
+              maxLength={100}
               style={fieldStyle}
             />
           </label>
@@ -95,21 +125,37 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
             />
           </label>
 
-          <label>
+                    <label>
             Date of birth
-            <input name="dob" type="date" required style={fieldStyle} />
-          </label>
-
-          <label>
-            Passport expiry date
-                        <input
-              name="expiry_date"
+            <input
+              name="dob"
               type="date"
               required
+              max={today || undefined}
+              value={dob}
+              onChange={(event) => {
+                setDob(event.target.value);
+                setAgeConfirmed(false);
+                setExpiryConfirmed(false);
+              }}
               style={fieldStyle}
             />
           </label>
 
+          <label>
+            Passport expiry date
+            <input
+              name="expiry_date"
+              type="date"
+              required
+              value={expiryDate}
+              onChange={(event) => {
+                setExpiryDate(event.target.value);
+                setExpiryConfirmed(false);
+              }}
+              style={fieldStyle}
+            />
+          </label>
           <label>
             Nationality
             <input
@@ -130,9 +176,47 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
           </label>
         </div>
 
+        {dateValidation?.error && (
+          <p role="alert" style={{ color: "#b91c1c" }}>
+            {dateValidation.error}
+          </p>
+        )}
+
+        {dateValidation?.ageNeedsConfirmation && (
+          <label style={{ display: "block", marginTop: "16px" }}>
+            <input
+              type="checkbox"
+              name="confirmed_unusual_age"
+              checked={ageConfirmed}
+              required
+              onChange={(event) =>
+                setAgeConfirmed(event.target.checked)
+              }
+            />{" "}
+            Age exceeds 100 years. I checked the DOB against the
+            passport and confirm it is correct.
+          </label>
+        )}
+
+        {dateValidation?.expiryNeedsConfirmation && (
+          <label style={{ display: "block", marginTop: "16px" }}>
+            <input
+              type="checkbox"
+              name="confirmed_unusual_expiry"
+              checked={expiryConfirmed}
+              required
+              onChange={(event) =>
+                setExpiryConfirmed(event.target.checked)
+              }
+            />{" "}
+            Expiry is more than 10 years from today. I checked the
+            expiry date against the passport and confirm it is correct.
+          </label>
+        )}
+
         <button
           type="submit"
-          disabled={pending || clients.length === 0}
+          disabled={pending || clients.length === 0 || !dateChecksPassed}
           style={{
             marginTop: "20px",
             padding: "13px 20px",

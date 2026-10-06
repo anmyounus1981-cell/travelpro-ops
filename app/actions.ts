@@ -1,6 +1,11 @@
 "use server";
 import { revalidatePath } from "next/cache"; import { redirect } from "next/navigation"; import { createClient } from "@/lib/supabase/server"; import { audit } from "@/lib/data/operations";
 import { parseGdsItinerary, triageInquiry } from "@/lib/ai/tools";
+import { readPassengerCounts } from "@/lib/passenger-counts";
+import {
+  dhakaToday,
+  validatePassportDates,
+} from "@/lib/passport-date-validation";
 const text=(fd:FormData,key:string)=>String(fd.get(key)??"").trim();
 function parseDhakaDateTime(value: string): Date {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
@@ -21,7 +26,65 @@ function parseDhakaDateTime(value: string): Date {
 
   return dhakaValue === value ? date : new Date(NaN);
 }
-export async function createCase(fd:FormData){const clientId=text(fd,"client_id");if(!clientId)throw new Error("Client is required");const db=await createClient();const caseNumber=`TP-${new Date().toISOString().slice(2,10).replaceAll("-","")}-${crypto.randomUUID().slice(0,4).toUpperCase()}`;const {data,error}=await db.from("cases").insert({case_number:caseNumber,client_id:clientId,assigned_to:"00000000-0000-0000-0000-000000000001",origin:text(fd,"origin").toUpperCase(),destination:text(fd,"destination").toUpperCase(),departure_date:text(fd,"departure_date"),return_date:text(fd,"return_date")||null,trip_type:text(fd,"trip_type"),passenger_count:Number(text(fd,"passenger_count")),cabin_class:text(fd,"cabin_class"),notes:text(fd,"notes"),intake_source:text(fd,"intake_source"),next_action:"Prepare fare options",next_action_deadline:new Date(Date.now()+86400000).toISOString()}).select("id").single();if(error)throw error;await audit("case.created","case",data.id,{case_number:caseNumber});revalidatePath("/");redirect(`/?case=${data.id}`)}
+export async function createCase(fd: FormData) {
+  const db = await createClient();
+  const ownerId = await requireOwnerId(db);
+
+  const clientId = text(fd, "client_id");
+
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      clientId,
+    )
+  ) {
+    throw new Error("Select a valid client");
+  }
+
+  const counts = readPassengerCounts(fd);
+
+  const caseNumber =
+    `TP-${new Date().toISOString().slice(2, 10).replaceAll("-", "")}-` +
+    crypto.randomUUID().slice(0, 4).toUpperCase();
+
+  const { data, error } = await db
+    .from("cases")
+    .insert({
+      case_number: caseNumber,
+      client_id: clientId,
+      assigned_to: ownerId,
+      user_id: ownerId,
+      origin: text(fd, "origin").toUpperCase(),
+      destination: text(fd, "destination").toUpperCase(),
+      departure_date: text(fd, "departure_date"),
+      return_date: text(fd, "return_date") || null,
+      trip_type: text(fd, "trip_type"),
+      ...counts,
+      cabin_class: text(fd, "cabin_class"),
+      notes: text(fd, "notes"),
+      intake_source: text(fd, "intake_source"),
+      next_action: "Prepare fare options",
+      next_action_deadline: new Date(
+        Date.now() + 86400000,
+      ).toISOString(),
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  await audit("case.created", "case", data.id, {
+    case_number: caseNumber,
+    ...counts,
+  });
+
+  revalidatePath("/");
+  revalidatePath(`/travellers`);
+  revalidatePath("/audit-log");
+
+  redirect(`/?case=${data.id}`);
+}
 export async function updateCaseStatus(fd:FormData){const id=text(fd,"id"),status=text(fd,"status");const db=await createClient();const {error}=await db.from("cases").update({status}).eq("id",id);if(error)throw error;await audit("case.status_changed","case",id,{status});revalidatePath("/")}
 
 async function upload(fd:FormData,key:string,bucket:string){const file=fd.get(key);if(!(file instanceof File)||!file.size)return null;const allowed=bucket==="passports"?file.type.startsWith("image/"):(file.type.startsWith("image/")||file.type==="application/pdf");if(!allowed)throw new Error(bucket==="passports"?"Please upload an image file":"Please upload an image or PDF");const db=await createClient();const path=`${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,"-")}`;const{error}=await db.storage.from(bucket).upload(path,file,{contentType:file.type});if(error)throw error;return path}
@@ -31,7 +94,9 @@ export async function addTraveller(fd: FormData) {
   await requireOwnerId(db);
 
   const clientId = text(fd, "client_id");
-  const fullName = text(fd, "full_name");
+  const givenName = text(fd, "given_name").toUpperCase();
+  const surname = text(fd, "surname").toUpperCase();
+  const fullName = [givenName, surname].filter(Boolean).join(" ");
   const passportNumber = text(fd, "passport_number").toUpperCase();
   const dob = text(fd, "dob");
   const expiryDate = text(fd, "expiry_date");
@@ -45,8 +110,16 @@ export async function addTraveller(fd: FormData) {
     throw new Error("Select a valid client");
   }
 
-  if (!fullName || fullName.length > 200) {
-    throw new Error("Full name must contain 1 to 200 characters");
+  if (!givenName && !surname) {
+    throw new Error("Enter the passport given name or surname");
+  }
+
+  if (givenName.length > 100 || surname.length > 100) {
+    throw new Error("Each name field must be at most 100 characters");
+  }
+
+  if (fullName.length > 200) {
+    throw new Error("Combined name must be at most 200 characters");
   }
 
   if (!passportNumber || passportNumber.length > 30) {
@@ -57,29 +130,32 @@ export async function addTraveller(fd: FormData) {
     throw new Error("Nationality must contain 1 to 100 characters");
   }
 
-  const validDate = (value: string) => {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith("0000")) {
-      return false;
-    }
+  const dateValidation = validatePassportDates(
+    dob,
+    expiryDate,
+    dhakaToday(),
+  );
 
-    const date = new Date(`${value}T00:00:00.000Z`);
-
-    return (
-      !Number.isNaN(date.getTime()) &&
-      date.toISOString().slice(0, 10) === value
-    );
-  };
-
-  const dhakaToday = new Date(Date.now() + 6 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
-
-  if (!validDate(dob) || dob > dhakaToday) {
-    throw new Error("Date of birth must be valid and not in the future");
+  if (dateValidation.error) {
+    throw new Error(dateValidation.error);
   }
 
-  if (!validDate(expiryDate) || expiryDate <= dob) {
-    throw new Error("Passport expiry date must be after date of birth");
+  if (
+    dateValidation.ageNeedsConfirmation &&
+    fd.get("confirmed_unusual_age") !== "on"
+  ) {
+    throw new Error(
+      "Confirm the DOB against the passport because age exceeds 100 years.",
+    );
+  }
+
+  if (
+    dateValidation.expiryNeedsConfirmation &&
+    fd.get("confirmed_unusual_expiry") !== "on"
+  ) {
+    throw new Error(
+      "Confirm the expiry against the passport because it is more than 10 years from today.",
+    );
   }
 
   const path = await upload(fd, "passport", "passports");
@@ -87,14 +163,17 @@ export async function addTraveller(fd: FormData) {
   let result;
 
   try {
-    result = await db.rpc("create_traveller_atomic", {
+    result = await db.rpc("create_traveller_with_date_review", {
       p_client_id: clientId,
-      p_full_name: fullName,
+      p_given_name: givenName || null,
+      p_surname: surname || null,
       p_passport_number: passportNumber,
       p_dob: dob,
       p_expiry_date: expiryDate,
       p_nationality: nationality,
       p_image_path: path,
+      p_age_confirmed: fd.get("confirmed_unusual_age") === "on",
+      p_expiry_confirmed: fd.get("confirmed_unusual_expiry") === "on",
     });
   } catch {
     throw new Error(
@@ -141,7 +220,9 @@ export async function addTraveller(fd: FormData) {
     const safeMessages = [
       "Owner access required",
       "Client not found",
-      "Full name must contain 1 to 200 characters",
+      "Enter the passport given name or surname",
+      "Each name field must be at most 100 characters",
+      "Combined name must be at most 200 characters",
       "Passport number must contain 1 to 30 characters",
       "Nationality must contain 1 to 100 characters",
       "Date of birth must not be in the future",
@@ -223,7 +304,9 @@ export async function addTravellerWithFeedback(
       "Select a valid client",
       "Client not found",
       "Please upload an image file",
-      "Full name must contain 1 to 200 characters",
+      "Enter the passport given name or surname",
+      "Each name field must be at most 100 characters",
+      "Combined name must be at most 200 characters",
       "Passport number must contain 1 to 30 characters",
       "Nationality must contain 1 to 100 characters",
       "Date of birth must be valid and not in the future",
@@ -231,7 +314,15 @@ export async function addTravellerWithFeedback(
       "Passport expiry date must be after date of birth",
       "Passport image not found or inaccessible",
       "This passport already exists for the selected client. Review the existing traveller instead.",
+      "Unable to validate dates. Refresh the page.",
+      "Date of birth must be valid and not in the future.",
+      "Check the date of birth against the passport.",
+      "Passport expiry date must be valid and after date of birth.",
+      "Confirm the DOB against the passport because age exceeds 100 years.",
+      "Confirm the expiry against the passport because it is more than 10 years from today.",
       "Unable to create traveller",
+      "Passport has expired. Enter the renewed passport details before confirming.",
+      "Passport expires today. Enter the renewed passport details before confirming.",
     ];
 
     if (safeMessages.includes(message)) {
@@ -784,7 +875,79 @@ export async function updateOwnerAlert(fd: FormData) {
 
 export async function createServiceCase(fd:FormData){const db=await createClient();const bookingId=text(fd,"booking_id");const{data,error}=await db.from("service_cases").insert({booking_id:bookingId||null,case_id:text(fd,"case_id")||null,type:text(fd,"type"),request_details:text(fd,"request_details"),status:"requested"}).select("id").single();if(error)throw error;await audit("service_case.requested","service_case",data.id,{type:text(fd,"type")});revalidatePath("/")}
 export async function transitionServiceCase(fd:FormData){const db=await createClient(),id=text(fd,"id");const{data:serviceCase}=await db.from("service_cases").select("status").eq("id",id).single();if(!serviceCase)throw new Error("Service case not found");const status=text(fd,"status")||(serviceCase.status==="requested"?"in_review":"completed");const{error}=await db.from("service_cases").update({status,result_summary:text(fd,"result_summary")||null}).eq("id",id);if(error)throw error;await audit(`service_case.${status}`,"service_case",id);revalidatePath("/")}
-export async function createCaseFromInquiry(fd:FormData){const raw=text(fd,"inquiry"),draft=triageInquiry(raw),clientId=text(fd,"client_id");if(draft.missing_fields.includes("route"))throw new Error("Route is missing. Review the inquiry and use manual case entry.");const db=await createClient();const caseNumber=`TP-AI-${crypto.randomUUID().slice(0,6).toUpperCase()}`;const{data,error}=await db.from("cases").insert({case_number:caseNumber,client_id:clientId,assigned_to:"00000000-0000-0000-0000-000000000001",origin:draft.origin,destination:draft.destination,departure_date:text(fd,"departure_date"),trip_type:"oneway",passenger_count:draft.passenger_count,cabin_class:"Economy",notes:`Source inquiry: ${raw}\nMissing: ${draft.missing_fields.join(", ")||"none"}\nConfidence: ${Math.round(draft.confidence*100)}%`,status:"new",intake_source:"whatsapp",escalation_flag:draft.escalation_flags.length>0,escalation_reason:draft.escalation_flags.join(", ")||null,next_action:draft.missing_fields.length?"Collect missing information":"Prepare fare options"}).select("id").single();if(error)throw error;await audit("case.ai_draft_confirmed","case",data.id,{confidence:draft.confidence,flags:draft.escalation_flags});revalidatePath("/")}
+export async function createCaseFromInquiry(fd: FormData) {
+  const db = await createClient();
+  const ownerId = await requireOwnerId(db);
+
+  const raw = text(fd, "inquiry");
+  const clientId = text(fd, "client_id");
+  const draft = triageInquiry(raw);
+  const counts = readPassengerCounts(fd);
+
+  if (
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      clientId,
+    )
+  ) {
+    throw new Error("Select a valid client");
+  }
+
+  if (draft.missing_fields.includes("route")) {
+    throw new Error(
+      "Route is missing. Review the inquiry and use manual case entry.",
+    );
+  }
+
+  const caseNumber =
+    `TP-AI-${crypto.randomUUID().slice(0, 6).toUpperCase()}`;
+
+  const notes = [
+    `Source inquiry: ${raw}`,
+    `Missing: ${draft.missing_fields.join(", ") || "none"}`,
+    `Confidence: ${Math.round(draft.confidence * 100)}%`,
+    `Parsed passenger total: ${draft.passenger_count}`,
+    `Owner-confirmed passengers: ADT ${counts.adult_count}, CHD ${counts.child_count}, INF ${counts.infant_count}`,
+  ].join("\n");
+
+  const { data, error } = await db
+    .from("cases")
+    .insert({
+      case_number: caseNumber,
+      client_id: clientId,
+      assigned_to: ownerId,
+      user_id: ownerId,
+      origin: draft.origin,
+      destination: draft.destination,
+      departure_date: text(fd, "departure_date"),
+      trip_type: "oneway",
+      ...counts,
+      cabin_class: "Economy",
+      notes,
+      status: "new",
+      intake_source: "whatsapp",
+      escalation_flag: draft.escalation_flags.length > 0,
+      escalation_reason: draft.escalation_flags.join(", ") || null,
+      next_action: draft.missing_fields.length
+        ? "Collect missing information"
+        : "Prepare fare options",
+    })
+    .select("id")
+    .single();
+
+  if (error) {
+    throw error;
+  }
+
+  await audit("case.ai_draft_confirmed", "case", data.id, {
+    confidence: draft.confidence,
+    flags: draft.escalation_flags,
+    ...counts,
+  });
+
+  revalidatePath("/");
+  revalidatePath("/travellers");
+  revalidatePath("/audit-log");
+}
 
 export async function convertInquiryToCase(fd: FormData) {
   const inquiryId = text(fd, "inquiry_id");
@@ -799,6 +962,8 @@ export async function convertInquiryToCase(fd: FormData) {
   }
 
   const db = await createClient();
+  const ownerId = await requireOwnerId(db);
+  const counts = readPassengerCounts(fd);
 
   const { data: inquiry, error: inquiryError } = await db
     .from("inquiries")
@@ -840,16 +1005,14 @@ export async function convertInquiryToCase(fd: FormData) {
     .insert({
       case_number: caseNumber,
       client_id: clientId,
-      assigned_to: "00000000-0000-0000-0000-000000000001",
+      assigned_to: ownerId,
+      user_id: ownerId,
       origin,
       destination,
       departure_date: departureDate,
       return_date: returnDate || null,
       trip_type: returnDate ? "roundtrip" : "oneway",
-      passenger_count:
-        Number.isInteger(passengerCount) && passengerCount > 0
-          ? passengerCount
-          : 1,
+      ...counts,
       cabin_class: cabinClass,
       notes: `Converted from ${inquiry.source} inquiry.\n\n${inquiry.raw_message}`,
       status: "new",
@@ -881,6 +1044,7 @@ export async function convertInquiryToCase(fd: FormData) {
   await audit("inquiry.converted", "inquiry", inquiryId, {
     case_id: newCase.id,
     case_number: caseNumber,
+    ...counts,
   });
 
   revalidatePath("/inbox");
