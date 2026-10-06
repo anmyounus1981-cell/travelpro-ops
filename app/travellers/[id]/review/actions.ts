@@ -2,6 +2,10 @@
 
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
+import {
+  dhakaToday,
+  validatePassportDates,
+} from "@/lib/passport-date-validation";
 
 type CorrectionState = {
   error: string;
@@ -83,6 +87,40 @@ export async function correctTraveller(
     };
   }
 
+    const dateValidation = validatePassportDates(
+    text("dob"),
+    text("expiry_date"),
+    dhakaToday(),
+  );
+
+  if (dateValidation.error) {
+    return {
+      error: dateValidation.error,
+      success: false,
+    };
+  }
+
+  if (
+    dateValidation.ageNeedsConfirmation &&
+    formData.get("confirmed_unusual_age") !== "on"
+  ) {
+    return {
+      error:
+        "Confirm the DOB against the passport because age exceeds 100 years.",
+      success: false,
+    };
+  }
+
+  if (
+    dateValidation.expiryNeedsConfirmation &&
+    formData.get("confirmed_unusual_expiry") !== "on"
+  ) {
+    return {
+      error:
+        "Confirm the expiry against the passport because it is more than 10 years from today.",
+      success: false,
+    };
+  }
   const reason = text("reason");
 
   if (!reason || reason.length > 500) {
@@ -128,7 +166,7 @@ export async function correctTraveller(
   }
 
   const { data: savedId, error } = await db.rpc(
-    "correct_traveller_details",
+    "correct_traveller_with_date_review",
     {
       p_traveller_id: travellerId,
       p_expected_fields: expectedFields,
@@ -140,6 +178,10 @@ export async function correctTraveller(
       p_nationality: text("nationality"),
       p_field_checks: checks,
       p_reason: reason,
+      p_age_confirmed:
+        formData.get("confirmed_unusual_age") === "on",
+      p_expiry_confirmed:
+        formData.get("confirmed_unusual_expiry") === "on",
     },
   );
 
@@ -168,6 +210,12 @@ export async function correctTraveller(
       "Traveller not found",
       "Traveller changed. Refresh before saving",
       "No changes to save",
+      "Date of birth must be valid and not in the future.",
+      "Passport expiry date must be valid and after date of birth.",
+      "Age at departure must not exceed 130 years",
+      "Confirm the DOB against the passport because age exceeds 100 years.",
+      "Confirm the expiry against the passport because it is more than 10 years from today.",
+      "Traveller has case assignments. Review passenger assignments before changing DOB, client or verification status",
     ];
 
     return {

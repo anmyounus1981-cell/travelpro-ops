@@ -2,6 +2,10 @@
 import { revalidatePath } from "next/cache"; import { redirect } from "next/navigation"; import { createClient } from "@/lib/supabase/server"; import { audit } from "@/lib/data/operations";
 import { parseGdsItinerary, triageInquiry } from "@/lib/ai/tools";
 import { readPassengerCounts } from "@/lib/passenger-counts";
+import {
+  dhakaToday,
+  validatePassportDates,
+} from "@/lib/passport-date-validation";
 const text=(fd:FormData,key:string)=>String(fd.get(key)??"").trim();
 function parseDhakaDateTime(value: string): Date {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
@@ -126,29 +130,32 @@ export async function addTraveller(fd: FormData) {
     throw new Error("Nationality must contain 1 to 100 characters");
   }
 
-  const validDate = (value: string) => {
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(value) || value.startsWith("0000")) {
-      return false;
-    }
+  const dateValidation = validatePassportDates(
+    dob,
+    expiryDate,
+    dhakaToday(),
+  );
 
-    const date = new Date(`${value}T00:00:00.000Z`);
-
-    return (
-      !Number.isNaN(date.getTime()) &&
-      date.toISOString().slice(0, 10) === value
-    );
-  };
-
-  const dhakaToday = new Date(Date.now() + 6 * 60 * 60 * 1000)
-    .toISOString()
-    .slice(0, 10);
-
-  if (!validDate(dob) || dob > dhakaToday) {
-    throw new Error("Date of birth must be valid and not in the future");
+  if (dateValidation.error) {
+    throw new Error(dateValidation.error);
   }
 
-  if (!validDate(expiryDate) || expiryDate <= dob) {
-    throw new Error("Passport expiry date must be after date of birth");
+  if (
+    dateValidation.ageNeedsConfirmation &&
+    fd.get("confirmed_unusual_age") !== "on"
+  ) {
+    throw new Error(
+      "Confirm the DOB against the passport because age exceeds 100 years.",
+    );
+  }
+
+  if (
+    dateValidation.expiryNeedsConfirmation &&
+    fd.get("confirmed_unusual_expiry") !== "on"
+  ) {
+    throw new Error(
+      "Confirm the expiry against the passport because it is more than 10 years from today.",
+    );
   }
 
   const path = await upload(fd, "passport", "passports");
@@ -156,7 +163,7 @@ export async function addTraveller(fd: FormData) {
   let result;
 
   try {
-    result = await db.rpc("create_traveller_atomic", {
+    result = await db.rpc("create_traveller_with_date_review", {
       p_client_id: clientId,
       p_given_name: givenName || null,
       p_surname: surname || null,
@@ -165,6 +172,8 @@ export async function addTraveller(fd: FormData) {
       p_expiry_date: expiryDate,
       p_nationality: nationality,
       p_image_path: path,
+      p_age_confirmed: fd.get("confirmed_unusual_age") === "on",
+      p_expiry_confirmed: fd.get("confirmed_unusual_expiry") === "on",
     });
   } catch {
     throw new Error(
@@ -305,6 +314,12 @@ export async function addTravellerWithFeedback(
       "Passport expiry date must be after date of birth",
       "Passport image not found or inaccessible",
       "This passport already exists for the selected client. Review the existing traveller instead.",
+      "Unable to validate dates. Refresh the page.",
+      "Date of birth must be valid and not in the future.",
+      "Check the date of birth against the passport.",
+      "Passport expiry date must be valid and after date of birth.",
+      "Confirm the DOB against the passport because age exceeds 100 years.",
+      "Confirm the expiry against the passport because it is more than 10 years from today.",
       "Unable to create traveller",
     ];
 

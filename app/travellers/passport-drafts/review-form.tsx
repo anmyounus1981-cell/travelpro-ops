@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { confirmPassportDraft } from "./actions";
+import {
+  dhakaToday,
+  validatePassportDates,
+} from "@/lib/passport-date-validation";
 import type {
   PassportReviewFields,
 } from "./passport-fields";
@@ -71,12 +75,34 @@ export function PassportReviewForm({
     expiry_date: false,
     nationality: false,
   });
+  const [today, setToday] = useState("");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [expiryConfirmed, setExpiryConfirmed] = useState(false);
 
+  useEffect(() => {
+    setToday(dhakaToday());
+  }, []);
+
+  const dateValidation =
+    today && values.dob && values.expiry_date
+      ? validatePassportDates(
+          values.dob,
+          values.expiry_date,
+          today,
+        )
+      : null;
+
+  const dateChecksPassed =
+    Boolean(dateValidation) &&
+    !dateValidation?.error &&
+    (!dateValidation?.ageNeedsConfirmation || ageConfirmed) &&
+    (!dateValidation?.expiryNeedsConfirmation || expiryConfirmed);
   const allChecked = fields.every((field) => checked[field.key]);
   const hasName = Boolean(
     values.given_name.trim() || values.surname.trim(),
   );
-  const canSubmit = allChecked && hasName && !pending;
+  const canSubmit =
+    allChecked && hasName && dateChecksPassed && !pending;
 
   if (state.success) {
     return (
@@ -133,9 +159,17 @@ export function PassportReviewForm({
                   "maxLength" in field ? field.maxLength : undefined
                 }
                 required={!isName}
+                max={field.key === "dob" ? today || undefined : undefined}
                 onChange={(event) => {
                   const value = event.target.value;
+                  if (field.key === "dob") {
+                    setAgeConfirmed(false);
+                    setExpiryConfirmed(false);
+                  }
 
+                  if (field.key === "expiry_date") {
+                    setExpiryConfirmed(false);
+                  }
                   setValues((previous) => ({
                     ...previous,
                     [field.key]: value,
@@ -183,7 +217,43 @@ export function PassportReviewForm({
             Enter at least one passport name field.
           </p>
         )}
+        {dateValidation?.error && (
+          <p role="alert" style={{ color: "#b91c1c" }}>
+            {dateValidation.error}
+          </p>
+        )}
 
+        {dateValidation?.ageNeedsConfirmation && (
+          <label style={{ display: "block", margin: "16px 0" }}>
+            <input
+              type="checkbox"
+              name="confirmed_unusual_age"
+              checked={ageConfirmed}
+              required
+              onChange={(event) =>
+                setAgeConfirmed(event.target.checked)
+              }
+            />{" "}
+            Age exceeds 100 years. I checked the DOB against the
+            passport and confirm it is correct.
+          </label>
+        )}
+
+        {dateValidation?.expiryNeedsConfirmation && (
+          <label style={{ display: "block", margin: "16px 0" }}>
+            <input
+              type="checkbox"
+              name="confirmed_unusual_expiry"
+              checked={expiryConfirmed}
+              required
+              onChange={(event) =>
+                setExpiryConfirmed(event.target.checked)
+              }
+            />{" "}
+            Expiry is more than 10 years from today. I checked the
+            expiry date against the passport and confirm it is correct.
+          </label>
+        )}
         <button
           type="submit"
           disabled={!canSubmit}

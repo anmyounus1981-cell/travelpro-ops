@@ -3,7 +3,10 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase/server";
 import { passportReviewFieldKeys } from "./passport-fields";
-
+import {
+  dhakaToday,
+  validatePassportDates,
+} from "@/lib/passport-date-validation";
 type ReviewState = {
   error: string;
   success: boolean;
@@ -72,35 +75,31 @@ export async function confirmPassportDraft(
     return fail("Nationality must contain 1 to 100 characters.");
   }
 
-  const validDate = (value: string) => {
-    if (
-      !/^\d{4}-\d{2}-\d{2}$/.test(value) ||
-      value.startsWith("0000")
-    ) {
-      return false;
-    }
+    const dateValidation = validatePassportDates(
+    dob,
+    expiryDate,
+    dhakaToday(),
+  );
 
-    const date = new Date(`${value}T00:00:00.000Z`);
-
-    return (
-      Number.isFinite(date.getTime()) &&
-      date.toISOString().slice(0, 10) === value
-    );
-  };
-
-  const todayDhaka = new Date(
-    Date.now() + 6 * 60 * 60 * 1000,
-  )
-    .toISOString()
-    .slice(0, 10);
-
-  if (!validDate(dob) || dob > todayDhaka) {
-    return fail("Date of birth must be valid and not in the future.");
+  if (dateValidation.error) {
+    return fail(dateValidation.error);
   }
 
-  if (!validDate(expiryDate) || expiryDate <= dob) {
+  if (
+    dateValidation.ageNeedsConfirmation &&
+    formData.get("confirmed_unusual_age") !== "on"
+  ) {
     return fail(
-      "Passport expiry date must be valid and after date of birth.",
+      "Confirm the DOB against the passport because age exceeds 100 years.",
+    );
+  }
+
+  if (
+    dateValidation.expiryNeedsConfirmation &&
+    formData.get("confirmed_unusual_expiry") !== "on"
+  ) {
+    return fail(
+      "Confirm the expiry against the passport because it is more than 10 years from today.",
     );
   }
 
@@ -119,7 +118,7 @@ export async function confirmPassportDraft(
 
   try {
     const { data, error } = await db.rpc(
-      "confirm_passport_draft",
+      "confirm_passport_draft_with_date_review",
       {
         p_draft_id: draftId,
         p_given_name: givenName || null,
@@ -129,6 +128,10 @@ export async function confirmPassportDraft(
         p_expiry_date: expiryDate,
         p_nationality: nationality,
         p_field_checks: checks,
+                p_age_confirmed:
+          formData.get("confirmed_unusual_age") === "on",
+        p_expiry_confirmed:
+          formData.get("confirmed_unusual_expiry") === "on",
       },
     );
 
@@ -155,6 +158,11 @@ export async function confirmPassportDraft(
         "Nationality must contain 1 to 100 characters",
         "Date of birth must not be in the future",
         "Passport expiry date must be after date of birth",
+        "Date of birth must be valid and not in the future.",
+        "Passport expiry date must be valid and after date of birth.",
+        "Age at departure must not exceed 130 years",
+        "Confirm the DOB against the passport because age exceeds 100 years.",
+        "Confirm the expiry against the passport because it is more than 10 years from today.",
       ];
 
       return fail(

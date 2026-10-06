@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useState } from "react";
+import { useActionState, useEffect, useState } from "react";
 import { correctTraveller } from "./actions";
+import {
+  dhakaToday,
+  validatePassportDates,
+} from "@/lib/passport-date-validation";
 
 const fields = [
   {
@@ -66,7 +70,28 @@ export function TravellerCorrectionForm({
     expiry_date: false,
     nationality: false,
   });
+  const [dob, setDob] = useState(initialDetails.dob ?? "");
+  const [expiryDate, setExpiryDate] = useState(
+    initialDetails.expiry_date ?? "",
+  );
+  const [today, setToday] = useState("");
+  const [ageConfirmed, setAgeConfirmed] = useState(false);
+  const [expiryConfirmed, setExpiryConfirmed] = useState(false);
 
+  useEffect(() => {
+    setToday(dhakaToday());
+  }, []);
+
+  const dateValidation =
+    today && dob && expiryDate
+      ? validatePassportDates(dob, expiryDate, today)
+      : null;
+
+  const dateChecksPassed =
+    Boolean(dateValidation) &&
+    !dateValidation?.error &&
+    (!dateValidation?.ageNeedsConfirmation || ageConfirmed) &&
+    (!dateValidation?.expiryNeedsConfirmation || expiryConfirmed);
   const allChecked = fields.every((field) => checked[field.key]);
 
   if (state.success) {
@@ -119,17 +144,43 @@ export function TravellerCorrectionForm({
               id={`correction_${field.key}`}
               name={field.key}
               type={field.type}
-              defaultValue={initialDetails[field.key] ?? ""}
+                            value={
+                field.key === "dob"
+                  ? dob
+                  : field.key === "expiry_date"
+                    ? expiryDate
+                    : undefined
+              }
+              defaultValue={
+                field.key === "dob" || field.key === "expiry_date"
+                  ? undefined
+                  : initialDetails[field.key] ?? ""
+              }
+              max={
+                field.key === "dob" ? today || undefined : undefined
+              }
               maxLength={"maxLength" in field ? field.maxLength : undefined}
               required={
                 field.key !== "given_name" && field.key !== "surname"
               }
-              onChange={() =>
+
+              onChange={(event) => {
+                if (field.key === "dob") {
+                  setDob(event.target.value);
+                  setAgeConfirmed(false);
+                  setExpiryConfirmed(false);
+                }
+
+                if (field.key === "expiry_date") {
+                  setExpiryDate(event.target.value);
+                  setExpiryConfirmed(false);
+                }
+
                 setChecked((previous) => ({
                   ...previous,
                   [field.key]: false,
-                }))
-              }
+                }));
+              }}
               style={{
                 display: "block",
                 boxSizing: "border-box",
@@ -183,10 +234,46 @@ export function TravellerCorrectionForm({
             borderRadius: "8px",
           }}
         />
+        {dateValidation?.error && (
+          <p role="alert" style={{ color: "#b91c1c" }}>
+            {dateValidation.error}
+          </p>
+        )}
 
+        {dateValidation?.ageNeedsConfirmation && (
+          <label style={{ display: "block", margin: "16px 0" }}>
+            <input
+              type="checkbox"
+              name="confirmed_unusual_age"
+              checked={ageConfirmed}
+              required
+              onChange={(event) =>
+                setAgeConfirmed(event.target.checked)
+              }
+            />{" "}
+            Age exceeds 100 years. I checked the DOB against the
+            passport and confirm it is correct.
+          </label>
+        )}
+
+        {dateValidation?.expiryNeedsConfirmation && (
+          <label style={{ display: "block", margin: "16px 0" }}>
+            <input
+              type="checkbox"
+              name="confirmed_unusual_expiry"
+              checked={expiryConfirmed}
+              required
+              onChange={(event) =>
+                setExpiryConfirmed(event.target.checked)
+              }
+            />{" "}
+            Expiry is more than 10 years from today. I checked the
+            expiry date against the passport and confirm it is correct.
+          </label>
+        )}
         <button
           type="submit"
-          disabled={!allChecked || pending}
+          disabled={!allChecked || !dateChecksPassed || pending}
           style={{
             padding: "13px 20px",
             border: 0,
