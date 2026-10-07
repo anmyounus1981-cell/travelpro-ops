@@ -165,6 +165,7 @@ export async function confirmPassportDraft(
         "Confirm the expiry against the passport because it is more than 10 years from today.",
         "Passport has expired. Enter the renewed passport details before confirming.",
         "Passport expires today. Enter the renewed passport details before confirming.",
+        "Passport image not found or inaccessible",
       ];
 
       return fail(

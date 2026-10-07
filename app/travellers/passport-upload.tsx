@@ -2,7 +2,7 @@
 
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
-
+import { registerPassportDraft } from "./passport-upload-actions";
 type Client = {
   id: string;
   company_name: string | null;
@@ -11,9 +11,13 @@ type Client = {
 export function PassportUpload({ clients }: { clients: Client[] }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
+  const [blocked, setBlocked] = useState(false);
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
+    if (busy || blocked) {
+  return;
+}
     setMessage("");
 
     const form = event.currentTarget;
@@ -80,22 +84,38 @@ export function PassportUpload({ clients }: { clients: Client[] }) {
         throw uploadError;
       }
 
-      const { error: draftError } = await db
-        .from("passport_extraction_drafts")
-        .insert({
-          client_id: clientId,
-          image_path: imagePath,
-          status: "uploaded",
-          created_by: owner.id,
-        });
+const registration = await registerPassportDraft(
+  clientId,
+  imagePath,
+).catch(() => {
+  setBlocked(true);
+  throw new Error(
+    "Draft registration outcome is unknown. Refresh the draft queue before uploading again.",
+  );
+});
 
-      if (draftError) {
-        await db.storage.from("passports").remove([imagePath]);
-        throw draftError;
-      }
+if (!registration.success) {
+  if (registration.outcomeUnknown) {
+  setBlocked(true);
+}
+  if (!registration.outcomeUnknown) {
+    const { error: cleanupError } = await db.storage
+      .from("passports")
+      .remove([imagePath]);
 
-      form.reset();
-      setMessage("Passport draft uploaded. Owner review is still required.");
+    if (cleanupError) {
+      console.error("Unable to remove unused passport upload.");
+    }
+  }
+
+  throw new Error(registration.error);
+}
+
+form.reset();
+setMessage(
+  registration.error ||
+    "Passport draft uploaded. Owner review is still required.",
+);
     } catch (error) {
       setMessage(
         error instanceof Error ? error.message : "Upload failed.",
@@ -132,7 +152,7 @@ export function PassportUpload({ clients }: { clients: Client[] }) {
         />
       </label>
 
-      <button type="submit" disabled={busy || clients.length === 0}>
+      <button type="submit" disabled={busy || blocked || clients.length === 0}>
         {busy ? "Uploading..." : "Upload for owner review"}
       </button>
 

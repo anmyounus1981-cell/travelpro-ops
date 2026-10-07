@@ -520,18 +520,27 @@ export async function uploadPayment(fd: FormData) {
     throw paymentError;
   }
 
-  const { error: documentError } = await db
-    .from("documents")
-    .insert({
-      entity_type: "payment",
-      entity_id: payment.id,
-      file_path: path,
-      file_type: "payment_evidence",
-      user_id: ownerId,
-    });
+   const { data: documentId, error: documentError } = await db.rpc(
+    "link_operational_document",
+    {
+      p_entity_type: "payment",
+      p_entity_id: payment.id,
+    },
+  );
 
   if (documentError) {
     throw documentError;
+  }
+
+  if (
+    typeof documentId !== "string" ||
+    !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+      documentId,
+    )
+  ) {
+    throw new Error(
+      "Document linking outcome is unknown. Check the payment record before submitting again.",
+    );
   }
 
   const { error: alertError } = await db
@@ -729,18 +738,27 @@ export async function recordTicket(fd: FormData) {
   }
 
   if (path) {
-    const { error: documentError } = await db
-      .from("documents")
-      .insert({
-        entity_type: "ticket",
-        entity_id: ticket.id,
-        file_path: path,
-        file_type: "e_ticket",
-        user_id: ownerId,
-      });
+      const { data: documentId, error: documentError } = await db.rpc(
+      "link_operational_document",
+      {
+        p_entity_type: "ticket",
+        p_entity_id: ticket.id,
+      },
+    );
 
     if (documentError) {
       throw documentError;
+    }
+
+    if (
+      typeof documentId !== "string" ||
+      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+        documentId,
+      )
+    ) {
+      throw new Error(
+        "Document linking outcome is unknown. Check the ticket record before submitting again.",
+      );
     }
   }
 
