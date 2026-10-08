@@ -98,39 +98,44 @@ export async function extractPassportDraft(
 
     const fields = await extractPassportFields(imageDataUrl);
 
-    const { data: saved, error: saveError } = await db
-      .from("passport_extraction_drafts")
-      .update({
-        extracted_fields: fields,
-        provider_name: "openai:gpt-4.1-mini",
-        confidence_by_field: {},
-        evidence_by_field: {},
-        extraction_error_code: null,
-        status: "awaiting_review",
-        updated_at: new Date().toISOString(),
-      })
-      .eq("id", draftId)
-      .eq("status", draft.status)
-      .eq("updated_at", draft.updated_at)
-      .select("id")
-      .maybeSingle();
+    const { data: saved, error: saveError } = await db.rpc(
+  "save_passport_draft_extraction",
+  {
+    p_draft_id: draftId,
+    p_expected_status: draft.status,
+    p_expected_updated_at: draft.updated_at,
+    p_extracted_fields: fields,
+  },
+);
 
-    if (saveError) {
-      return {
-        error: "Unable to save extracted fields.",
-        success: false,
-      };
-    }
+   if (saveError) {
+  const safeMessages = [
+    "Authentication required",
+    "Owner access required",
+    "Invalid extracted passport fields",
+    "Passport draft not found",
+    "The draft changed. Refresh before continuing.",
+    "This draft is not available for extraction.",
+  ];
 
-    if (!saved) {
-      return {
-        error: "The draft changed. Refresh before continuing.",
-        success: false,
-      };
-    }
+  return {
+    error: safeMessages.includes(saveError.message)
+      ? saveError.message
+      : "Unable to confirm extraction save. Refresh and check the draft before trying again.",
+    success: false,
+  };
+}
 
-    revalidatePath("/travellers");
-    revalidatePath(`/travellers/passport-drafts/${draftId}`);
+if (saved !== draftId) {
+  return {
+    error: "Extraction save outcome is unknown. Refresh and check the draft.",
+    success: false,
+  };
+}
+
+revalidatePath("/travellers");
+revalidatePath(`/travellers/passport-drafts/${draftId}`);
+revalidatePath("/audit-log");
 
     return { error: "", success: true };
     } catch (error: unknown) {

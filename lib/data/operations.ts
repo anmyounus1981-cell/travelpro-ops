@@ -28,16 +28,29 @@ export async function audit(
     throw new Error("Authorized audit actor not found");
   }
 
-  const { error: auditError } = await db.from("audit_logs").insert({
-    actor_id: actor.id,
-    action,
-    entity_type: entityType,
-    entity_id: entityId,
-    details,
-  });
+  const { data: auditId, error: auditError } = await db.rpc(
+  "record_operational_audit",
+  {
+    p_action: action,
+    p_entity_type: entityType,
+    p_entity_id: entityId,
+    p_details: details,
+  },
+);
 
   if (auditError) {
-    throw auditError;
-  }
+  throw auditError;
+}
+
+if (
+  typeof auditId !== "string" ||
+  !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+    auditId,
+  )
+) {
+  throw new Error(
+    "Audit outcome is unknown. Check the audit log before repeating the action.",
+  );
+}
 }
 export async function getOperations(){const db=await createClient();const names=["travellers","quotations","bookings","payments","tickets","service_cases","audit_logs"] as const;const results=await Promise.all(names.map(n=>db.from(n).select("*").order("created_at",{ascending:false})));return Object.fromEntries(names.map((n,i)=>[n,results[i].data??[]])) as Record<(typeof names)[number],any[]>}
