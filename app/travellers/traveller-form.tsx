@@ -7,10 +7,12 @@ import {
   dhakaToday,
   validatePassportDates,
 } from "@/lib/passport-date-validation";
-type Client = {
-  id: string;
-  company_name: string | null;
-};
+import {
+  ClientSelector,
+  type SelectableClient,
+} from "./client-selector";
+
+type Client = SelectableClient;
 
 const fieldStyle = {
   display: "block",
@@ -32,6 +34,7 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
   const [today, setToday] = useState("");
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [expiryConfirmed, setExpiryConfirmed] = useState(false);
+  const [clientId, setClientId] = useState("");
 
   useEffect(() => {
     setToday(dhakaToday());
@@ -78,24 +81,12 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
             gap: "18px",
           }}
         >
-          <label>
-            Corporate client
-            <select
-              name="client_id"
-              required
-              defaultValue=""
-              style={fieldStyle}
-            >
-              <option value="" disabled>
-                Select client
-              </option>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.company_name || "Unnamed client"}
-                </option>
-              ))}
-            </select>
-          </label>
+          <ClientSelector
+  clients={clients}
+  value={clientId}
+  onChange={setClientId}
+  disabled={pending}
+/>
 
           <label>
             Given Name
@@ -216,7 +207,7 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
 
         <button
           type="submit"
-          disabled={pending || clients.length === 0 || !dateChecksPassed}
+          disabled={pending || !clientId || !dateChecksPassed}
           style={{
             marginTop: "20px",
             padding: "13px 20px",
@@ -225,22 +216,19 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
             background: "#0f766e",
             color: "#ffffff",
             fontWeight: 700,
-            opacity: pending || clients.length === 0 ? 0.55 : 1,
+            opacity:
+              pending || !clientId || !dateChecksPassed ? 0.55 : 1,
             cursor:
-              pending || clients.length === 0 ? "not-allowed" : "pointer",
+              pending || !clientId || !dateChecksPassed
+                ? "not-allowed"
+                : "pointer",
           }}
         >
           {pending ? "Saving..." : "Confirm traveller"}
         </button>
       </fieldset>
 
-      {clients.length === 0 && (
-        <p role="status" style={{ marginTop: "12px" }}>
-          Add a corporate client before creating a traveller.
-        </p>
-      )}
-
-      {state.error && (
+  {state.error && (
         <p
           role="alert"
           style={{ color: "#b91c1c", marginTop: "12px" }}

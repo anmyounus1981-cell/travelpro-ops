@@ -1,20 +1,65 @@
 import { createBooking,createCaseFromInquiry,createClientRecord,createQuotation,createReminder,createServiceCase,recordTicket,transitionQuotation,transitionServiceCase,uploadPayment,verifyPayment } from "./actions";
 import { TravellerForm } from "./travellers/traveller-form";
 export function Workflow({data,ops}:{data:any,ops:Record<string,any[]>}){const approved=ops.quotations.filter(q=>["approved","sent","accepted"].includes(q.status));return <>
-<section className="panel form-panel"><div><p className="eyebrow">ASSISTED INTAKE</p><h2>Triage WhatsApp inquiry</h2><p>Extracts a draft, flags complex requests, and preserves the original text. You confirm creation.</p></div><form action={createCaseFromInquiry} className="grid-form"><label>Client<select name="client_id" required>{data.clients.map((c:any)=><option key={c.id} value={c.id}>{c.company_name}</option>)}</select></label><label>Confirmed departure date<input name="departure_date" type="date" required/></label><label>
-  Confirmed adults (ADT)
-  <input name="adult_count" type="number" min="0" step="1" defaultValue="1" required />
-</label>
-<label>
-  Confirmed children (CHD)
-  <input name="child_count" type="number" min="0" step="1" defaultValue="0" required />
-</label>
-<label>
-  Confirmed infants (INF)
-  <input name="infant_count" type="number" min="0" step="1" defaultValue="0" required />
-</label>
-<label className="wide">Inquiry text<textarea name="inquiry" rows={4} required placeholder="Need DAC to DXB for 2 pax on 15 Oct, one infant"/></label><button className="primary wide">Review and create structured case</button></form></section>
-<section className="panel form-panel"><div><p className="eyebrow">CLIENTS</p><h2>Add corporate client</h2><p>Create the account before opening its cases.</p></div><form action={createClientRecord} className="grid-form"><label>Company<input name="company_name" required/></label><label>Contact person<input name="contact_name" required/></label><label>Email<input name="contact_email" type="email"/></label><label>Phone<input name="contact_phone"/></label><button className="primary wide">Save client</button></form></section>
+<section className="panel form-panel">
+  <div>
+    <p className="eyebrow">ASSISTED INTAKE</p>
+    <h2>Triage WhatsApp inquiry</h2>
+    <p>
+      Review the inquiry and confirm the passenger breakdown before
+      creating the case.
+    </p>
+  </div>
+
+  <form action={createCaseFromInquiry} className="grid-form">
+    <label>
+      Client
+      <select name="client_id" required defaultValue="">
+        <option value="" disabled>Select client</option>
+        {data.clients.map((c: any) => (
+          <option key={c.id} value={c.id}>
+            {c.company_name}
+          </option>
+        ))}
+      </select>
+    </label>
+
+    <label>
+      Confirmed departure date
+      <input name="departure_date" type="date" required />
+    </label>
+
+    <label>
+      Confirmed adults (ADT)
+      <input name="adult_count" type="number" min="0" step="1" defaultValue="1" required />
+    </label>
+
+    <label>
+      Confirmed children (CHD)
+      <input name="child_count" type="number" min="0" step="1" defaultValue="0" required />
+    </label>
+
+    <label>
+      Confirmed infants (INF)
+      <input name="infant_count" type="number" min="0" step="1" defaultValue="0" required />
+    </label>
+
+    <label className="wide">
+      Inquiry text
+      <textarea
+        name="inquiry"
+        rows={4}
+        required
+        placeholder="Need DAC to DXB for 2 pax on 15 Oct, one infant"
+      />
+    </label>
+
+    <button className="primary wide">
+      Review and create structured case
+    </button>
+  </form>
+</section>
+<section className="panel form-panel"><div><p className="eyebrow">CLIENTS</p><h2>Add corporate client</h2><p>Create the account before opening its cases.</p></div><form action={createClientRecord} className="grid-form"><input type="hidden" name="creation_request_id" value={crypto.randomUUID()}/><label>Company<input name="company_name" required/></label><label>Contact person<input name="contact_name" required/></label><label>Email<input name="contact_email" type="email"/></label><label>Phone<input name="contact_phone"/></label><button className="primary wide">Save client</button></form></section>
 <section className="panel form-panel">
   <div>
     <p className="eyebrow">TRAVELLERS</p>

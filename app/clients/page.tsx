@@ -85,6 +85,11 @@ export default async function ClientsPage() {
             gap: "16px",
           }}
         >
+          <input
+  type="hidden"
+  name="creation_request_id"
+  value={crypto.randomUUID()}
+/>
           <label>
             Company name
             <input

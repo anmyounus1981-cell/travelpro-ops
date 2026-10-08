@@ -1,5 +1,5 @@
 import { createClient } from "@/lib/supabase/server";
-export async function getDashboard() { const db=await createClient(); const [{data:cases,error},{data:clients},{data:reminders}]=await Promise.all([db.from("cases").select("*, clients(company_name), app_users(name)").order("created_at",{ascending:false}),db.from("clients").select("*").order("company_name"),db.from("reminders").select("*").eq("status","scheduled").order("due_at")]); if(error) throw error; return {cases:cases??[],clients:clients??[],reminders:reminders??[]}; }
+export async function getDashboard() { const db=await createClient(); const [{data:cases,error},{data:clients},{data:reminders}]=await Promise.all([db.from("cases").select("*, clients(company_name), app_users(name)").order("created_at",{ascending:false}),db.from("clients").select("*").order("created_at",{ascending:true}).order("id",{ascending:true}),db.from("reminders").select("*").eq("status","scheduled").order("due_at")]); if(error) throw error; return {cases:cases??[],clients:clients??[],reminders:reminders??[]}; }
 export async function audit(
   action: string,
   entityType: string,

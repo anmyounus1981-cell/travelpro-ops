@@ -6,6 +6,8 @@ import {
   dhakaToday,
   validatePassportDates,
 } from "@/lib/passport-date-validation";
+import { quickCreateClient } from "@/app/travellers/client-selection-actions";
+
 const text=(fd:FormData,key:string)=>String(fd.get(key)??"").trim();
 function parseDhakaDateTime(value: string): Date {
   if (!/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}$/.test(value)) {
@@ -88,7 +90,33 @@ export async function createCase(fd: FormData) {
 export async function updateCaseStatus(fd:FormData){const id=text(fd,"id"),status=text(fd,"status");const db=await createClient();const {error}=await db.from("cases").update({status}).eq("id",id);if(error)throw error;await audit("case.status_changed","case",id,{status});revalidatePath("/")}
 
 async function upload(fd:FormData,key:string,bucket:string){const file=fd.get(key);if(!(file instanceof File)||!file.size)return null;const allowed=bucket==="passports"?file.type.startsWith("image/"):(file.type.startsWith("image/")||file.type==="application/pdf");if(!allowed)throw new Error(bucket==="passports"?"Please upload an image file":"Please upload an image or PDF");const db=await createClient();const path=`${crypto.randomUUID()}-${file.name.replace(/[^a-zA-Z0-9._-]/g,"-")}`;const{error}=await db.storage.from(bucket).upload(path,file,{contentType:file.type});if(error)throw error;return path}
-export async function createClientRecord(fd:FormData){const db=await createClient();const{data,error}=await db.from("clients").insert({company_name:text(fd,"company_name"),contact_name:text(fd,"contact_name"),contact_email:text(fd,"contact_email"),contact_phone:text(fd,"contact_phone")}).select("id").single();if(error)throw error;await audit("client.created","client",data.id);revalidatePath("/")}
+export async function createClientRecord(fd: FormData) {
+  const submission = new FormData();
+
+  for (const key of [
+    "creation_request_id",
+    "company_name",
+    "contact_name",
+    "contact_email",
+    "contact_phone",
+  ]) {
+    const value = fd.get(key);
+
+    if (typeof value === "string") {
+      submission.set(key, value);
+    }
+  }
+
+  submission.set("client_type", "corporate");
+
+  const result = await quickCreateClient(submission);
+
+  if (!result.success || !result.client) {
+    throw new Error(
+      result.error || "Unable to create the client.",
+    );
+  }
+}
 export async function addTraveller(fd: FormData) {
   const db = await createClient();
   await requireOwnerId(db);
