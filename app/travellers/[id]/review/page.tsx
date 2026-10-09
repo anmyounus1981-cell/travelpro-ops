@@ -178,7 +178,12 @@ export default async function TravellerReviewPage({
           cases={passengerData.cases}
         />
 
-        <h3 style={{ marginTop: "28px" }}>Existing assignments</h3>
+        <h3 style={{ marginTop: "28px" }}>Trip History</h3>
+
+        <p>
+          Cases linked to this traveller profile, including upcoming trips.
+          A case assignment does not confirm ticket issuance or completed travel.
+        </p>
 
         {passengerData.assignments.length === 0 ? (
           <p>This traveller has no case assignments.</p>
@@ -190,7 +195,18 @@ export default async function TravellerReviewPage({
                 style={{ marginBottom: "16px" }}
               >
                 <strong>{assignment.caseNumber}</strong>
+                <p>
+  Case route: {assignment.origin || "Not recorded"}
+  {" → "}
+  {assignment.destination || "Not recorded"}
+</p>
                 <p>Departure: {assignment.departureDate}</p>
+                <p>
+  Return: {assignment.returnDate || "Not recorded"}
+</p>
+<p>
+  Case status: {assignment.caseStatus.replaceAll("_", " ")}
+</p>
                 <p>
                   Passenger type: {assignment.passengerType}
                   {" · "}Age at departure:{" "}

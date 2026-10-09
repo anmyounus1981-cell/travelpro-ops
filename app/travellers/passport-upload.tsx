@@ -3,15 +3,18 @@
 import { useState, type FormEvent } from "react";
 import { createClient } from "@/lib/supabase/client";
 import { registerPassportDraft } from "./passport-upload-actions";
-type Client = {
-  id: string;
-  company_name: string | null;
-};
+import {
+  ClientSelector,
+  type SelectableClient,
+} from "./client-selector";
+
+type Client = SelectableClient;
 
 export function PassportUpload({ clients }: { clients: Client[] }) {
   const [busy, setBusy] = useState(false);
   const [message, setMessage] = useState("");
   const [blocked, setBlocked] = useState(false);
+  const [clientId, setClientId] = useState("");
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -112,6 +115,7 @@ if (!registration.success) {
 }
 
 form.reset();
+setClientId("");
 setMessage(
   registration.error ||
     "Passport draft uploaded. Owner review is still required.",
@@ -127,20 +131,12 @@ setMessage(
 
   return (
     <form onSubmit={handleSubmit}>
-      <label>
-        Corporate client
-        <select name="client_id" required defaultValue="">
-          <option value="" disabled>
-            Select client
-          </option>
-
-          {clients.map((client) => (
-            <option key={client.id} value={client.id}>
-              {client.company_name || "Unnamed client"}
-            </option>
-          ))}
-        </select>
-      </label>
+            <ClientSelector
+        clients={clients}
+        value={clientId}
+        onChange={setClientId}
+        disabled={busy || blocked}
+      />
 
       <label>
         Passport image
@@ -152,7 +148,7 @@ setMessage(
         />
       </label>
 
-      <button type="submit" disabled={busy || blocked || clients.length === 0}>
+      <button type="submit" disabled={busy || blocked || !clientId}>
         {busy ? "Uploading..." : "Upload for owner review"}
       </button>
 

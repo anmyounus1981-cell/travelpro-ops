@@ -4,13 +4,11 @@ import { TravellerForm } from "./traveller-form";
 import { createClient } from "@/lib/supabase/server";
 import { PassportUpload } from "./passport-upload";
 import { travellerDisplayName } from "./passport-drafts/passport-fields";
+import type { SelectableClient } from "./client-selector";
 
 export const dynamic = "force-dynamic";
 
-type Client = {
-  id: string;
-  company_name: string | null;
-};
+type Client = SelectableClient;
 
 type Traveller = {
   id: string;
@@ -43,8 +41,9 @@ export default async function TravellersPage() {
   ] = await Promise.all([
     db
       .from("clients")
-      .select("id, company_name")
-      .order("company_name", { ascending: true }),
+      .select("id, client_type, company_name, contact_name")
+      .order("created_at", { ascending: true })
+      .order("id", { ascending: true }),
     db
       .from("travellers")
       .select(

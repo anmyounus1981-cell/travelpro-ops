@@ -21,7 +21,11 @@ export type ExistingPassengerAssignment = {
   id: string;
   caseId: string;
   caseNumber: string;
+  origin: string | null;
+  destination: string | null;
   departureDate: string;
+  returnDate: string | null;
+  caseStatus: string;
   passengerType: PassengerType;
   ageAtDeparture: number | null;
   accompanyingAdultName: string | null;

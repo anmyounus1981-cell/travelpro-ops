@@ -1,16 +1,22 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { addTravellerWithFeedback } from "@/app/actions";
 import {
   dhakaToday,
   validatePassportDates,
 } from "@/lib/passport-date-validation";
-type Client = {
-  id: string;
-  company_name: string | null;
-};
+import {
+  ClientSelector,
+  type SelectableClient,
+} from "./client-selector";
+import {
+  lookupCorporateTraveller,
+  type TravellerLookupResult,
+} from "./traveller-lookup-actions";
+
+type Client = SelectableClient;
 
 const fieldStyle = {
   display: "block",
@@ -32,6 +38,55 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
   const [today, setToday] = useState("");
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [expiryConfirmed, setExpiryConfirmed] = useState(false);
+  const [clientId, setClientId] = useState("");
+  const [selectedClientType, setSelectedClientType] =
+  useState<SelectableClient["client_type"] | null>(null);
+  const [passportNumber, setPassportNumber] = useState("");
+  const [lookupResult, setLookupResult] =
+    useState<TravellerLookupResult | null>(null);
+  const [lookupBusy, setLookupBusy] = useState(false);
+  const lookupVersion = useRef(0);
+
+  const isCorporateClient =
+    selectedClientType === "corporate";
+  function clearTravellerLookup() {
+    lookupVersion.current += 1;
+    setLookupResult(null);
+    setLookupBusy(false);
+  }
+
+  async function findExistingTraveller() {
+    if (pending || lookupBusy || !isCorporateClient) {
+      return;
+    }
+
+    const version = ++lookupVersion.current;
+    setLookupBusy(true);
+    setLookupResult(null);
+
+    try {
+      const result = await lookupCorporateTraveller(
+        clientId,
+        passportNumber,
+      );
+
+      if (lookupVersion.current === version) {
+        setLookupResult(result);
+      }
+    } catch {
+      if (lookupVersion.current === version) {
+        setLookupResult({
+          success: false,
+          error: "Unable to search travellers. Please try again.",
+          traveller: null,
+        });
+      }
+    } finally {
+      if (lookupVersion.current === version) {
+        setLookupBusy(false);
+      }
+    }
+  }
 
   useEffect(() => {
     setToday(dhakaToday());
@@ -47,6 +102,18 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
     !dateValidation?.error &&
     (!dateValidation?.ageNeedsConfirmation || ageConfirmed) &&
     (!dateValidation?.expiryNeedsConfirmation || expiryConfirmed);
+  const corporateLookupPassed =
+    selectedClientType === "individual" ||
+    (isCorporateClient &&
+      lookupResult?.success === true &&
+      lookupResult.traveller === null);
+
+  const creationDisabled =
+    pending ||
+    lookupBusy ||
+    !clientId ||
+    !dateChecksPassed ||
+    !corporateLookupPassed;
     if (state.success || state.blocked) {
     return (
       <div role="status">
@@ -66,7 +133,14 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
   }
 
   return (
-    <form action={formAction}>
+    <form
+  action={formAction}
+  onSubmit={(event) => {
+    if (creationDisabled) {
+      event.preventDefault();
+    }
+  }}
+>
       <fieldset
         disabled={pending}
         style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
@@ -78,24 +152,16 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
             gap: "18px",
           }}
         >
-          <label>
-            Corporate client
-            <select
-              name="client_id"
-              required
-              defaultValue=""
-              style={fieldStyle}
-            >
-              <option value="" disabled>
-                Select client
-              </option>
-              {clients.map((client) => (
-                <option key={client.id} value={client.id}>
-                  {client.company_name || "Unnamed client"}
-                </option>
-              ))}
-            </select>
-          </label>
+          <ClientSelector
+  clients={clients}
+  value={clientId}
+  onChange={(nextClientId, nextClientType) => {
+  clearTravellerLookup();
+  setClientId(nextClientId);
+  setSelectedClientType(nextClientType);
+}}
+  disabled={pending}
+/>
 
           <label>
             Given Name
@@ -118,11 +184,16 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
           <label>
             Passport number
             <input
-              name="passport_number"
-              required
-              maxLength={30}
-              style={fieldStyle}
-            />
+  name="passport_number"
+  required
+  maxLength={30}
+  value={passportNumber}
+  onChange={(event) => {
+    clearTravellerLookup();
+    setPassportNumber(event.target.value);
+  }}
+  style={fieldStyle}
+/>
           </label>
 
                     <label>
@@ -175,6 +246,60 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
             />
           </label>
         </div>
+        {isCorporateClient && (
+          <section
+            aria-label="Returning corporate traveller lookup"
+            style={{ marginTop: "20px" }}
+          >
+            <button
+              type="button"
+              onClick={findExistingTraveller}
+              disabled={pending || lookupBusy || !passportNumber.trim()}
+            >
+              {lookupBusy ? "Searching..." : "Find existing traveller"}
+            </button>
+
+            {lookupResult && !lookupResult.success && (
+              <p role="alert" style={{ color: "#b91c1c" }}>
+                {lookupResult.error}
+              </p>
+            )}
+
+            {lookupResult?.success && lookupResult.traveller && (
+              <div role="status">
+                <p>
+                  Existing traveller:{" "}
+                  <strong>
+                    {[
+                      lookupResult.traveller.given_name,
+                      lookupResult.traveller.surname,
+                    ]
+                      .filter(Boolean)
+                      .join(" ") || lookupResult.traveller.full_name}
+                  </strong>
+                </p>
+
+                <p>
+                  Use this profile for the next trip. Review its passport
+                  details before assigning it to a new case.
+                </p>
+
+                <Link
+                  href={`/travellers/${lookupResult.traveller.id}/review`}
+                >
+                  Use existing traveller: open review and case assignment
+                </Link>
+              </div>
+            )}
+
+            {lookupResult?.success && !lookupResult.traveller && (
+              <p role="status">
+                No matching passport found under this corporate client.
+                Review the entered details before creating a new profile.
+              </p>
+            )}
+          </section>
+        )}
 
         {dateValidation?.error && (
           <p role="alert" style={{ color: "#b91c1c" }}>
@@ -216,7 +341,7 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
 
         <button
           type="submit"
-          disabled={pending || clients.length === 0 || !dateChecksPassed}
+          disabled={creationDisabled}
           style={{
             marginTop: "20px",
             padding: "13px 20px",
@@ -225,22 +350,15 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
             background: "#0f766e",
             color: "#ffffff",
             fontWeight: 700,
-            opacity: pending || clients.length === 0 ? 0.55 : 1,
-            cursor:
-              pending || clients.length === 0 ? "not-allowed" : "pointer",
+            opacity: creationDisabled ? 0.55 : 1,
+            cursor: creationDisabled ? "not-allowed" : "pointer",
           }}
         >
           {pending ? "Saving..." : "Confirm traveller"}
         </button>
       </fieldset>
 
-      {clients.length === 0 && (
-        <p role="status" style={{ marginTop: "12px" }}>
-          Add a corporate client before creating a traveller.
-        </p>
-      )}
-
-      {state.error && (
+  {state.error && (
         <p
           role="alert"
           style={{ color: "#b91c1c", marginTop: "12px" }}
