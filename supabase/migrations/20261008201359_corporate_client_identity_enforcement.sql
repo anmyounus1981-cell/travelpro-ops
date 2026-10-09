@@ -1,3 +1,4 @@
+BEGIN;
 -- Consolidate only the four reviewed Premier Group accounts.
 -- Preserve traveller IDs and historical audit records.
 
@@ -254,3 +255,5 @@ revoke all on function public.lookup_corporate_traveller(
 grant execute on function public.lookup_corporate_traveller(
   uuid, text
 ) to authenticated;
+
+COMMIT;

@@ -2,6 +2,18 @@ $ErrorActionPreference = 'Stop'
 
 $migrationPath = 'supabase\migrations\20261008201359_corporate_client_identity_enforcement.sql'
 $migrationSql = Get-Content -LiteralPath $migrationPath -Raw
+$boundaryPattern = '\A\s*BEGIN\s*;(?<body>[\s\S]*?)COMMIT\s*;\s*\z'
+$boundaryMatch = [regex]::Match(
+  $migrationSql,
+  $boundaryPattern,
+  [System.Text.RegularExpressions.RegexOptions]::IgnoreCase
+)
+
+if (-not $boundaryMatch.Success) {
+  throw 'Expected one outer BEGIN/COMMIT boundary. No test executed.'
+}
+
+$migrationSql = $boundaryMatch.Groups['body'].Value
 $skipSql = $migrationSql
 
 $reviewedIds = @(
