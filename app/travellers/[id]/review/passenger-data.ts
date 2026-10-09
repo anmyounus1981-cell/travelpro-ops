@@ -12,6 +12,8 @@ import type { PassengerType } from "@/lib/passenger-classification";
 type CaseRow = {
   id: string;
   case_number: string;
+  origin: string | null;
+  destination: string | null;
   departure_date: string;
   return_date: string | null;
   status: string;
@@ -49,7 +51,7 @@ export async function loadPassengerAssignmentData(
   const { data: caseData, error: caseError } = await db
     .from("cases")
     .select(
-      "id, case_number, departure_date, return_date, status, adult_count, child_count, infant_count",
+      "id, case_number, origin, destination, departure_date, return_date, status, adult_count, child_count, infant_count",
     )
     .eq("client_id", clientId)
     .order("departure_date", { ascending: true });
@@ -183,6 +185,12 @@ export async function loadPassengerAssignmentData(
 
   const assignments: ExistingPassengerAssignment[] = assignmentRows
     .filter((item) => item.traveller_id === travellerId)
+    .sort((a, b) => {
+      const aDate = casesById.get(a.case_id)!.departure_date;
+      const bDate = casesById.get(b.case_id)!.departure_date;
+
+      return bDate.localeCompare(aDate) || a.id.localeCompare(b.id);
+    })
     .map((item) => {
       const travelCase = casesById.get(item.case_id)!;
       const adultAssignment = item.accompanying_adult_id
@@ -197,7 +205,11 @@ export async function loadPassengerAssignmentData(
         id: item.id,
         caseId: item.case_id,
         caseNumber: travelCase.case_number,
+        origin: travelCase.origin,
+        destination: travelCase.destination,
         departureDate: travelCase.departure_date,
+        returnDate: travelCase.return_date,
+        caseStatus: travelCase.status,
         passengerType: item.passenger_type,
         ageAtDeparture: item.age_at_departure,
         accompanyingAdultName: adult

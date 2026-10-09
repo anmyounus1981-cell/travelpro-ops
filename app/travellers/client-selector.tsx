@@ -21,7 +21,10 @@ export type SelectableClient = {
 type ClientSelectorProps = {
   clients: SelectableClient[];
   value: string;
-  onChange: (clientId: string) => void;
+  onChange: (
+  clientId: string,
+  clientType: SelectableClient["client_type"],
+) => void;
   disabled?: boolean;
 };
 
@@ -166,7 +169,7 @@ export function ClientSelector({
         createdClient,
       ]);
 
-      onChange(createdClient.id);
+      onChange(createdClient.id, createdClient.client_type);
       setMessage(result.error || "Client created and selected.");
       dialogRef.current?.close();
       setOpen(false);
@@ -197,7 +200,7 @@ export function ClientSelector({
             checked={clientType === "corporate"}
             onChange={() => {
               setClientType("corporate");
-              onChange("");
+              onChange("", "corporate");
               setMessage("");
             }}
           />{" "}
@@ -211,7 +214,7 @@ export function ClientSelector({
             checked={clientType === "individual"}
             onChange={() => {
               setClientType("individual");
-              onChange("");
+              onChange("", "individual");
               setMessage("");
             }}
           />{" "}
@@ -239,7 +242,9 @@ export function ClientSelector({
           required
           value={value}
           disabled={disabled || busy || blocked}
-          onChange={(event) => onChange(event.target.value)}
+          onChange={(event) =>
+            onChange(event.target.value, clientType)
+        }
           style={{ ...inputStyle, flex: "1 1 220px" }}
         >
           <option value="">Select client</option>
