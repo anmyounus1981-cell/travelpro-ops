@@ -10,6 +10,9 @@ import {
 type ReviewState = {
   error: string;
   success: boolean;
+  travellerId?: string;
+  profileReused?: boolean;
+  blocked?: boolean;
 };
 
 const isUuid = (value: string) =>
@@ -33,6 +36,11 @@ export async function confirmPassportDraft(
 
   if (!isUuid(draftId)) {
     return fail("Invalid passport draft.");
+  }
+  const existingTravellerId = text("existing_traveller_id");
+
+  if (existingTravellerId && !isUuid(existingTravellerId)) {
+    return fail("Invalid existing traveller.");
   }
 
   const checks = Object.fromEntries(
@@ -117,23 +125,33 @@ export async function confirmPassportDraft(
   let travellerId: unknown;
 
   try {
-    const { data, error } = await db.rpc(
-      "confirm_passport_draft_with_date_review",
-      {
-        p_draft_id: draftId,
-        p_given_name: givenName || null,
-        p_surname: surname || null,
-        p_passport_number: passportNumber,
-        p_dob: dob,
-        p_expiry_date: expiryDate,
-        p_nationality: nationality,
-        p_field_checks: checks,
-                p_age_confirmed:
-          formData.get("confirmed_unusual_age") === "on",
-        p_expiry_confirmed:
-          formData.get("confirmed_unusual_expiry") === "on",
-      },
-    );
+        const reviewParams = {
+      p_draft_id: draftId,
+      p_given_name: givenName || null,
+      p_surname: surname || null,
+      p_passport_number: passportNumber,
+      p_dob: dob,
+      p_expiry_date: expiryDate,
+      p_nationality: nationality,
+      p_field_checks: checks,
+      p_age_confirmed:
+        formData.get("confirmed_unusual_age") === "on",
+      p_expiry_confirmed:
+        formData.get("confirmed_unusual_expiry") === "on",
+    };
+
+    const { data, error } = existingTravellerId
+      ? await db.rpc(
+          "confirm_returning_corporate_passport_draft",
+          {
+            ...reviewParams,
+            p_traveller_id: existingTravellerId,
+          },
+        )
+      : await db.rpc(
+          "confirm_passport_draft_with_date_review",
+          reviewParams,
+        );
 
     if (error) {
       if (
@@ -146,6 +164,15 @@ export async function confirmPassportDraft(
       }
 
       const safeMessages = [
+        "Authentication required",
+        "Passport draft and traveller are required",
+        "Select a valid corporate client",
+        "Traveller not found",
+        "Traveller belongs to a different client",
+        "Review and verify the existing traveller first",
+        "Passport details differ. Correct the existing traveller before linking this draft",
+        "Passport image has conflicting document links",
+        "Passport image is already linked elsewhere",
         "Owner access required",
         "Passport draft not found",
         "Passport draft is already confirmed",
@@ -177,28 +204,47 @@ export async function confirmPassportDraft(
 
     travellerId = data;
   } catch {
-    return fail(
-      "Confirmation outcome is unknown. Refresh and check the draft status before submitting again.",
-    );
+    return {
+      error:
+        "Confirmation outcome is unknown. Refresh and check the draft status before submitting again.",
+      success: false,
+      blocked: true,
+    };
   }
 
-  if (typeof travellerId !== "string" || !isUuid(travellerId)) {
-    return fail(
-      "Confirmation outcome is unknown. Refresh and check the draft status.",
-    );
+  if (
+    typeof travellerId !== "string" ||
+    !isUuid(travellerId) ||
+    (existingTravellerId !== "" &&
+      travellerId !== existingTravellerId)
+  ) {
+    return {
+      error:
+        "Confirmation outcome is unknown. Refresh and check the draft status.",
+      success: false,
+      blocked: true,
+    };
   }
 
-  try {
+    try {
     revalidatePath("/travellers");
+    revalidatePath(`/travellers/${travellerId}/review`);
     revalidatePath(`/travellers/passport-drafts/${draftId}`);
     revalidatePath("/audit-log");
   } catch {
     return {
       error:
-        "Traveller created successfully. Refresh the traveller directory to see it.",
+        "Passport review saved. Refresh the traveller profile to see the result.",
       success: true,
+      travellerId,
+      profileReused: Boolean(existingTravellerId),
     };
   }
 
-  return { error: "", success: true };
+  return {
+    error: "",
+    success: true,
+    travellerId,
+    profileReused: Boolean(existingTravellerId),
+  };
 }

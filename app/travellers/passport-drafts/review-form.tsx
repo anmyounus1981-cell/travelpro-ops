@@ -1,8 +1,12 @@
 "use client";
 
 import Link from "next/link";
-import { useActionState, useEffect, useState } from "react";
+import { useActionState, useEffect, useRef, useState } from "react";
 import { confirmPassportDraft } from "./actions";
+import {
+  lookupCorporateTraveller,
+  type TravellerLookupResult,
+} from "../traveller-lookup-actions";
 import {
   dhakaToday,
   validatePassportDates,
@@ -48,12 +52,17 @@ type FieldKey = (typeof fields)[number]["key"];
 
 export function PassportReviewForm({
   draftId,
+  clientId,
+  clientType,
   initialFields,
 }: {
   draftId: string;
+  clientId: string;
+  clientType: "corporate" | "individual";
   initialFields?: PassportReviewFields;
 }) {
-  const [state, formAction, pending] = useActionState(
+
+const [state, formAction, pending] = useActionState(
     confirmPassportDraft,
     { error: "", success: false },
   );
@@ -78,6 +87,60 @@ export function PassportReviewForm({
   const [today, setToday] = useState("");
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [expiryConfirmed, setExpiryConfirmed] = useState(false);
+  const [lookupResult, setLookupResult] =
+    useState<TravellerLookupResult | null>(null);
+  const [lookupBusy, setLookupBusy] = useState(false);
+  const [reuseConfirmed, setReuseConfirmed] = useState(false);
+  const lookupVersion = useRef(0);
+
+  const isCorporateClient = clientType === "corporate";
+
+  function clearTravellerLookup() {
+    lookupVersion.current += 1;
+    setLookupResult(null);
+    setLookupBusy(false);
+    setReuseConfirmed(false);
+  }
+
+  async function findExistingTraveller() {
+    if (
+      pending ||
+      state.blocked ||
+      lookupBusy ||
+      !isCorporateClient ||
+      !values.passport_number.trim()
+    ) {
+      return;
+    }
+
+    const version = ++lookupVersion.current;
+    setLookupBusy(true);
+    setLookupResult(null);
+    setReuseConfirmed(false);
+
+    try {
+      const result = await lookupCorporateTraveller(
+        clientId,
+        values.passport_number,
+      );
+
+      if (lookupVersion.current === version) {
+        setLookupResult(result);
+      }
+    } catch {
+      if (lookupVersion.current === version) {
+        setLookupResult({
+          success: false,
+          error: "Unable to search travellers. Please try again.",
+          traveller: null,
+        });
+      }
+    } finally {
+      if (lookupVersion.current === version) {
+        setLookupBusy(false);
+      }
+    }
+  }
 
   useEffect(() => {
     setToday(dhakaToday());
@@ -101,13 +164,50 @@ export function PassportReviewForm({
   const hasName = Boolean(
     values.given_name.trim() || values.surname.trim(),
   );
-  const canSubmit =
-    allChecked && hasName && dateChecksPassed && !pending;
+  const existingTraveller =
+    lookupResult?.success ? lookupResult.traveller : null;
 
-  if (state.success) {
+  const corporateLookupPassed =
+    !isCorporateClient ||
+    (lookupResult?.success === true &&
+      (existingTraveller === null ||
+        (existingTraveller.verification_status === "verified" &&
+          reuseConfirmed)));
+
+  const canSubmit =
+    allChecked &&
+    hasName &&
+    dateChecksPassed &&
+    !pending &&
+    !state.blocked &&
+    !lookupBusy &&
+    corporateLookupPassed;
+
+    if (state.success || state.blocked) {
     return (
       <div role="status">
-        <p>Passport review saved. Traveller created successfully.</p>
+        {state.success && (
+          <p>
+            {state.profileReused
+              ? "Passport review saved. Existing traveller profile reused."
+              : "Passport review saved. Traveller created successfully."}
+          </p>
+        )}
+
+        {state.error && (
+          <p style={{ color: "#92400e" }}>
+            {state.error}
+          </p>
+        )}
+
+        {state.success && state.travellerId && (
+          <p>
+            <Link href={`/travellers/${state.travellerId}/review`}>
+              Open traveller review, case assignment and trip history
+            </Link>
+          </p>
+        )}
+
         <Link href="/travellers">
           Return to traveller directory
         </Link>
@@ -116,8 +216,24 @@ export function PassportReviewForm({
   }
 
   return (
-    <form action={formAction}>
+        <form
+      action={formAction}
+      onSubmit={(event) => {
+        if (!canSubmit) {
+          event.preventDefault();
+        }
+      }}
+    >
       <input type="hidden" name="draft_id" value={draftId} />
+      <input
+        type="hidden"
+        name="existing_traveller_id"
+        value={
+          isCorporateClient && reuseConfirmed && existingTraveller
+            ? existingTraveller.id
+            : ""
+        }
+      />
 
       <p style={{ marginBottom: "16px" }}>
         Enter the given names and surname exactly as shown on the
@@ -162,6 +278,12 @@ export function PassportReviewForm({
                 max={field.key === "dob" ? today || undefined : undefined}
                 onChange={(event) => {
                   const value = event.target.value;
+                                    setReuseConfirmed(false);
+
+                  if (field.key === "passport_number") {
+                    clearTravellerLookup();
+                  }
+
                   if (field.key === "dob") {
                     setAgeConfirmed(false);
                     setExpiryConfirmed(false);
@@ -212,6 +334,84 @@ export function PassportReviewForm({
           );
         })}
 
+        {isCorporateClient && (
+          <section
+            aria-label="Returning corporate traveller lookup"
+            style={{ margin: "20px 0" }}
+          >
+            <button
+              type="button"
+              onClick={findExistingTraveller}
+              disabled={
+                pending ||
+                lookupBusy ||
+                !values.passport_number.trim()
+              }
+            >
+              {lookupBusy
+                ? "Searching..."
+                : "Find existing traveller"}
+            </button>
+
+            {lookupResult && !lookupResult.success && (
+              <p role="alert" style={{ color: "#b91c1c" }}>
+                {lookupResult.error}
+              </p>
+            )}
+
+            {lookupResult?.success && !existingTraveller && (
+              <p role="status">
+                No matching passport found under this corporate client.
+                Confirming will create a new traveller profile.
+              </p>
+            )}
+
+            {existingTraveller && (
+              <div>
+                <p role="status">
+                  Existing traveller:{" "}
+                  <strong>
+                    {[
+                      existingTraveller.given_name,
+                      existingTraveller.surname,
+                    ]
+                      .filter(Boolean)
+                      .join(" ") || existingTraveller.full_name}
+                  </strong>
+                </p>
+
+                <p>
+                  <Link
+                    href={`/travellers/${existingTraveller.id}/review`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    Open existing profile for review or correction
+                  </Link>
+                </p>
+
+                {existingTraveller.verification_status !== "verified" ? (
+                  <p>
+                    Review and verify this profile first, then search again.
+                  </p>
+                ) : (
+                  <label>
+                    <input
+                      type="checkbox"
+                      checked={reuseConfirmed}
+                      onChange={(event) =>
+                        setReuseConfirmed(event.target.checked)
+                      }
+                    />{" "}
+                    I checked this existing profile against the passport
+                    and confirm that all six reviewed fields match.
+                    Link this draft without changing the profile.
+                  </label>
+                )}
+              </div>
+            )}
+          </section>
+        )}
         {!hasName && (
           <p style={{ marginBottom: "12px" }}>
             Enter at least one passport name field.
@@ -267,7 +467,11 @@ export function PassportReviewForm({
             opacity: canSubmit ? 1 : 0.55,
           }}
         >
-          {pending ? "Saving..." : "Confirm reviewed traveller"}
+          {pending
+            ? "Saving..."
+            : existingTraveller
+              ? "Confirm and link existing traveller"
+              : "Confirm new traveller"}
         </button>
       </fieldset>
 

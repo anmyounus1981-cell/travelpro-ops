@@ -61,6 +61,22 @@ export default async function PassportDraftPage({
   if (!draft) {
     notFound();
   }
+    const { data: client, error: clientError } = await db
+    .from("clients")
+    .select("id, client_type")
+    .eq("id", draft.client_id)
+    .maybeSingle();
+
+  if (clientError) {
+    throw new Error("Unable to load passport draft client.");
+  }
+
+  if (
+    !client ||
+    !["corporate", "individual"].includes(client.client_type)
+  ) {
+    throw new Error("Passport draft client is unavailable.");
+  }
 
   const { data: image, error: imageError } = await db.storage
     .from("passports")
@@ -146,9 +162,15 @@ export default async function PassportDraftPage({
           }}
         >
           <h2 style={{ marginTop: 0 }}>Owner field review</h2>
-                   <PassportReviewForm
+          <PassportReviewForm
             key={`${draft.id}:${draft.updated_at}`}
             draftId={draft.id}
+                        clientId={client.id}
+            clientType={
+              client.client_type === "corporate"
+                ? "corporate"
+                : "individual"
+            }
             initialFields={{
               ...readPassportReviewFields(draft.extracted_fields),
               given_name:
