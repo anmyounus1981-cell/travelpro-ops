@@ -12,6 +12,7 @@ const publicRoutes = new Set([
   "/login",
   "/api/health",
   "/api/v1/inquiry",
+  "/api/webhooks/inquiries",
   "/api/stripe/webhooks",
 ]);
 
