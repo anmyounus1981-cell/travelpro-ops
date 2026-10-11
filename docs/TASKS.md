@@ -1,78 +1,180 @@
-# Task Plan
+# TravelPro Ops — Task Plan
 
-## Sprint 1 — Foundation + Case Intake
-**Goal:** DB schema live, case CRUD working, dashboard shell renders with seed data — no login required.
-- [ ] Create Supabase schema (all core tables, RLS permissive, seed data)
-- [ ] Build data-access layer (`lib/data/`) for all tables
-- [ ] Case list page (table: case #, client, route, status, owner, deadline)
-- [ ] Case create form (client select, route, dates, pax, cabin, notes, source)
-- [ ] Case detail page (header + status timeline + edit)
-- [ ] Dashboard shell: left sidebar nav, responsive, current section highlight
-- [ ] Owner dashboard: alert count, queue counts, recent cases
-- [ ] Seed 5 realistic cases + clients + travellers
-**DoD:** Anonymous visitor opens app → sees dashboard with seeded cases → creates a new case → it persists and appears in the list.
+## Checkpoint
 
-## Sprint 2 — Quotation Engine + Booking + Payment + Ticket ← v1 Functional
-**Goal:** Full case→quotation→booking→payment→ticket lifecycle working end-to-end.
-- [ ] Client CRUD (company, contact, phone, email)
-- [ ] Traveller CRUD (name, passport fields, verification status)
-- [ ] Passport upload + OCR extraction (per-field confidence, editable)
-- [ ] Quotation create: manual fare entry (fare, taxes, service fee, baggage, conditions, expiry)
-- [ ] GDS itinerary paste → parser extracts segments (editable, confidence-flagged)
-- [ ] Quotation approval flow (draft → approved → sent)
-- [ ] Booking create: PNR, source, itinerary, TTL, status=unticketed
-- [ ] Payment evidence upload → pending_verification
-- [ ] Payment verify/reject by owner
-- [ ] Ticket recording: ticket #, issue date, amount, e-ticket attachment
-- [ ] Booking status → ticketed after ticket recorded
-- [ ] Audit log on every status transition
-**DoD:** Owner creates case → adds travellers → builds quotation → approves → records PNR with TTL → uploads payment → verifies → records ticket → case shows 'ticketed'. Full audit trail visible.
+- Production baseline: main a9c8067.
+- PR #14: merged; corporate lookup and Trip History production verified.
+- PR #15: merged; returning corporate passport draft reuse verified in
+  preview, followed by production deployment and lookup verification.
+- Active branch: feature/public-inquiry-ingestion.
+- Current priority: public landing page inquiry submission and reviewed
+  inquiry-to-case conversion.
 
-## Sprint 3 — Reminders + Service Cases + Search
-**Goal:** Reminder scheduling, re-issuance/refund/cancel request flow, dashboard search.
-- [ ] Reminder create + list (TTL, payment, missing docs, client response)
-- [ ] Reminder due status + dashboard alert badges
-- [ ] Service-case create (type, request details, link to booking/ticket)
-- [ ] Service-case status flow (requested → in_review → completed)
-- [ ] Dashboard search across cases, clients, bookings, tickets
-- [ ] Audit log viewer page (filter by entity, action, actor)
-**DoD:** Booking with TTL shows reminder on dashboard when due. Service case created for a refund request tracks to completion. Search finds a case by client name.
+Checked items below reflect recorded verification.
+Unchecked items are remaining work, not claims of missing implementation
+across every historical module.
 
-## Sprint 4 — Intelligence Layer
-**Goal:** AI extraction and drafting on top of working core.
-- [ ] Inquiry triage: paste free text → structured case draft with confidence + escalation flags
-- [ ] Passport OCR integration: image → extracted fields with per-field confidence
-- [ ] GDS parser: paste text → segments + passenger extraction (multi-format)
-- [ ] Quotation drafter: case + fare data → formatted quotation text
-- [ ] All AI outputs: editable, confidence-flagged, require human confirm
-- [ ] Graceful degradation: AI down → manual entry still works
-**DoD:** Paste a WhatsApp inquiry → AI suggests structured case with missing-field flags. Upload passport → fields auto-fill with confidence. Paste GDS text → segments populate. All editable.
+## Completed — Security and Corporate Traveller Workflows
 
-## Sprint 5 — Lock It Down
-**Goal:** Auth + per-user RLS + role-based access.
-- [ ] Enable Supabase Auth (email/password)
-- [ ] Login/signup pages
-- [ ] Replace permissive RLS with owner-scoped policies (`auth.uid() = user_id`)
-- [ ] Owner role: sees all records; consultant: assigned only
-- [ ] Session-based data filtering in data-access layer
-- [ ] Private storage bucket access via signed URLs only
-- [ ] Remove seed data or mark as demo-only
-**DoD:** New user signs up → sees only their own cases. Owner sees all. Anonymous access blocked. No data leaks across users.
+- [x] Supabase Auth and owner-only protected access.
+- [x] Review write enforcement and permission cutover for protected
+  traveller, passport draft, document, assignment, and audit workflows.
+- [x] Corporate and individual client selector with quick creation.
+- [x] Retry-safe client creation with atomic audit logging.
+- [x] Database uniqueness for normalized corporate names.
+- [x] Reviewed Premier Group consolidation with traveller IDs retained.
+- [x] Corporate traveller lookup by client and normalized passport.
+- [x] Clear stale lookup results when lookup inputs change.
+- [x] Trip History with case route, departure, return, and case status.
+- [x] Database test: one reviewed traveller reused across two trip cases.
+- [x] Returning corporate passport draft links to an existing verified
+  profile without changing or duplicating that profile.
+- [x] Returning draft checks for field mismatches, permissions, retries,
+  and atomic rollback on audit failure.
+- [x] Preview confirmation retained the traveller count at 14.
+- [x] PR #14 and PR #15 merged and deployed.
 
-## Sprint 6 — Later: Messaging + Reporting
-- [ ] Email quotation/ticket delivery integration
-- [ ] WhatsApp send integration (approved templates)
-- [ ] Client portal: secure link to view quotation + confirm + upload docs
-- [ ] Owner reporting: revenue, case volume, TTL compliance
-- [ ] Re-issuance full workflow (change request → fare diff → acceptance → exchange → docs)
-- [ ] Refund full workflow (request → validation → acceptance → submit → confirmation → transfer → credit statement)
+## Phase 6 — Review Enforcement Follow-up
 
-## Text Gantt
-```
-S1: Foundation + Case Intake     [====]
-S2: Quotation→Ticket lifecycle  [========] ← v1 functional
-S3: Reminders + Service Cases   [====]
-S4: Intelligence Layer          [====]
-S5: Lock It Down (Auth/RLS)     [====]
-S6: Messaging + Reporting       [====]
-```
+Review Write Enforcement and Permission Cutover is the established
+security baseline. Related verification and workflow improvements continue.
+
+- [ ] Verify multi-trip history ordering with multiple cases in the browser.
+- [ ] Add a linked non-owner identity test for returning draft confirmation.
+- [ ] Review database security and performance advisors after new migrations.
+- [ ] Review incomplete historical traveller profiles without automatic
+  name-based merging or deletion.
+- [ ] Define passport renewal and cross-client identity handling.
+- [ ] Implement and test consultant permissions before exposing
+  owner-only operations to consultants.
+
+## Active Milestone — Public Inquiry Ingestion
+
+### 1. Inspect and Document
+
+- [x] Inspect the existing public form and HTTP intake route.
+- [x] Inspect the original inquiries schema and owner security cutover.
+- [x] Inspect Inbox review UI and existing conversion Server Action.
+- [x] Inspect deterministic and optional AI inquiry parsing.
+- [x] Read the existing PRD, ARCHITECTURE, and TASKS documents.
+- [ ] Update and verify all three documents against the current checkpoint.
+- [ ] Inspect relevant case constraints, Supabase helpers, and any later
+  inquiry schema changes before writing the migration.
+
+### 2. Public Form and Submission
+
+- [ ] Corporate / Individual-Retail client type selection.
+- [ ] Corporate company name and contact person fields.
+- [ ] Individual full name field.
+- [ ] Phone / WhatsApp and email validation.
+- [ ] Service type: Flight Booking, Visa Support, Package, Consultation.
+- [ ] Preferred route, target dates, and special requirements.
+- [ ] Relevant flight passenger count and cabin preference.
+- [ ] Allow incomplete plans where appropriate to the service type.
+- [ ] Next.js Server Action backed by a scoped Supabase intake function.
+- [ ] Assign landing_page source on the server.
+- [ ] Preserve validated submitted fields independently of AI suggestions.
+- [ ] Stable request UUID with identical retry and conflict handling.
+- [ ] Submission feedback for validation errors and unknown outcomes.
+- [ ] Public endpoint abuse controls.
+- [ ] Preserve existing web, email, and WhatsApp intake compatibility.
+
+### 3. Internal Matching and Review
+
+- [ ] Explicit mapping from inquiry personal to client individual.
+- [ ] Defined email and phone normalization.
+- [ ] Contact-match candidates scoped by client type.
+- [ ] Suggestions visible only to authorized internal users.
+- [ ] Human selection for ambiguous or conflicting matches.
+- [ ] Review and correct case fields before conversion.
+- [ ] Use the separate approved client creation workflow when required.
+- [ ] Preserve original inquiry contact, company, and source details.
+
+### 4. Atomic Case Conversion
+
+- [ ] Define non-flight case support before enabling its conversion.
+- [ ] Replace separate conversion writes with one authorized database RPC.
+- [ ] Lock and validate the inquiry during conversion.
+- [ ] Reject dismissed inquiries.
+- [ ] Validate client type, reviewed trip fields, and passenger counts.
+- [ ] Create one case, update inquiry review metadata, and write audit
+  within the same transaction.
+- [ ] Identical completed retry returns the existing case.
+- [ ] Conflicting retry is rejected.
+- [ ] Concurrent conversion cannot create duplicate cases.
+- [ ] Store and display the converted case reference.
+- [ ] Create no booking, payment, or ticket automatically.
+
+### 5. Verification and Delivery
+
+- [ ] Anonymous submission and private-data isolation tests.
+- [ ] Corporate and individual validation tests.
+- [ ] All service types and incomplete-plan tests.
+- [ ] Submission retry and request conflict tests.
+- [ ] Matching ambiguity and client-type isolation tests.
+- [ ] Authorized and unauthorized conversion tests.
+- [ ] Dismissed inquiry rejection test.
+- [ ] Conversion retry and concurrency tests.
+- [ ] Audit-failure rollback test.
+- [ ] Source and submitted-data preservation checks.
+- [ ] Existing channel compatibility checks.
+- [ ] npx tsc --noEmit.
+- [ ] git diff --check.
+- [ ] npm run build.
+- [ ] Preview browser verification of submission, review, and conversion.
+- [ ] Review staged changes and commit only milestone files.
+- [ ] Apply reviewed migration through the established deployment workflow.
+- [ ] Merge PR after required checks.
+- [ ] Production verification and checkpoint update.
+
+## Next Milestone — Individual Returning Travellers
+
+- [ ] Review individual account identity and duplicate prevention rules.
+- [ ] Individual traveller lookup under the selected account.
+- [ ] Returning individual passport draft reuse.
+- [ ] Retain existing profiles and multi-trip history.
+- [ ] Permission, mismatch, retry, and rollback tests.
+- [ ] Preview and production verification.
+
+Do not deduplicate individual clients solely by name.
+
+## Later — Messaging and Automation
+
+- [ ] Meta Lead Ads webhook authentication and event deduplication.
+- [ ] Source-preserving inquiry ingestion through n8n.
+- [ ] WhatsApp template notifications and delivery tracking.
+- [ ] Email delivery integration.
+- [ ] Secure client portal access.
+- [ ] Live passport OCR activation and provider verification.
+- [ ] Reporting and remaining after-sales workflows.
+
+## Historical Roadmap Reconciliation
+
+The earlier sprint plan contained permissive RLS, anonymous operational
+writes, future Auth setup, and unchecked tasks that no longer accurately
+represented the deployed checkpoint.
+
+- [ ] Reconcile broader quotation, booking, reminder, reporting, and
+  service-case requirements against implemented code and tests.
+- [ ] Track unverified historical features without marking them completed
+  solely because a page or table exists.
+
+## Mandatory Boundaries
+
+- Public visitors submit inquiries only.
+- Protected operational records require authorization.
+- Client matching is a suggestion, not proof of identity.
+- AI extraction and parsing require human review.
+- Payment collection and verification remain manual.
+- Ticket issuance, reissue, refund, void, and GDS changes remain manual.
+- Case assignment does not prove ticket issuance or completed travel.
+- Do not delete or stage unrelated local audit and backup files.
+
+## Resume Procedure
+
+At the beginning of each resumed session:
+
+1. Summarize verified completed work.
+2. Summarize remaining work and the immediate next task.
+3. Confirm the repository branch and checkpoint from available evidence.
+4. Continue with one clearly identified editor or terminal step at a time.
