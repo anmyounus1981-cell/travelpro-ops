@@ -42,6 +42,24 @@ export async function createCase(fd: FormData) {
     throw new Error("Select a valid client");
   }
 
+  const clientType = text(fd, "client_type");
+  if (clientType !== "corporate" && clientType !== "individual") {
+    throw new Error("Select a valid client type");
+  }
+
+  const { data: client, error: clientError } = await db
+    .from("clients")
+    .select("id, client_type")
+    .eq("id", clientId)
+    .maybeSingle();
+
+  if (clientError) throw clientError;
+  if (!client || client.client_type !== clientType) {
+    throw new Error(
+      "Selected client does not match the client type. Select the client again.",
+    );
+  }
+
   const counts = readPassengerCounts(fd);
 
   const caseNumber =

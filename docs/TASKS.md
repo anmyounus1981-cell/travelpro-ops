@@ -142,7 +142,12 @@ production application baseline remains main a9c8067 until merge.
 - [x] Apply migration 20261011084315_individual_returning_travellers.sql.
 - [x] TypeScript, production build, and diff checks.
 - [x] Review security and performance advisors; record existing advisories.
-- [ ] Owner-authenticated preview browser verification.
+- [x] Owner-guided preview: individual client created, no-match lookup,
+  traveller creation, returning match, and verified owner review.
+- [x] Fix Case Intake mixed client dropdown: reuse typed account selector,
+  clear selection on type changes, and validate the account type server-side.
+- [ ] Verify the updated Case Intake selector in preview.
+- [ ] Complete two-trip assignment and passport draft reuse browser checks.
 - [ ] Merge and production verification.
 
 Preview browser verification requires an owner session. The verification
