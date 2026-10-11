@@ -16,9 +16,7 @@ type ReviewState = {
 };
 
 const isUuid = (value: string) =>
-  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
-    value,
-  );
+  /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(value);
 
 export async function confirmPassportDraft(
   _previousState: ReviewState,
@@ -29,8 +27,7 @@ export async function confirmPassportDraft(
     success: false,
   });
 
-  const text = (key: string) =>
-    String(formData.get(key) ?? "").trim();
+  const text = (key: string) => String(formData.get(key) ?? "").trim();
 
   const draftId = text("draft_id");
 
@@ -83,11 +80,7 @@ export async function confirmPassportDraft(
     return fail("Nationality must contain 1 to 100 characters.");
   }
 
-    const dateValidation = validatePassportDates(
-    dob,
-    expiryDate,
-    dhakaToday(),
-  );
+  const dateValidation = validatePassportDates(dob, expiryDate, dhakaToday());
 
   if (dateValidation.error) {
     return fail(dateValidation.error);
@@ -125,7 +118,7 @@ export async function confirmPassportDraft(
   let travellerId: unknown;
 
   try {
-        const reviewParams = {
+    const reviewParams = {
       p_draft_id: draftId,
       p_given_name: givenName || null,
       p_surname: surname || null,
@@ -134,24 +127,43 @@ export async function confirmPassportDraft(
       p_expiry_date: expiryDate,
       p_nationality: nationality,
       p_field_checks: checks,
-      p_age_confirmed:
-        formData.get("confirmed_unusual_age") === "on",
-      p_expiry_confirmed:
-        formData.get("confirmed_unusual_expiry") === "on",
+      p_age_confirmed: formData.get("confirmed_unusual_age") === "on",
+      p_expiry_confirmed: formData.get("confirmed_unusual_expiry") === "on",
     };
 
+    // Dispatch from the persisted draft account, never a submitted client type.
+    let returningRpc = "confirm_returning_corporate_passport_draft";
+    if (existingTravellerId) {
+      const { data: draft, error: draftError } = await db
+        .from("passport_extraction_drafts")
+        .select("client_id")
+        .eq("id", draftId)
+        .maybeSingle();
+      if (draftError || !draft) return fail("Passport draft not found");
+
+      const { data: client, error: clientError } = await db
+        .from("clients")
+        .select("client_type")
+        .eq("id", draft.client_id)
+        .maybeSingle();
+      if (
+        clientError ||
+        !client ||
+        !["corporate", "individual"].includes(client.client_type)
+      ) {
+        return fail("Select a valid client");
+      }
+      if (client.client_type === "individual") {
+        returningRpc = "confirm_returning_individual_passport_draft";
+      }
+    }
+
     const { data, error } = existingTravellerId
-      ? await db.rpc(
-          "confirm_returning_corporate_passport_draft",
-          {
-            ...reviewParams,
-            p_traveller_id: existingTravellerId,
-          },
-        )
-      : await db.rpc(
-          "confirm_passport_draft_with_date_review",
-          reviewParams,
-        );
+      ? await db.rpc(returningRpc, {
+          ...reviewParams,
+          p_traveller_id: existingTravellerId,
+        })
+      : await db.rpc("confirm_passport_draft_with_date_review", reviewParams);
 
     if (error) {
       if (
@@ -167,6 +179,7 @@ export async function confirmPassportDraft(
         "Authentication required",
         "Passport draft and traveller are required",
         "Select a valid corporate client",
+        "Select a valid individual client",
         "Traveller not found",
         "Traveller belongs to a different client",
         "Review and verify the existing traveller first",
@@ -215,8 +228,7 @@ export async function confirmPassportDraft(
   if (
     typeof travellerId !== "string" ||
     !isUuid(travellerId) ||
-    (existingTravellerId !== "" &&
-      travellerId !== existingTravellerId)
+    (existingTravellerId !== "" && travellerId !== existingTravellerId)
   ) {
     return {
       error:
@@ -226,7 +238,7 @@ export async function confirmPassportDraft(
     };
   }
 
-    try {
+  try {
     revalidatePath("/travellers");
     revalidatePath(`/travellers/${travellerId}/review`);
     revalidatePath(`/travellers/passport-drafts/${draftId}`);

@@ -14,9 +14,10 @@ export type TravellerLookupResult = {
   } | null;
 };
 
-export async function lookupCorporateTraveller(
+async function lookupTraveller(
   clientId: string,
   passportNumber: string,
+  corporateOnly = false,
 ): Promise<TravellerLookupResult> {
   const fail = (error: string): TravellerLookupResult => ({
     success: false,
@@ -28,7 +29,7 @@ export async function lookupCorporateTraveller(
     /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
   if (typeof clientId !== "string" || !uuidPattern.test(clientId)) {
-    return fail("Select a valid corporate client.");
+    return fail("Select a valid client.");
   }
 
   if (typeof passportNumber !== "string") {
@@ -63,8 +64,25 @@ export async function lookupCorporateTraveller(
     if (ownerError || !owner) {
       return fail("Owner access required.");
     }
-        const { data, error } = await db.rpc(
-      "lookup_corporate_traveller",
+    const { data: client, error: clientError } = await db
+      .from("clients")
+      .select("client_type")
+      .eq("id", clientId)
+      .maybeSingle();
+
+    if (
+      clientError ||
+      !client ||
+      !["corporate", "individual"].includes(client.client_type) ||
+      (corporateOnly && client.client_type !== "corporate")
+    ) {
+      return fail("Select a valid client.");
+    }
+
+    const { data, error } = await db.rpc(
+      client.client_type === "individual"
+        ? "lookup_individual_traveller"
+        : "lookup_corporate_traveller",
       {
         p_client_id: clientId,
         p_passport_number: passport,
@@ -76,6 +94,7 @@ export async function lookupCorporateTraveller(
         "Authentication required",
         "Owner access required",
         "Select a valid corporate client",
+        "Select a valid individual client",
         "Passport number must contain 1 to 30 characters",
       ];
 
@@ -133,4 +152,18 @@ export async function lookupCorporateTraveller(
   } catch {
     return fail("Unable to search travellers. Please try again.");
   }
+}
+
+export async function lookupCorporateTraveller(
+  clientId: string,
+  passportNumber: string,
+): Promise<TravellerLookupResult> {
+  return lookupTraveller(clientId, passportNumber, true);
+}
+
+export async function lookupAccountTraveller(
+  clientId: string,
+  passportNumber: string,
+): Promise<TravellerLookupResult> {
+  return lookupTraveller(clientId, passportNumber);
 }
