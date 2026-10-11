@@ -39,7 +39,7 @@ across every historical module.
 Review Write Enforcement and Permission Cutover is the established
 security baseline. Related verification and workflow improvements continue.
 
-- [ ] Verify multi-trip history ordering with multiple cases in the browser.
+- [x] Verify multi-trip history ordering with multiple cases in the browser.
 - [x] Add a linked non-owner identity test for returning draft confirmation.
 - [ ] Review database security and performance advisors after new migrations.
 - [ ] Review incomplete historical traveller profiles without automatic
@@ -146,12 +146,20 @@ production application baseline remains main a9c8067 until merge.
   traveller creation, returning match, and verified owner review.
 - [x] Fix Case Intake mixed client dropdown: reuse typed account selector,
   clear selection on type changes, and validate the account type server-side.
-- [ ] Verify the updated Case Intake selector in preview.
-- [ ] Complete two-trip assignment and passport draft reuse browser checks.
+- [x] Verify the updated Case Intake selector in preview: individual account
+  appears only under Individual / Retail.
+- [x] Complete two-trip assignment and passport draft reuse browser checks.
+  Owner-guided verification on 11 October 2026: traveller
+  8dfc158a-6bc1-4918-9373-dc689fb6bc13 assigned to TP-261011-D020
+  (DAC-BKK, 2026-11-15) and TP-261011-F6C8 (DAC-SIN, 2026-12-10).
+  Draft 6f7dafa2-7dac-4a65-b3be-8e04767de1cb confirmed against that
+  existing verified profile. Directory remained at 15 travellers with one
+  SYNTHETIC RETAIL TEST entry; both trips remained in history. Refresh
+  retained confirmed status and confirmation was unavailable.
 - [ ] Merge and production verification.
 
-Preview browser verification requires an owner session. The verification
-browser currently reaches the owner sign-in screen.
+Preview browser verification completed in the owner's authenticated session.
+Production owner-session verification remains pending after merge.
 Database tests use synthetic fixtures in transactions ending in ROLLBACK.
 
 Do not deduplicate individual clients solely by name.
