@@ -2,7 +2,7 @@
 
 ## 11 October 2026: PR #16 preview browser verification
 
-Production baseline: main a9c8067. PR #16 implements Individual / Retail returning-traveller reuse and typed Case Intake account selection. Production merge and owner-session production verification remain pending.
+Production baseline: main 2e23db2. PR #16 implements Individual / Retail returning-traveller reuse and typed Case Intake account selection. PR #16 merged and owner-session production verification completed.
 
 Owner-guided tests passed in the authenticated preview session:
 
@@ -19,4 +19,6 @@ Prior automated validation: TypeScript, production build, formatting checks and 
 
 Migration 20261011084315_individual_returning_travellers.sql is applied to the connected Supabase project. Browser confirmation guard and SQL retry checks are separate verification evidence.
 
-Next: finalize PR #16 review and changelog, merge to main, verify production in an owner session, then resume Multi-Channel Client Query Ingestion. Payment verification and financial/GDS actions remain manual.
+Production deployment FyzRkFPhrueg4zFBwZyhxPHxKsVi was Ready on main 2e23db2. Owner verified account filtering, both trip assignments, and confirmed-draft guard at the deployment URL; canonical travelpro-ops.vercel.app displayed the new selector after refresh.
+
+Next: Multi-Channel Client Query Ingestion on feature/multi-channel-inquiry-ingestion. Implementation contract: docs/INQUIRY_INGESTION_PLAN.md. No channel credentials, provider connections or new webhook route have been activated by this documentation checkpoint. Payment verification and financial/GDS actions remain manual.

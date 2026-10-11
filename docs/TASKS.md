@@ -2,11 +2,11 @@
 
 ## Checkpoint
 
-- Production baseline: main a9c8067.
+- Production baseline: main 2e23db2 (PR #16).
 - PR #14: merged; corporate lookup and Trip History production verified.
 - PR #15: merged; returning corporate passport draft reuse verified in
   preview, followed by production deployment and lookup verification.
-- Active branch: feature/public-inquiry-ingestion.
+- Active branch: feature/multi-channel-inquiry-ingestion.
 - Current priority: public landing page inquiry submission and reviewed
   inquiry-to-case conversion.
 
@@ -131,7 +131,7 @@ security baseline. Related verification and workflow improvements continue.
 
 Advanced ahead of public inquiry implementation at the owner's request.
 Application changes are on feature/individual-returning-travellers;
-production application baseline remains main a9c8067 until merge.
+merged to main as 2e23db2; production verification completed.
 
 - [x] Review individual account identity and duplicate prevention rules.
 - [x] Individual traveller lookup under the selected account.
@@ -156,10 +156,15 @@ production application baseline remains main a9c8067 until merge.
   existing verified profile. Directory remained at 15 travellers with one
   SYNTHETIC RETAIL TEST entry; both trips remained in history. Refresh
   retained confirmed status and confirmation was unavailable.
-- [ ] Merge and production verification.
+- [x] PR #16 merged as 2e23db2; Production deployment Ready.
+- [x] Owner verified typed client filtering, both trip assignments, and
+  confirmed-draft guard on Production. Canonical travelpro-ops.vercel.app
+  also displays the new selector after refresh.
+- [x] No duplicate profile during multi-case assignment and draft linking;
+  preview directory count remained 15 with one synthetic retail profile.
 
 Preview browser verification completed in the owner's authenticated session.
-Production owner-session verification remains pending after merge.
+Production owner-session verification completed on 11 October 2026.
 Database tests use synthetic fixtures in transactions ending in ROLLBACK.
 
 Do not deduplicate individual clients solely by name.
