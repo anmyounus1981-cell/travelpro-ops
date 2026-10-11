@@ -161,7 +161,7 @@ A case assignment does not prove ticket issuance or completed travel.
 
 ## Future Work
 
-- Individual / retail returning traveller lookup and passport draft reuse.
+- Release and browser verification of individual / retail traveller lookup and draft reuse.
 - Explicit handling of passport renewal and cross-client identity.
 - Meta Lead Ads webhook ingestion with source and event deduplication.
 - n8n routing and WhatsApp notification workflows.
@@ -198,3 +198,20 @@ Preview verification covers submission, review, matching, and conversion
 before merge. Production verification follows deployment.
 
 Documentation distinguishes verified capabilities from planned work.
+
+## Individual Returning Travellers — Pending Application Release
+
+The individual workflow is implemented on feature/individual-returning-travellers.
+Its migration is applied to the linked database; the production application
+remains at main a9c8067 pending preview verification and merge.
+
+The owner selects an existing individual account and searches its normalized
+passport number. A matching retained profile is used for review and new case
+assignments. In passport draft review, a verified matching profile can receive
+the reviewed document without changes to the profile. All six passport fields
+must match and the owner must explicitly confirm reuse.
+
+Database checks passed for same-name account separation, account-scoped
+passport uniqueness, lookup isolation, two-trip profile reuse, field mismatch
+rejection, unauthorized identities, identical retry and audit-failure rollback.
+Owner-authenticated browser verification remains pending.

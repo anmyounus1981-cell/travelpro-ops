@@ -40,7 +40,7 @@ Review Write Enforcement and Permission Cutover is the established
 security baseline. Related verification and workflow improvements continue.
 
 - [ ] Verify multi-trip history ordering with multiple cases in the browser.
-- [ ] Add a linked non-owner identity test for returning draft confirmation.
+- [x] Add a linked non-owner identity test for returning draft confirmation.
 - [ ] Review database security and performance advisors after new migrations.
 - [ ] Review incomplete historical traveller profiles without automatic
   name-based merging or deletion.
@@ -57,7 +57,7 @@ security baseline. Related verification and workflow improvements continue.
 - [x] Inspect Inbox review UI and existing conversion Server Action.
 - [x] Inspect deterministic and optional AI inquiry parsing.
 - [x] Read the existing PRD, ARCHITECTURE, and TASKS documents.
-- [ ] Update and verify all three documents against the current checkpoint.
+- [x] Update and verify all three documents against the current checkpoint.
 - [ ] Inspect relevant case constraints, Supabase helpers, and any later
   inquiry schema changes before writing the migration.
 
@@ -127,14 +127,27 @@ security baseline. Related verification and workflow improvements continue.
 - [ ] Merge PR after required checks.
 - [ ] Production verification and checkpoint update.
 
-## Next Milestone — Individual Returning Travellers
+## Individual Returning Travellers — Implementation Checkpoint
 
-- [ ] Review individual account identity and duplicate prevention rules.
-- [ ] Individual traveller lookup under the selected account.
-- [ ] Returning individual passport draft reuse.
-- [ ] Retain existing profiles and multi-trip history.
-- [ ] Permission, mismatch, retry, and rollback tests.
-- [ ] Preview and production verification.
+Advanced ahead of public inquiry implementation at the owner's request.
+Application changes are on feature/individual-returning-travellers;
+production application baseline remains main a9c8067 until merge.
+
+- [x] Review individual account identity and duplicate prevention rules.
+- [x] Individual traveller lookup under the selected account.
+- [x] Returning individual passport draft reuse.
+- [x] Retain existing profiles and multi-trip history (database verified).
+- [x] Permission, mismatch, retry, and audit rollback tests.
+- [x] Linked consultant rejected by both corporate and individual functions.
+- [x] Apply migration 20261011084315_individual_returning_travellers.sql.
+- [x] TypeScript, production build, and diff checks.
+- [x] Review security and performance advisors; record existing advisories.
+- [ ] Owner-authenticated preview browser verification.
+- [ ] Merge and production verification.
+
+Preview browser verification requires an owner session. The verification
+browser currently reaches the owner sign-in screen.
+Database tests use synthetic fixtures in transactions ending in ROLLBACK.
 
 Do not deduplicate individual clients solely by name.
 

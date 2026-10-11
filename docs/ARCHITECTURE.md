@@ -22,8 +22,10 @@ Corporate client uniqueness, returning corporate traveller lookup,
 case-based Trip History, and returning corporate passport draft reuse
 are implemented at this checkpoint.
 
-Live passport OCR activation, individual returning traveller workflows,
-and Meta / n8n messaging integrations remain separate work.
+Live passport OCR activation and Meta / n8n messaging integrations remain
+separate work. Individual returning travellers are implemented on
+feature/individual-returning-travellers, pending owner-authenticated browser
+verification and application release.
 
 ## Repository Layout
 
@@ -290,3 +292,22 @@ Required inquiry checks include:
 - Preservation of submitted data and source.
 - Existing channel compatibility.
 - TypeScript checks, production build, and browser verification.
+
+## Individual Returning Traveller Implementation
+
+Migration 20261011084315 adds lookup_individual_traveller (security invoker)
+and confirm_returning_individual_passport_draft (owner-authorized security
+definer with empty search_path and no anonymous execution). The confirmation
+function retains the corporate workflow's six-field comparison, document
+ownership validation, draft locking, atomic audit and identical retry behavior.
+Existing corporate functions retain their interface and behavior.
+
+The manual traveller form and passport draft review both require a successful
+account-scoped lookup before creating a new profile. Existing matches link to
+the review/case-assignment page; draft reuse requires a verified profile and
+explicit six-field confirmation. Input changes invalidate stale lookup or
+reuse consent. Server Actions choose the lookup/confirmation function from
+persisted account data, never a submitted account-type flag.
+
+No uniqueness or matching based only on individual account names was added.
+Passport renewal and cross-client identity remain outside this workflow.

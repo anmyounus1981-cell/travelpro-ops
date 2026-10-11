@@ -4,16 +4,14 @@ import Link from "next/link";
 import { useActionState, useEffect, useRef, useState } from "react";
 import { confirmPassportDraft } from "./actions";
 import {
-  lookupCorporateTraveller,
+  lookupAccountTraveller,
   type TravellerLookupResult,
 } from "../traveller-lookup-actions";
 import {
   dhakaToday,
   validatePassportDates,
 } from "@/lib/passport-date-validation";
-import type {
-  PassportReviewFields,
-} from "./passport-fields";
+import type { PassportReviewFields } from "./passport-fields";
 
 const fields = [
   {
@@ -61,11 +59,10 @@ export function PassportReviewForm({
   clientType: "corporate" | "individual";
   initialFields?: PassportReviewFields;
 }) {
-
-const [state, formAction, pending] = useActionState(
-    confirmPassportDraft,
-    { error: "", success: false },
-  );
+  const [state, formAction, pending] = useActionState(confirmPassportDraft, {
+    error: "",
+    success: false,
+  });
 
   const [values, setValues] = useState<Record<FieldKey, string>>({
     given_name: initialFields?.given_name ?? "",
@@ -93,7 +90,10 @@ const [state, formAction, pending] = useActionState(
   const [reuseConfirmed, setReuseConfirmed] = useState(false);
   const lookupVersion = useRef(0);
 
-  const isCorporateClient = clientType === "corporate";
+  const accountLabel =
+    clientType === "corporate"
+      ? "corporate client"
+      : "individual / retail account";
 
   function clearTravellerLookup() {
     lookupVersion.current += 1;
@@ -107,7 +107,6 @@ const [state, formAction, pending] = useActionState(
       pending ||
       state.blocked ||
       lookupBusy ||
-      !isCorporateClient ||
       !values.passport_number.trim()
     ) {
       return;
@@ -119,7 +118,7 @@ const [state, formAction, pending] = useActionState(
     setReuseConfirmed(false);
 
     try {
-      const result = await lookupCorporateTraveller(
+      const result = await lookupAccountTraveller(
         clientId,
         values.passport_number,
       );
@@ -148,11 +147,7 @@ const [state, formAction, pending] = useActionState(
 
   const dateValidation =
     today && values.dob && values.expiry_date
-      ? validatePassportDates(
-          values.dob,
-          values.expiry_date,
-          today,
-        )
+      ? validatePassportDates(values.dob, values.expiry_date, today)
       : null;
 
   const dateChecksPassed =
@@ -161,18 +156,15 @@ const [state, formAction, pending] = useActionState(
     (!dateValidation?.ageNeedsConfirmation || ageConfirmed) &&
     (!dateValidation?.expiryNeedsConfirmation || expiryConfirmed);
   const allChecked = fields.every((field) => checked[field.key]);
-  const hasName = Boolean(
-    values.given_name.trim() || values.surname.trim(),
-  );
-  const existingTraveller =
-    lookupResult?.success ? lookupResult.traveller : null;
+  const hasName = Boolean(values.given_name.trim() || values.surname.trim());
+  const existingTraveller = lookupResult?.success
+    ? lookupResult.traveller
+    : null;
 
-  const corporateLookupPassed =
-    !isCorporateClient ||
-    (lookupResult?.success === true &&
-      (existingTraveller === null ||
-        (existingTraveller.verification_status === "verified" &&
-          reuseConfirmed)));
+  const accountLookupPassed =
+    lookupResult?.success === true &&
+    (existingTraveller === null ||
+      (existingTraveller.verification_status === "verified" && reuseConfirmed));
 
   const canSubmit =
     allChecked &&
@@ -181,9 +173,9 @@ const [state, formAction, pending] = useActionState(
     !pending &&
     !state.blocked &&
     !lookupBusy &&
-    corporateLookupPassed;
+    accountLookupPassed;
 
-    if (state.success || state.blocked) {
+  if (state.success || state.blocked) {
     return (
       <div role="status">
         {state.success && (
@@ -194,11 +186,7 @@ const [state, formAction, pending] = useActionState(
           </p>
         )}
 
-        {state.error && (
-          <p style={{ color: "#92400e" }}>
-            {state.error}
-          </p>
-        )}
+        {state.error && <p style={{ color: "#92400e" }}>{state.error}</p>}
 
         {state.success && state.travellerId && (
           <p>
@@ -208,15 +196,13 @@ const [state, formAction, pending] = useActionState(
           </p>
         )}
 
-        <Link href="/travellers">
-          Return to traveller directory
-        </Link>
+        <Link href="/travellers">Return to traveller directory</Link>
       </div>
     );
   }
 
   return (
-        <form
+    <form
       action={formAction}
       onSubmit={(event) => {
         if (!canSubmit) {
@@ -228,17 +214,13 @@ const [state, formAction, pending] = useActionState(
       <input
         type="hidden"
         name="existing_traveller_id"
-        value={
-          isCorporateClient && reuseConfirmed && existingTraveller
-            ? existingTraveller.id
-            : ""
-        }
+        value={reuseConfirmed && existingTraveller ? existingTraveller.id : ""}
       />
 
       <p style={{ marginBottom: "16px" }}>
-        Enter the given names and surname exactly as shown on the
-        passport. Leave a name field blank only if it is blank on
-        the passport. Check all six fields after reviewing them.
+        Enter the given names and surname exactly as shown on the passport.
+        Leave a name field blank only if it is blank on the passport. Check all
+        six fields after reviewing them.
       </p>
 
       <fieldset
@@ -246,8 +228,7 @@ const [state, formAction, pending] = useActionState(
         style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
       >
         {fields.map((field) => {
-          const isName =
-            field.key === "given_name" || field.key === "surname";
+          const isName = field.key === "given_name" || field.key === "surname";
 
           return (
             <div
@@ -271,14 +252,12 @@ const [state, formAction, pending] = useActionState(
                 name={field.key}
                 value={values[field.key]}
                 type={field.type}
-                maxLength={
-                  "maxLength" in field ? field.maxLength : undefined
-                }
+                maxLength={"maxLength" in field ? field.maxLength : undefined}
                 required={!isName}
                 max={field.key === "dob" ? today || undefined : undefined}
                 onChange={(event) => {
                   const value = event.target.value;
-                                    setReuseConfirmed(false);
+                  setReuseConfirmed(false);
 
                   if (field.key === "passport_number") {
                     clearTravellerLookup();
@@ -334,23 +313,17 @@ const [state, formAction, pending] = useActionState(
           );
         })}
 
-        {isCorporateClient && (
+        {
           <section
-            aria-label="Returning corporate traveller lookup"
+            aria-label={`Returning traveller lookup under ${accountLabel}`}
             style={{ margin: "20px 0" }}
           >
             <button
               type="button"
               onClick={findExistingTraveller}
-              disabled={
-                pending ||
-                lookupBusy ||
-                !values.passport_number.trim()
-              }
+              disabled={pending || lookupBusy || !values.passport_number.trim()}
             >
-              {lookupBusy
-                ? "Searching..."
-                : "Find existing traveller"}
+              {lookupBusy ? "Searching..." : "Find existing traveller"}
             </button>
 
             {lookupResult && !lookupResult.success && (
@@ -361,8 +334,8 @@ const [state, formAction, pending] = useActionState(
 
             {lookupResult?.success && !existingTraveller && (
               <p role="status">
-                No matching passport found under this corporate client.
-                Confirming will create a new traveller profile.
+                No matching passport found under this {accountLabel}. Confirming
+                will create a new traveller profile.
               </p>
             )}
 
@@ -371,10 +344,7 @@ const [state, formAction, pending] = useActionState(
                 <p role="status">
                   Existing traveller:{" "}
                   <strong>
-                    {[
-                      existingTraveller.given_name,
-                      existingTraveller.surname,
-                    ]
+                    {[existingTraveller.given_name, existingTraveller.surname]
                       .filter(Boolean)
                       .join(" ") || existingTraveller.full_name}
                   </strong>
@@ -403,15 +373,15 @@ const [state, formAction, pending] = useActionState(
                         setReuseConfirmed(event.target.checked)
                       }
                     />{" "}
-                    I checked this existing profile against the passport
-                    and confirm that all six reviewed fields match.
-                    Link this draft without changing the profile.
+                    I checked this existing profile against the passport and
+                    confirm that all six reviewed fields match. Link this draft
+                    without changing the profile.
                   </label>
                 )}
               </div>
             )}
           </section>
-        )}
+        }
         {!hasName && (
           <p style={{ marginBottom: "12px" }}>
             Enter at least one passport name field.
@@ -430,12 +400,10 @@ const [state, formAction, pending] = useActionState(
               name="confirmed_unusual_age"
               checked={ageConfirmed}
               required
-              onChange={(event) =>
-                setAgeConfirmed(event.target.checked)
-              }
+              onChange={(event) => setAgeConfirmed(event.target.checked)}
             />{" "}
-            Age exceeds 100 years. I checked the DOB against the
-            passport and confirm it is correct.
+            Age exceeds 100 years. I checked the DOB against the passport and
+            confirm it is correct.
           </label>
         )}
 
@@ -446,12 +414,10 @@ const [state, formAction, pending] = useActionState(
               name="confirmed_unusual_expiry"
               checked={expiryConfirmed}
               required
-              onChange={(event) =>
-                setExpiryConfirmed(event.target.checked)
-              }
+              onChange={(event) => setExpiryConfirmed(event.target.checked)}
             />{" "}
-            Expiry is more than 10 years from today. I checked the
-            expiry date against the passport and confirm it is correct.
+            Expiry is more than 10 years from today. I checked the expiry date
+            against the passport and confirm it is correct.
           </label>
         )}
         <button
@@ -476,10 +442,7 @@ const [state, formAction, pending] = useActionState(
       </fieldset>
 
       {state.error && (
-        <p
-          role="alert"
-          style={{ color: "#b91c1c", marginTop: "12px" }}
-        >
+        <p role="alert" style={{ color: "#b91c1c", marginTop: "12px" }}>
           {state.error}
         </p>
       )}

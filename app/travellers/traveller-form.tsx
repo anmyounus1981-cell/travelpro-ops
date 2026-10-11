@@ -7,12 +7,9 @@ import {
   dhakaToday,
   validatePassportDates,
 } from "@/lib/passport-date-validation";
+import { ClientSelector, type SelectableClient } from "./client-selector";
 import {
-  ClientSelector,
-  type SelectableClient,
-} from "./client-selector";
-import {
-  lookupCorporateTraveller,
+  lookupAccountTraveller,
   type TravellerLookupResult,
 } from "./traveller-lookup-actions";
 
@@ -39,16 +36,21 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
   const [ageConfirmed, setAgeConfirmed] = useState(false);
   const [expiryConfirmed, setExpiryConfirmed] = useState(false);
   const [clientId, setClientId] = useState("");
-  const [selectedClientType, setSelectedClientType] =
-  useState<SelectableClient["client_type"] | null>(null);
+  const [selectedClientType, setSelectedClientType] = useState<
+    SelectableClient["client_type"] | null
+  >(null);
   const [passportNumber, setPassportNumber] = useState("");
   const [lookupResult, setLookupResult] =
     useState<TravellerLookupResult | null>(null);
   const [lookupBusy, setLookupBusy] = useState(false);
   const lookupVersion = useRef(0);
 
-  const isCorporateClient =
-    selectedClientType === "corporate";
+  const hasSelectedAccount =
+    selectedClientType === "corporate" || selectedClientType === "individual";
+  const accountLabel =
+    selectedClientType === "corporate"
+      ? "corporate client"
+      : "individual / retail account";
   function clearTravellerLookup() {
     lookupVersion.current += 1;
     setLookupResult(null);
@@ -56,7 +58,7 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
   }
 
   async function findExistingTraveller() {
-    if (pending || lookupBusy || !isCorporateClient) {
+    if (pending || lookupBusy || !hasSelectedAccount) {
       return;
     }
 
@@ -65,10 +67,7 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
     setLookupResult(null);
 
     try {
-      const result = await lookupCorporateTraveller(
-        clientId,
-        passportNumber,
-      );
+      const result = await lookupAccountTraveller(clientId, passportNumber);
 
       if (lookupVersion.current === version) {
         setLookupResult(result);
@@ -102,19 +101,18 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
     !dateValidation?.error &&
     (!dateValidation?.ageNeedsConfirmation || ageConfirmed) &&
     (!dateValidation?.expiryNeedsConfirmation || expiryConfirmed);
-  const corporateLookupPassed =
-    selectedClientType === "individual" ||
-    (isCorporateClient &&
-      lookupResult?.success === true &&
-      lookupResult.traveller === null);
+  const accountLookupPassed =
+    hasSelectedAccount &&
+    lookupResult?.success === true &&
+    lookupResult.traveller === null;
 
   const creationDisabled =
     pending ||
     lookupBusy ||
     !clientId ||
     !dateChecksPassed ||
-    !corporateLookupPassed;
-    if (state.success || state.blocked) {
+    !accountLookupPassed;
+  if (state.success || state.blocked) {
     return (
       <div role="status">
         {state.error ? (
@@ -134,13 +132,13 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
 
   return (
     <form
-  action={formAction}
-  onSubmit={(event) => {
-    if (creationDisabled) {
-      event.preventDefault();
-    }
-  }}
->
+      action={formAction}
+      onSubmit={(event) => {
+        if (creationDisabled) {
+          event.preventDefault();
+        }
+      }}
+    >
       <fieldset
         disabled={pending}
         style={{ border: 0, padding: 0, margin: 0, minWidth: 0 }}
@@ -153,50 +151,42 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
           }}
         >
           <ClientSelector
-  clients={clients}
-  value={clientId}
-  onChange={(nextClientId, nextClientType) => {
-  clearTravellerLookup();
-  setClientId(nextClientId);
-  setSelectedClientType(nextClientType);
-}}
-  disabled={pending}
-/>
+            clients={clients}
+            value={clientId}
+            onChange={(nextClientId, nextClientType) => {
+              clearTravellerLookup();
+              setClientId(nextClientId);
+              setSelectedClientType(nextClientType);
+            }}
+            disabled={pending}
+          />
 
           <label>
             Given Name
-            <input
-              name="given_name"
-              maxLength={100}
-              style={fieldStyle}
-            />
+            <input name="given_name" maxLength={100} style={fieldStyle} />
           </label>
 
           <label>
             Surname / Last Name
-            <input
-              name="surname"
-              maxLength={100}
-              style={fieldStyle}
-            />
+            <input name="surname" maxLength={100} style={fieldStyle} />
           </label>
 
           <label>
             Passport number
             <input
-  name="passport_number"
-  required
-  maxLength={30}
-  value={passportNumber}
-  onChange={(event) => {
-    clearTravellerLookup();
-    setPassportNumber(event.target.value);
-  }}
-  style={fieldStyle}
-/>
+              name="passport_number"
+              required
+              maxLength={30}
+              value={passportNumber}
+              onChange={(event) => {
+                clearTravellerLookup();
+                setPassportNumber(event.target.value);
+              }}
+              style={fieldStyle}
+            />
           </label>
 
-                    <label>
+          <label>
             Date of birth
             <input
               name="dob"
@@ -229,11 +219,7 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
           </label>
           <label>
             Nationality
-            <input
-              name="nationality"
-              maxLength={100}
-              style={fieldStyle}
-            />
+            <input name="nationality" maxLength={100} style={fieldStyle} />
           </label>
 
           <label>
@@ -246,9 +232,9 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
             />
           </label>
         </div>
-        {isCorporateClient && (
+        {hasSelectedAccount && (
           <section
-            aria-label="Returning corporate traveller lookup"
+            aria-label={`Returning traveller lookup under ${accountLabel}`}
             style={{ marginTop: "20px" }}
           >
             <button
@@ -284,9 +270,7 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
                   details before assigning it to a new case.
                 </p>
 
-                <Link
-                  href={`/travellers/${lookupResult.traveller.id}/review`}
-                >
+                <Link href={`/travellers/${lookupResult.traveller.id}/review`}>
                   Use existing traveller: open review and case assignment
                 </Link>
               </div>
@@ -294,8 +278,8 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
 
             {lookupResult?.success && !lookupResult.traveller && (
               <p role="status">
-                No matching passport found under this corporate client.
-                Review the entered details before creating a new profile.
+                No matching passport found under this {accountLabel}. Review the
+                entered details before creating a new profile.
               </p>
             )}
           </section>
@@ -314,12 +298,10 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
               name="confirmed_unusual_age"
               checked={ageConfirmed}
               required
-              onChange={(event) =>
-                setAgeConfirmed(event.target.checked)
-              }
+              onChange={(event) => setAgeConfirmed(event.target.checked)}
             />{" "}
-            Age exceeds 100 years. I checked the DOB against the
-            passport and confirm it is correct.
+            Age exceeds 100 years. I checked the DOB against the passport and
+            confirm it is correct.
           </label>
         )}
 
@@ -330,12 +312,10 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
               name="confirmed_unusual_expiry"
               checked={expiryConfirmed}
               required
-              onChange={(event) =>
-                setExpiryConfirmed(event.target.checked)
-              }
+              onChange={(event) => setExpiryConfirmed(event.target.checked)}
             />{" "}
-            Expiry is more than 10 years from today. I checked the
-            expiry date against the passport and confirm it is correct.
+            Expiry is more than 10 years from today. I checked the expiry date
+            against the passport and confirm it is correct.
           </label>
         )}
 
@@ -358,11 +338,8 @@ export function TravellerForm({ clients }: { clients: Client[] }) {
         </button>
       </fieldset>
 
-  {state.error && (
-        <p
-          role="alert"
-          style={{ color: "#b91c1c", marginTop: "12px" }}
-        >
+      {state.error && (
+        <p role="alert" style={{ color: "#b91c1c", marginTop: "12px" }}>
           {state.error}
         </p>
       )}
