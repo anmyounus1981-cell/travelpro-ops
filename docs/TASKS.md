@@ -209,3 +209,38 @@ At the beginning of each resumed session:
 2. Summarize remaining work and the immediate next task.
 3. Confirm the repository branch and checkpoint from available evidence.
 4. Continue with one clearly identified editor or terminal step at a time.
+## 12 October 2026 — Signed Inquiry Webhook Checkpoint
+
+These checks cover the new webhook intake path, not completion of the
+whole Public Inquiry Ingestion milestone.
+
+- [x] Apply migration 20261011144826; local/remote history matched.
+- [x] Server-only Supabase intake helper.
+- [x] Signed POST /api/webhooks/inquiries with bounded body reading.
+- [x] Timestamp, signature and configured source/account validation.
+- [x] Middleware exception with authentication enforced by route handler.
+- [x] Rollback SQL tests for intake, permissions, retry conflicts,
+  historical identical retries and provider account isolation.
+- [x] Nine local webhook checks without intake database writes.
+- [x] TypeScript, production build and formatting checks.
+- [x] Preview rejection: unsigned 401, unauthorized account 403.
+- [x] Preview accepted synthetic inquiry:
+  0bd0bc17-5b25-4a54-897d-ccf82bffc3fa.
+- [x] Identical retry returned same ID and duplicate=true.
+- [x] Conflicting retry rejected with 409.
+- [x] Saved original message intact; status=new; client/case links NULL.
+- [x] Owner Inbox displays the inquiry once.
+- [ ] Concurrent-request verification.
+- [ ] Durable rate limiting.
+- [ ] Public Landing Page intake implementation and verification.
+- [ ] Display service type and validated submitted fields in Inbox.
+- [ ] Correct Corporate client labels for individual inquiries.
+- [ ] Block unsupported non-flight conversion in UI and server action.
+- [ ] Reviewed atomic inquiry-to-case conversion.
+- [ ] Real n8n / Meta / WhatsApp integration and channel verification.
+- [ ] Milestone PR review and production release.
+
+Latest pushed application commit: a4ce25b.
+Production application baseline: main 2e23db2.
+Database is shared; the intake migration is applied.
+Synthetic HTTP tests do not establish a live WhatsApp connection.

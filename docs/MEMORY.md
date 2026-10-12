@@ -22,3 +22,49 @@ Migration 20261011084315_individual_returning_travellers.sql is applied to the c
 Production deployment FyzRkFPhrueg4zFBwZyhxPHxKsVi was Ready on main 2e23db2. Owner verified account filtering, both trip assignments, and confirmed-draft guard at the deployment URL; canonical travelpro-ops.vercel.app displayed the new selector after refresh.
 
 Next: Multi-Channel Client Query Ingestion on feature/multi-channel-inquiry-ingestion. Implementation contract: docs/INQUIRY_INGESTION_PLAN.md. No channel credentials, provider connections or new webhook route have been activated by this documentation checkpoint. Payment verification and financial/GDS actions remain manual.
+## 12 October 2026: Inquiry Webhook Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed commit: a4ce25b.
+Production application remains main 2e23db2.
+
+Migration 20261011144826_multi_channel_inquiry_intake.sql applied
+successfully to the shared Supabase database. Local and remote migration
+history match.
+
+Verified:
+- Rollback SQL checks: execution permissions, intake, identical retries,
+  conflicting retries, delayed retries, and provider account isolation.
+- Nine local webhook checks passed without intake database writes.
+- Preview unsigned requests rejected with 401.
+- Valid signatures with unauthorized accounts rejected with 403.
+- Synthetic allowed-account inquiry accepted without automatic client
+  matching or case creation.
+- Identical retry returned the same inquiry ID with duplicate=true.
+- Changed payload under the same identity rejected with 409.
+- Original saved message remained intact; status=new; client/case links NULL.
+- Owner Inbox displays the synthetic inquiry once.
+
+Synthetic inquiry ID: 0bd0bc17-5b25-4a54-897d-ccf82bffc3fa.
+Service type: consultation. Source: whatsapp.
+This was a signed synthetic HTTP test, not a live WhatsApp integration.
+
+Preview branch configuration:
+- SUPABASE_SECRET_KEY
+- INQUIRY_WEBHOOK_SECRET
+- INQUIRY_WEBHOOK_ALLOWED_ACCOUNTS
+No secret values are recorded here.
+
+Pending:
+- Concurrent-request tests and durable rate limiting.
+- Public Landing Page intake.
+- Inbox service type and validated submitted-field display.
+- Replace misleading Corporate client labels for individual inquiries.
+- Disable unsupported non-flight conversion in UI and server action.
+- Reviewed atomic inquiry-to-case conversion.
+- Real n8n / Meta / WhatsApp provider setup and verification.
+- Milestone PR review, production configuration and release verification.
+
+Parsing remains pending for the new intake path.
+Do not use the consultation inquiry's existing Convert to Active Case button.
+Payments and GDS actions remain manual.
