@@ -270,3 +270,18 @@ Production application remains main 2e23db2.
 This checkpoint supersedes the earlier pending client-label and
 non-flight UI/server guard implementation items. Execution-level
 server guard tests remain pending.
+
+## 13 October 2026 — Submitted-Field Display Checkpoint
+
+Latest verified Preview: 5a3c0b4.
+Production application remains main 2e23db2.
+
+- [x] Query and display validated submitted fields in Inbox.
+- [x] Separate submitted values from AI suggestions.
+- [x] Show Not provided for missing submitted values.
+- [x] Show explicit missing-record message for legacy inquiries.
+- [x] Preview verified synthetic submitted name/email and missing fields.
+- [x] TypeScript, production build and formatting checks.
+
+This supersedes the earlier pending submitted-field display item.
+The full inquiry-ingestion milestone remains incomplete.

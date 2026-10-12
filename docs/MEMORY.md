@@ -102,3 +102,27 @@ Still pending:
 - Reviewed atomic inquiry-to-case conversion.
 - Real n8n / Meta / WhatsApp integration.
 - Milestone review and production release.
+
+## 13 October 2026: Submitted-Field Display Verification
+
+Latest pushed commit and verified Preview: 5a3c0b4.
+Branch: feature/multi-channel-inquiry-ingestion.
+Production application remains main 2e23db2.
+
+Owner-guided Preview verification passed:
+- Synthetic inquiry displays its original submitted name and email.
+- Missing phone and travel values display Not provided.
+- Validated submitted fields appear separately from AI-parsed details.
+- Legacy inquiries display an explicit missing submitted-record message.
+- Consultation inquiry retains the conversion-unavailable label.
+
+TypeScript, production build and formatting checks passed.
+This supersedes the pending submitted-field display item.
+
+Remaining milestone work:
+- Direct server-action rejection tests.
+- Concurrent-request verification and durable rate limiting.
+- Public Landing Page intake.
+- Reviewed atomic inquiry-to-case conversion.
+- Real n8n / Meta / WhatsApp integration.
+- Milestone review and production release.
