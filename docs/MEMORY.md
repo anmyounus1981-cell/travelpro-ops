@@ -68,3 +68,37 @@ Pending:
 Parsing remains pending for the new intake path.
 Do not use the consultation inquiry's existing Convert to Active Case button.
 Payments and GDS actions remain manual.
+## 13 October 2026: Inbox Guard and Display Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed commit and verified Preview: 6a74e37.
+Production application remains main 2e23db2.
+
+Changes:
+- 06e9d8c: server guard rejects non-flight and dismissed inquiries;
+  Inbox disables their conversion controls.
+- e1143ba: Inbox displays client type and service type;
+  company suggestion field appears only for corporate inquiries.
+- 6a74e37: empty deployment trigger after a temporary GitHub
+  secondary rate limit prevented deployment of e1143ba.
+
+Owner-guided Preview verification:
+- Synthetic consultation inquiry displays Individual / Retail.
+- Service type displays Consultation.
+- No Corporate client or Company name suggestion field on that card.
+- Client selector and ADT/CHD/INF fields verified disabled on 06e9d8c.
+- Conversion button verified disabled on 06e9d8c.
+- Latest Preview retains the conversion-unavailable label.
+- Legacy inquiries display Not recorded (legacy inquiry).
+
+TypeScript, production build and diff formatting checks passed.
+Direct server-action rejection tests remain pending.
+These checks do not establish atomic conversion or concurrency safety.
+
+Still pending:
+- Validated submitted-field display.
+- Public Landing Page intake and durable rate limiting.
+- Concurrent-request tests.
+- Reviewed atomic inquiry-to-case conversion.
+- Real n8n / Meta / WhatsApp integration.
+- Milestone review and production release.

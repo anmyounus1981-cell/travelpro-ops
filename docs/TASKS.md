@@ -244,3 +244,29 @@ Latest pushed application commit: a4ce25b.
 Production application baseline: main 2e23db2.
 Database is shared; the intake migration is applied.
 Synthetic HTTP tests do not establish a live WhatsApp connection.
+
+## 13 October 2026 — Inbox Guard and Display Checkpoint
+
+Latest verified Preview: 6a74e37.
+Production application remains main 2e23db2.
+
+- [x] Add server-action guard for non-flight and dismissed inquiries.
+- [x] Disable consultation conversion controls in Inbox.
+- [x] Owner verified client selector, ADT/CHD/INF fields and button disabled.
+- [x] Display client type and service type.
+- [x] Remove corporate suggestion field from individual inquiry cards.
+- [x] Preview verified Individual / Retail and Consultation labels.
+- [x] Preserve explicit Not recorded label for legacy service types.
+- [x] TypeScript, production build and formatting checks.
+- [x] Recover Preview deployment after temporary GitHub secondary rate limit.
+- [ ] Direct server-action rejection tests.
+- [ ] Display validated submitted fields separately from AI suggestions.
+- [ ] Concurrent-request tests and durable rate limiting.
+- [ ] Public Landing Page intake.
+- [ ] Reviewed atomic inquiry-to-case conversion.
+- [ ] Real n8n / Meta / WhatsApp integration.
+- [ ] Milestone review and production release.
+
+This checkpoint supersedes the earlier pending client-label and
+non-flight UI/server guard implementation items. Execution-level
+server guard tests remain pending.
