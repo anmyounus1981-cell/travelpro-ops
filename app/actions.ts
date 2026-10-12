@@ -1032,7 +1032,7 @@ export async function convertInquiryToCase(fd: FormData) {
   const { data: inquiry, error: inquiryError } = await db
     .from("inquiries")
     .select(
-      "id, source, raw_message, parsed_fields, status, converted_case_id"
+      "id, source, service_type, raw_message, parsed_fields, status, converted_case_id"
     )
     .eq("id", inquiryId)
     .single();
@@ -1040,6 +1040,18 @@ export async function convertInquiryToCase(fd: FormData) {
   if (inquiryError || !inquiry) {
     throw inquiryError ?? new Error("Inquiry not found");
   }
+if (
+  inquiry.service_type !== null &&
+  inquiry.service_type !== "flight_booking"
+) {
+  throw new Error(
+    "Only flight booking inquiries can be converted to travel cases.",
+  );
+}
+
+if (inquiry.status === "dismissed") {
+  throw new Error("Dismissed inquiries cannot be converted.");
+}
 
   if (inquiry.status === "converted" || inquiry.converted_case_id) {
     throw new Error("This inquiry has already been converted");

@@ -17,8 +17,19 @@ type ParsedFields = {
 
 type Inquiry = {
   id: string;
-  source: "web" | "email" | "whatsapp";
+  source:
+    | "web"
+    | "email"
+    | "whatsapp"
+    | "landing_page"
+    | "meta_lead_ads";
   client_type: "personal" | "corporate";
+  service_type:
+    | "flight_booking"
+    | "visa_support"
+    | "package"
+    | "consultation"
+    | null;
   corporate_client_name: string | null;
   contact_name: string | null;
   contact_email: string | null;
@@ -29,7 +40,6 @@ type Inquiry = {
   status: "new" | "converted" | "dismissed";
   created_at: string;
 };
-
 type Client = {
   id: string;
   company_name: string;
@@ -54,6 +64,7 @@ function formatDate(value: string) {
           "id",
           "source",
           "client_type",
+          "service_type",
           "corporate_client_name",
           "contact_name",
           "contact_email",
@@ -134,6 +145,14 @@ function formatDate(value: string) {
         <section className={styles.inquiries}>
           {inquiries.map((inquiry) => {
             const parsed = inquiry.parsed_fields ?? {};
+            const isFlightInquiry =
+  inquiry.service_type === null ||
+  inquiry.service_type === "flight_booking";
+
+const canConvert =
+  inquiry.status === "new" &&
+  isFlightInquiry &&
+  clients.length > 0;
             const clientName =
               inquiry.corporate_client_name ||
               inquiry.contact_name ||
@@ -263,7 +282,7 @@ function formatDate(value: string) {
       name="client_id"
       defaultValue=""
       required
-      disabled={inquiry.status === "converted"}
+      disabled={!canConvert}
     >
       <option value="">Select a client</option>
 
@@ -282,7 +301,7 @@ function formatDate(value: string) {
       min="0"
       step="1"
       required
-      disabled={inquiry.status === "converted"}
+      disabled={!canConvert}
     />
   </label>
 
@@ -294,7 +313,7 @@ function formatDate(value: string) {
       min="0"
       step="1"
       required
-      disabled={inquiry.status === "converted"}
+      disabled={!canConvert}
     />
   </label>
 
@@ -306,20 +325,21 @@ function formatDate(value: string) {
       min="0"
       step="1"
       required
-      disabled={inquiry.status === "converted"}
+      disabled={!canConvert}
     />
   </label>
 
   <button
     className={styles.convertButton}
     type="submit"
-    disabled={
-      inquiry.status === "converted" ||
-      clients.length === 0
-    }
+    disabled={!canConvert}
   >
     {inquiry.status === "converted"
-      ? "Converted"
+  ? "Converted"
+  : inquiry.status === "dismissed"
+    ? "Dismissed"
+    : !isFlightInquiry
+      ? "Case conversion unavailable for this service"
       : "Convert to Active Case"}
   </button>
 </form>
