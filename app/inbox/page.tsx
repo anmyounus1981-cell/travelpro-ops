@@ -35,6 +35,7 @@ type Inquiry = {
   contact_email: string | null;
   contact_phone: string | null;
   raw_message: string;
+  submitted_fields: Record<string, unknown> | null;
   parsed_fields: ParsedFields;
   parsing_status: string;
   status: "new" | "converted" | "dismissed";
@@ -44,6 +45,31 @@ type Client = {
   id: string;
   company_name: string;
 };
+function readSubmittedObject(
+  value: unknown,
+): Record<string, unknown> {
+  if (
+    value === null ||
+    typeof value !== "object" ||
+    Array.isArray(value)
+  ) {
+    return {};
+  }
+
+  return value as Record<string, unknown>;
+}
+
+function displaySubmittedValue(value: unknown): string {
+  if (typeof value === "string" && value.trim()) {
+    return value;
+  }
+
+  if (typeof value === "number" && Number.isFinite(value)) {
+    return String(value);
+  }
+
+  return "Not provided";
+}
 
 function formatDate(value: string) {
   return new Intl.DateTimeFormat("en-BD", {
@@ -70,6 +96,7 @@ function formatDate(value: string) {
           "contact_email",
           "contact_phone",
           "raw_message",
+          "submitted_fields",
           "parsed_fields",
           "parsing_status",
           "status",
@@ -144,10 +171,16 @@ function formatDate(value: string) {
       ) : (
         <section className={styles.inquiries}>
           {inquiries.map((inquiry) => {
-            const parsed = inquiry.parsed_fields ?? {};
-            const isFlightInquiry =
-  inquiry.service_type === null ||
-  inquiry.service_type === "flight_booking";
+  const parsed = inquiry.parsed_fields ?? {};
+
+  const submitted = readSubmittedObject(inquiry.submitted_fields);
+  const submittedContact = readSubmittedObject(submitted.contact);
+  const submittedTravel = readSubmittedObject(submitted.travel);
+  const hasSubmittedFields = Object.keys(submitted).length > 0;
+
+  const isFlightInquiry =
+    inquiry.service_type === null ||
+    inquiry.service_type === "flight_booking";
 
 const canConvert =
   inquiry.status === "new" &&
@@ -180,6 +213,60 @@ const canConvert =
 
                 <div className={styles.comparisonGrid}>
                   <section className={styles.rawMessagePanel}>
+                    <h3>Validated submitted fields</h3>
+
+{hasSubmittedFields ? (
+  <dl className={styles.parsedFields}>
+    {inquiry.client_type === "corporate" && (
+      <div>
+        <dt>Company name</dt>
+        <dd>{displaySubmittedValue(submitted.companyName)}</dd>
+      </div>
+    )}
+    <div>
+      <dt>Name</dt>
+      <dd>{displaySubmittedValue(submittedContact.name)}</dd>
+    </div>
+    <div>
+      <dt>Email</dt>
+      <dd>{displaySubmittedValue(submittedContact.email)}</dd>
+    </div>
+    <div>
+      <dt>Phone</dt>
+      <dd>{displaySubmittedValue(submittedContact.phone)}</dd>
+    </div>
+    <div>
+      <dt>Origin</dt>
+      <dd>{displaySubmittedValue(submittedTravel.origin)}</dd>
+    </div>
+    <div>
+      <dt>Destination</dt>
+      <dd>{displaySubmittedValue(submittedTravel.destination)}</dd>
+    </div>
+    <div>
+      <dt>Departure date</dt>
+      <dd>{displaySubmittedValue(submittedTravel.departureDate)}</dd>
+    </div>
+    <div>
+      <dt>Return date</dt>
+      <dd>{displaySubmittedValue(submittedTravel.returnDate)}</dd>
+    </div>
+    <div>
+      <dt>Passengers</dt>
+      <dd>{displaySubmittedValue(submittedTravel.passengerCount)}</dd>
+    </div>
+    <div>
+      <dt>Cabin preference</dt>
+      <dd>{displaySubmittedValue(submittedTravel.cabinClass)}</dd>
+    </div>
+    <div>
+      <dt>Notes</dt>
+      <dd>{displaySubmittedValue(submittedTravel.notes)}</dd>
+    </div>
+  </dl>
+) : (
+  <p>No separate submitted-field record for this legacy inquiry.</p>
+)}
                     <h3>Raw message</h3>
 
                     <p className={styles.rawMessage}>
