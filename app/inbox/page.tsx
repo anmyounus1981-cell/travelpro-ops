@@ -188,6 +188,24 @@ const canConvert =
 
                     <div className={styles.contactDetails}>
                       <p>
+  <strong>Client type:</strong>{" "}
+  {inquiry.client_type === "corporate"
+    ? "Corporate"
+    : "Individual / Retail"}
+</p>
+
+<p>
+  <strong>Service type:</strong>{" "}
+  {inquiry.service_type === null
+    ? "Not recorded (legacy inquiry)"
+    : {
+        flight_booking: "Flight Booking",
+        visa_support: "Visa Support",
+        package: "Package",
+        consultation: "Consultation",
+      }[inquiry.service_type]}
+</p>
+                      <p>
                         <strong>Name:</strong>{" "}
                         {inquiry.contact_name || "Not provided"}
                       </p>
@@ -214,14 +232,16 @@ const canConvert =
                     </div>
 
                     <dl className={styles.parsedFields}>
-                      <div>
-                        <dt>Corporate client</dt>
-                        <dd>
-                          {parsed.corporateClient ||
-                            inquiry.corporate_client_name ||
-                            "Not matched"}
-                        </dd>
-                      </div>
+                      {inquiry.client_type === "corporate" && (
+  <div>
+    <dt>Company name suggestion</dt>
+    <dd>
+      {parsed.corporateClient ||
+        inquiry.corporate_client_name ||
+        "Not provided"}
+    </dd>
+  </div>
+)}
 
                       <div>
                         <dt>Origin</dt>
