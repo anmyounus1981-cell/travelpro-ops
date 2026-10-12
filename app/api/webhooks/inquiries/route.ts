@@ -209,6 +209,9 @@ export async function POST(request: Request) {
     });
 
     if (error) {
+      console.error("Inquiry intake RPC failed", {
+        code: error.code,
+      });
       if (error.code === "23505") {
         throw new IntakeRequestError(
           "Submission identity conflicts with an existing inquiry.",
