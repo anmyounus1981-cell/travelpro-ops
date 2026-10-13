@@ -126,3 +126,53 @@ Remaining milestone work:
 - Reviewed atomic inquiry-to-case conversion.
 - Real n8n / Meta / WhatsApp integration.
 - Milestone review and production release.
+
+## 13 October 2026: Durable Rate-Limit Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed application commit: f2248fc.
+Production application remains main 2e23db2.
+
+Migration 20261012191447_inquiry_intake_rate_limits.sql applied
+to the shared database; local and remote migration history matched.
+
+Completed:
+- Server-only rate counters and atomic fixed-window consumption.
+- Rollback tests passed for permissions, allowance, denial,
+  retry delay, scope isolation, old-window reset and
+  newer-window preservation.
+- Keyed bucket identifiers avoid storing raw contact/account identities.
+- Webhook limiter runs after signature and account authorization.
+- Landing Page Server Action implemented with validation,
+  honeypot, rate checks and intake receipt handling.
+- TypeScript, build and nine local webhook regression checks passed.
+
+Owner-executed Preview integration:
+- Synthetic rate-limited inquiry accepted.
+- Inquiry ID: 281c9438-6daa-4b6f-9964-b6a0aae8dd07.
+- Shared and account counters persisted.
+- 65 retries using 10 concurrent workers in one minute:
+  60 accepted duplicate retries and five HTTP 429 responses.
+- Retry-After validated; all accepted retries retained the same receipt.
+- Database event-identity query confirmed one matching inquiry.
+
+Preview test script:
+scripts/test-preview-inquiry-rate-limit.mjs.
+No secret values are stored in the script or documentation.
+
+Limits currently implemented:
+- Landing Page: 100 shared attempts per 15 minutes;
+  five attempts per supplied normalized email or phone.
+- Webhook: 500 shared attempts per minute;
+  60 attempts per configured source/provider/account.
+These are initial limits and count retries.
+
+Pending:
+- Landing Page form wiring and anonymous end-to-end tests.
+- Landing contact-limit integration tests and shared-ceiling tests.
+- Rate-counter retention cleanup.
+- Signed-request protections do not establish protection for legacy
+  /api/v1/inquiry or direct anonymous insert paths.
+- Atomic reviewed inquiry-to-case conversion and its tests.
+- Real n8n / Meta / WhatsApp integration.
+- Documentation reconciliation and production release.

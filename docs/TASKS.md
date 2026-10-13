@@ -285,3 +285,31 @@ Production application remains main 2e23db2.
 
 This supersedes the earlier pending submitted-field display item.
 The full inquiry-ingestion milestone remains incomplete.
+
+## 13 October 2026 — Durable Rate-Limit Checkpoint
+
+Verified Preview application: f2248fc.
+Production application remains main 2e23db2.
+
+- [x] Apply rate-limit migration 20261012191447; history matched.
+- [x] Server-only counters, keyed buckets and atomic consumption.
+- [x] Rollback permission, allowance, denial and window tests.
+- [x] Integrate webhook limiter after signature/account authorization.
+- [x] Implement rate-checked Landing Page Server Action.
+- [x] TypeScript, build and local webhook regression checks.
+- [x] Preview synthetic intake with persisted rate counters.
+- [x] Concurrent Preview retries: 60 accepted, five HTTP 429.
+- [x] Verify Retry-After and unchanged duplicate receipt.
+- [x] Database verification: one inquiry for the tested event identity.
+- [ ] Wire public Landing Page form to the new Server Action.
+- [ ] Anonymous submission and private-data isolation verification.
+- [ ] Landing contact-limit and shared-ceiling integration tests.
+- [ ] Rate-counter retention cleanup.
+- [ ] Reconcile legacy API and anonymous insert abuse-control paths.
+- [ ] Atomic reviewed conversion and execution-level guard tests.
+- [ ] Real provider/n8n integration and production release.
+
+The concurrency check covers retries of an existing synthetic inquiry.
+It does not establish concurrent first-submission or conversion safety.
+Earlier pending rate-limiter implementation items are superseded;
+remaining integration and release checks are listed above.
