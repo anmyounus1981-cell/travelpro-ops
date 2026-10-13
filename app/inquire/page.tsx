@@ -2,13 +2,21 @@
 
 import {
   type FormEvent,
+  useRef,
   useState,
 } from "react";
 
+import { submitLandingInquiry } from "./actions";
+
 import styles from "./page.module.css";
 
-type FormData = {
-  clientType: "personal" | "corporate";
+type InquiryFormValues = {
+  clientType: "individual" | "corporate";
+  serviceType:
+    | "flight_booking"
+    | "visa_support"
+    | "package"
+    | "consultation";
   corporateClient: string;
   contactName: string;
   contactEmail: string;
@@ -20,10 +28,12 @@ type FormData = {
   passengerCount: string;
   cabinClass: string;
   notes: string;
+  website: string;
 };
 
-const INITIAL_FORM: FormData = {
-  clientType: "personal",
+const INITIAL_FORM: InquiryFormValues = {
+  clientType: "individual",
+  serviceType: "flight_booking",
   corporateClient: "",
   contactName: "",
   contactEmail: "",
@@ -32,14 +42,17 @@ const INITIAL_FORM: FormData = {
   destination: "",
   departureDate: "",
   returnDate: "",
-  passengerCount: "1",
-  cabinClass: "economy",
+  passengerCount: "",
+  cabinClass: "",
   notes: "",
+  website: "",
 };
 
 export default function InquiryPage() {
+  const requestIdRef = useRef<string | null>(null);
+  const submissionInFlightRef = useRef(false);
   const [form, setForm] =
-    useState<FormData>(INITIAL_FORM);
+    useState<InquiryFormValues>(INITIAL_FORM);
 
   const [isSubmitting, setIsSubmitting] =
     useState(false);
@@ -49,7 +62,7 @@ export default function InquiryPage() {
 
   const [isSuccess, setIsSuccess] =
     useState(false);  function updateField(
-    field: keyof FormData,
+    field: keyof InquiryFormValues,
     value: string,
   ) {
     setForm((current) => ({
@@ -58,67 +71,52 @@ export default function InquiryPage() {
     }));
   }
 
-  async function handleSubmit(
-    event: FormEvent<HTMLFormElement>,
-  ) {
-    event.preventDefault();
+ async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+  event.preventDefault();
 
-    setIsSubmitting(true);
-    setMessage("");
-    setIsSuccess(false);
+  if (submissionInFlightRef.current) {
+    return;
+  }
 
-    try {
-      const response = await fetch(
-        "/api/v1/inquiry",
-        {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-          },
-          body: JSON.stringify({
-            ...form,
-            source: "web",
-            corporateClient:
-              form.clientType === "corporate"
-                ? form.corporateClient
-                : null,
-            passengerCount: Number(
-              form.passengerCount,
-            ),
-            returnDate:
-              form.returnDate || null,
-          }),
-        },
-      );
+  submissionInFlightRef.current = true;
+  setIsSubmitting(true);
+  setMessage("");
+  setIsSuccess(false);
 
-      const result = (await response.json()) as {
-        message?: string;
-        error?: string;
-      };
-
-      if (!response.ok) {
-        throw new Error(
-          result.error ??
-            "Unable to submit inquiry.",
-        );
-      }
-
-      setIsSuccess(true);
-      setMessage(
-        result.message ??
-          "Your inquiry was submitted successfully.",
-      );
-      setForm(INITIAL_FORM);
-    } catch (error) {
-      setMessage(
-        error instanceof Error
-          ? error.message
-          : "Unable to submit inquiry.",
-      );
-    } finally {
-      setIsSubmitting(false);
+  try {
+    if (!requestIdRef.current) {
+      requestIdRef.current = crypto.randomUUID();
     }
-  }  return (
+
+    const submission = new FormData();
+    submission.set("requestId", requestIdRef.current);
+
+    for (const [field, value] of Object.entries(form)) {
+      submission.set(field, value);
+    }
+
+    const result = await submitLandingInquiry(submission);
+
+    if (!result.success || !result.receiptId) {
+      setMessage(result.message);
+      return;
+    }
+
+    setIsSuccess(true);
+    setMessage(`${result.message} Reference: ${result.receiptId}`);
+    setForm({ ...INITIAL_FORM });
+    requestIdRef.current = null;
+  } catch {
+    setMessage(
+      "Unable to confirm receipt. Retry without changing your details.",
+    );
+  } finally {
+    submissionInFlightRef.current = false;
+    setIsSubmitting(false);
+  }
+}
+
+return (
     <main className={styles.page}>
       <section className={styles.card}>
         <header className={styles.header}>
@@ -126,7 +124,7 @@ export default function InquiryPage() {
             TravelPro Ops
           </p>
 
-          <h1>Flight Inquiry</h1>
+          <h1>Travel Inquiry</h1>
 
           <p>
             Share your travel requirements.
@@ -139,6 +137,21 @@ export default function InquiryPage() {
           className={styles.form}
           onSubmit={handleSubmit}
         >
+                    <div hidden aria-hidden="true">
+            <label htmlFor="website">Website</label>
+            <input
+              id="website"
+              name="website"
+              type="text"
+              value={form.website}
+              onChange={(event) =>
+                updateField("website", event.target.value)
+              }
+              autoComplete="off"
+              tabIndex={-1}
+              maxLength={200}
+            />
+          </div>
           <div className={styles.field}>
             <label htmlFor="clientType">
               Client type
@@ -146,6 +159,7 @@ export default function InquiryPage() {
 
             <select
               id="clientType"
+              disabled={isSubmitting}
               value={form.clientType}
               onChange={(event) =>
                 updateField(
@@ -154,16 +168,33 @@ export default function InquiryPage() {
                 )
               }
             >
-              <option value="personal">
-                Personal
-              </option>
+              <option value="individual">
+  Individual / Retail
+</option>
 
               <option value="corporate">
                 Corporate Client
               </option>
             </select>
           </div>
+<div className={styles.field}>
+  <label htmlFor="serviceType">Service type</label>
 
+  <select
+    id="serviceType"
+    disabled={isSubmitting}
+    value={form.serviceType}
+    onChange={(event) =>
+      updateField("serviceType", event.target.value)
+    }
+    required
+  >
+    <option value="flight_booking">Flight Booking</option>
+    <option value="visa_support">Visa Support</option>
+    <option value="package">Package</option>
+    <option value="consultation">Consultation</option>
+  </select>
+</div>
           {form.clientType === "corporate" && (
             <div className={styles.field}>
               <label htmlFor="corporateClient">
@@ -172,6 +203,8 @@ export default function InquiryPage() {
 
               <input
                 id="corporateClient"
+                disabled={isSubmitting}
+                maxLength={200}
                 type="text"
                 value={form.corporateClient}
                 onChange={(event) =>
@@ -187,11 +220,15 @@ export default function InquiryPage() {
           )}          <div className={styles.grid}>
             <div className={styles.field}>
               <label htmlFor="contactName">
-                Full name
-              </label>
+  {form.clientType === "corporate"
+    ? "Contact person name"
+    : "Full name"}
+</label>
 
               <input
                 id="contactName"
+                disabled={isSubmitting}
+                maxLength={200}
                 type="text"
                 value={form.contactName}
                 onChange={(event) =>
@@ -213,6 +250,8 @@ export default function InquiryPage() {
 
               <input
                 id="contactEmail"
+                disabled={isSubmitting}
+                maxLength={254}
                 type="email"
                 value={form.contactEmail}
                 onChange={(event) =>
@@ -223,7 +262,7 @@ export default function InquiryPage() {
                 }
                 placeholder="name@company.com"
                 autoComplete="email"
-                required
+                required={!form.contactPhone.trim()}
               />
             </div>
           </div>
@@ -235,6 +274,7 @@ export default function InquiryPage() {
 
             <input
               id="contactPhone"
+              disabled={isSubmitting}
               type="tel"
               value={form.contactPhone}
               onChange={(event) =>
@@ -245,106 +285,90 @@ export default function InquiryPage() {
               }
               placeholder="+8801XXXXXXXXX"
               autoComplete="tel"
+              required={!form.contactEmail.trim()}
+maxLength={16}
+pattern="\+[1-9][0-9]{7,14}"
             />
-          </div>          <div className={styles.grid}>
+          </div>
+                    <div className={styles.grid}>
             <div className={styles.field}>
-              <label htmlFor="origin">
-                Origin
-              </label>
-
+              <label htmlFor="origin">Origin</label>
               <input
                 id="origin"
+                disabled={isSubmitting}
                 type="text"
                 value={form.origin}
                 onChange={(event) =>
-                  updateField(
-                    "origin",
-                    event.target.value,
-                  )
+                  updateField("origin", event.target.value)
                 }
-                placeholder="DAC or Dhaka"
-                required
+                placeholder="DAC (optional)"
+                maxLength={3}
+                pattern="[A-Za-z]{3}"
               />
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="destination">
-                Destination
-              </label>
-
+              <label htmlFor="destination">Destination</label>
               <input
                 id="destination"
+                disabled={isSubmitting}
                 type="text"
                 value={form.destination}
                 onChange={(event) =>
-                  updateField(
-                    "destination",
-                    event.target.value,
-                  )
+                  updateField("destination", event.target.value)
                 }
-                placeholder="BKK or Bangkok"
-                required
+                placeholder="SIN (optional)"
+                maxLength={3}
+                pattern="[A-Za-z]{3}"
               />
             </div>
-          </div>
 
-          <div className={styles.grid}>
             <div className={styles.field}>
-              <label htmlFor="departureDate">
-                Departure date
-              </label>
-
+              <label htmlFor="departureDate">Departure date</label>
               <input
                 id="departureDate"
+                disabled={isSubmitting}
                 type="date"
                 value={form.departureDate}
                 onChange={(event) =>
-                  updateField(
-                    "departureDate",
-                    event.target.value,
-                  )
+                  updateField("departureDate", event.target.value)
                 }
-                required
               />
             </div>
 
             <div className={styles.field}>
-              <label htmlFor="returnDate">
-                Return date
-              </label>
-
+              <label htmlFor="returnDate">Return date</label>
               <input
                 id="returnDate"
+                disabled={isSubmitting}
                 type="date"
                 value={form.returnDate}
                 min={form.departureDate || undefined}
                 onChange={(event) =>
-                  updateField(
-                    "returnDate",
-                    event.target.value,
-                  )
+                  updateField("returnDate", event.target.value)
                 }
               />
             </div>
-          </div>          <div className={styles.grid}>
+          </div>
+          {form.serviceType === "flight_booking" && (
+            <div className={styles.grid}>
             <div className={styles.field}>
               <label htmlFor="passengerCount">
                 Number of passengers
               </label>
 
-              <input
+                            <input
                 id="passengerCount"
+                disabled={isSubmitting}
                 type="number"
                 min="1"
-                max="100"
+                max="999"
+                step="1"
                 value={form.passengerCount}
                 onChange={(event) =>
-                  updateField(
-                    "passengerCount",
-                    event.target.value,
-                  )
+                  updateField("passengerCount", event.target.value)
                 }
-                required
+                placeholder="Optional"
               />
             </div>
 
@@ -355,6 +379,7 @@ export default function InquiryPage() {
 
               <select
                 id="cabinClass"
+                disabled={isSubmitting}
                 value={form.cabinClass}
                 onChange={(event) =>
                   updateField(
@@ -363,6 +388,7 @@ export default function InquiryPage() {
                   )
                 }
               >
+                <option value="">Not selected</option>
                 <option value="economy">
                   Economy
                 </option>
@@ -381,6 +407,7 @@ export default function InquiryPage() {
               </select>
             </div>
           </div>
+          )}
 
           <div className={styles.field}>
             <label htmlFor="notes">
@@ -389,6 +416,8 @@ export default function InquiryPage() {
 
             <textarea
               id="notes"
+              disabled={isSubmitting}
+              maxLength={4000}
               rows={5}
               value={form.notes}
               onChange={(event) =>
