@@ -182,7 +182,7 @@ async function runTests() {
     );
 
     await expectStatus(
-      baseUrl, "valid authentication reaches disabled database client", body,
+      baseUrl, "valid authentication fails closed without intake configuration", body,
       signedHeaders(body), 503,
     );
 

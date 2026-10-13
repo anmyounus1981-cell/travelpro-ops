@@ -1,6 +1,6 @@
 import { createHmac, timingSafeEqual } from "node:crypto";
 import { NextResponse } from "next/server";
-
+import { checkWebhookInquiryRateLimit } from "@/lib/inquiry-rate-limit";
 import { createIntakeClient } from "@/lib/supabase/intake";
 
 export const runtime = "nodejs";
@@ -202,7 +202,35 @@ export async function POST(request: Request) {
     verifySignature(request, body, secret);
 
     const payload = parseWebhookPayload(body, accounts);
-    const db = createIntakeClient();
+
+if (
+  typeof payload.source !== "string" ||
+  typeof payload.provider !== "string" ||
+  typeof payload.providerAccountId !== "string"
+) {
+  throw new IntakeRequestError("Invalid source account.", 400);
+}
+
+const rateLimit = await checkWebhookInquiryRateLimit({
+  source: payload.source,
+  provider: payload.provider,
+  accountId: payload.providerAccountId,
+});
+
+if (!rateLimit.allowed) {
+  return NextResponse.json(
+    { error: "Too many inquiry requests. Try again later." },
+    {
+      status: 429,
+      headers: {
+        "Cache-Control": "no-store",
+        "Retry-After": String(rateLimit.retryAfterSeconds),
+      },
+    },
+  );
+}
+
+const db = createIntakeClient();
 
     const { data, error } = await db.rpc("submit_inquiry_intake", {
       p_payload: payload,
