@@ -469,3 +469,41 @@ Contact validation testing was paused for autocomplete implementation.
 Remaining validation, rate-limit, concurrency, cleanup, legacy-path
 reconciliation, atomic conversion, provider integration and production
 release tasks are unchanged. The milestone remains incomplete.
+
+## 14 October 2026 — Landing Browser Validation Checkpoint
+
+Verified Preview application: ee98bcc.
+Branch: feature/multi-channel-inquiry-ingestion.
+Production baseline remains main 2e23db2.
+Checks performed on 14 October; recorded after midnight on 15 October.
+
+- [x] Observe required-email focus when both contact methods are empty.
+- [x] Observe email-field focus for invalid-email input.
+- [x] Verify browser rejects phone without country code.
+- [x] Observe required-company focus for an empty Corporate company name.
+- [x] Verify browser rejects empty full name.
+- [x] Verify browser rejects return date before departure.
+- [x] Verify passenger count minimum of 1.
+- [x] Verify passenger count maximum of 999.
+- [x] Verify fractional passenger count is rejected.
+
+Evidence limits:
+- Invalid-email and missing-company checks recorded focus behaviour;
+  validation popup text was not captured.
+- No successful receipt was reported during invalid-input checks.
+- Network requests and database row counts were not inspected.
+- Browser checks do not prove server-side rejection when constraints
+  are bypassed.
+
+Still pending:
+- [ ] Direct Server Action validation and honeypot rejection tests.
+- [ ] Submission-lock, retry and ambiguous-response tests.
+- [ ] Landing contact/shared rate-limit integration tests.
+- [ ] Remaining airport accessibility, mobile and failure-recovery checks.
+- [ ] Concurrent first-submission tests and counter retention cleanup.
+- [ ] Legacy-path abuse-control reconciliation.
+- [ ] Reviewed atomic conversion and execution-level guard tests.
+- [ ] Real provider integration, documentation reconciliation and release.
+
+This records browser validation evidence only.
+The inquiry-ingestion milestone remains incomplete.

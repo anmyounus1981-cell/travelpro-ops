@@ -381,3 +381,43 @@ Contact validation testing was paused for this feature.
 The remaining inquiry-ingestion validation, rate-limit, concurrency,
 cleanup, legacy-path reconciliation, atomic conversion, provider
 integration and production release work remains pending.
+
+## 14 October 2026: Landing Browser Validation Checks
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Verified Preview application: ee98bcc.
+Latest pushed documentation checkpoint: 2ee6467.
+Production baseline remains main 2e23db2.
+
+Owner-guided browser checks:
+- Email and phone both empty: submission focused the required email field.
+- Email containing invalid-email: submission focused the email field;
+  no validation popup text was reported.
+- Phone without country code: browser displayed
+  "Please match the requested format."
+- Corporate company name empty: submission focused the company field;
+  no popup text was reported.
+- Full name empty: browser displayed "Please fill out this field".
+- Departure 2026-11-20 with return 2026-11-15: browser displayed
+  "Value must be 20/11/2026 or later."
+- Passenger count 0: browser required a value greater than or equal to 1.
+- Passenger count 1000: browser required a value less than or equal to 999.
+- Passenger count 1.5: browser rejected the value and identified
+  1 and 2 as the nearest valid values.
+- No successful receipt was reported during these invalid-input checks.
+
+Evidence limits:
+- These checks exercise normal browser constraint validation.
+- They do not prove Server Action or database rejection when browser
+  validation is bypassed.
+- Network requests and database row counts were not inspected for these checks.
+- Invalid-email and missing-company results are focus observations,
+  not captured validation-message assertions.
+
+Pending:
+- Direct Server Action validation and honeypot rejection tests.
+- Submission-lock, retry and ambiguous-response tests.
+- Landing contact/shared rate-limit integration tests.
+- Remaining airport accessibility, mobile and failure-recovery checks.
+- Concurrency, counter cleanup, legacy-path reconciliation,
+  reviewed atomic conversion, real provider integration and release work.
