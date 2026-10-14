@@ -421,3 +421,57 @@ Pending:
 - Remaining airport accessibility, mobile and failure-recovery checks.
 - Concurrency, counter cleanup, legacy-path reconciliation,
   reviewed atomic conversion, real provider integration and release work.
+
+## 15 October 2026: Local Landing Server Action Tests
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint: 7d229fd.
+Application implementation remains ee98bcc.
+Production baseline remains main 2e23db2.
+
+Test script: scripts/test-landing-inquiry-action.mjs.
+Syntax check and all local assertions passed.
+
+Test method:
+- Load and transpile the current app/inquire/actions.ts.
+- Execute the exported submitLandingInquiry function.
+- Replace rate-limit and intake-client dependencies with test doubles.
+- Reject unexpected imports and network access.
+- No real network requests or database writes.
+
+Verified rejection before rate-limit or intake calls:
+- Missing request ID; invalid client/service types; blank name.
+- Missing Corporate company; both contact methods missing.
+- Invalid email and phone without country code.
+- Filled honeypot, unknown protected field and file-valued input.
+- Duplicate contactName field and oversized name/notes.
+- Invalid airport code syntax and impossible calendar date.
+- Return without departure and return before departure.
+- Flight passenger counts 0, -1, 1.5 and 1000.
+- Invalid flight cabin.
+
+Verified payload construction:
+- Email-only and phone-only contacts omit absent contact properties.
+- Corporate company and contact person remain separate.
+- Individual payload omits stale company values.
+- Flight codes normalize to uppercase; passenger count becomes numeric.
+- Unknown flight details remain omitted without invented defaults.
+- Visa, Package and Consultation omit stale flight-only count/cabin fields.
+
+Verified response handling:
+- Mocked rate-limit denial and failure prevent intake RPC invocation.
+- Duplicate RPC receipt produces the already-received response.
+- Conflict, validation and infrastructure RPC codes produce safe failures.
+- Malformed receipts never report success.
+- Thrown RPC failure returns a safe failure response.
+
+Evidence limits:
+- Mocked duplicate receipt tests response handling, not database deduplication.
+- Mocked rate-limit results do not establish real counter enforcement.
+- These tests do not exercise Next.js HTTP transport, browser submission
+  locking, real retries, database authorization or transaction behaviour.
+- Airport syntax validation does not establish dataset membership.
+
+This supersedes pending local action-validation and honeypot unit checks.
+Real transport/integration tests, submission-lock and retry behaviour,
+Landing rate-limit integration and the remaining milestone work stay pending.

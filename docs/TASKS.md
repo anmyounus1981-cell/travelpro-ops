@@ -507,3 +507,39 @@ Still pending:
 
 This records browser validation evidence only.
 The inquiry-ingestion milestone remains incomplete.
+
+## 15 October 2026 — Local Landing Server Action Test Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Application implementation: ee98bcc.
+Production baseline remains main 2e23db2.
+
+- [x] Add scripts/test-landing-inquiry-action.mjs.
+- [x] Execute current exported action with mocked dependencies.
+- [x] Verify invalid inputs reject before rate-limit/intake calls.
+- [x] Verify honeypot, unknown fields, file inputs and duplicate-name rejection.
+- [x] Verify contact, Corporate company, date and flight-field validation.
+- [x] Verify optional-field omission and clean uppercase IATA payloads.
+- [x] Verify stale company/flight-only values are omitted where appropriate.
+- [x] Verify mocked rate denial/failure prevents intake RPC.
+- [x] Verify duplicate receipt response handling.
+- [x] Verify safe RPC errors and malformed-receipt rejection.
+- [x] Syntax check and all local test assertions passed.
+- [x] No network requests or real database writes during tests.
+
+These checks supersede pending local action-validation and honeypot unit
+tests only. Dependencies are mocked; database deduplication, real rate
+enforcement and Next.js HTTP transport are not established by this suite.
+
+Still pending:
+- [ ] Real transport/integration validation and honeypot rejection tests.
+- [ ] Browser submission-lock, retry and ambiguous-response tests.
+- [ ] Landing contact/shared rate-limit integration tests.
+- [ ] Concurrent first-submission tests.
+- [ ] Airport accessibility, mobile and failure-recovery verification.
+- [ ] Counter cleanup and legacy-path abuse-control reconciliation.
+- [ ] Reviewed atomic conversion and execution-level guard tests.
+- [ ] Real provider integration, documentation reconciliation and release.
+
+Airport code syntax checks do not validate membership in the local dataset.
+The milestone remains incomplete.
