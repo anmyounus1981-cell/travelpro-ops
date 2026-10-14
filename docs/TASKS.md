@@ -543,3 +543,39 @@ Still pending:
 
 Airport code syntax checks do not validate membership in the local dataset.
 The milestone remains incomplete.
+
+## 15 October 2026 — Dependency and Rate-Test Preparation Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before these changes: 7d71df6.
+Production baseline remains main 2e23db2.
+
+- [x] Add exact Playwright 1.64.1 development dependency.
+- [x] Apply compatible audit updates to Next.js/ESLint config 15.5.28.
+- [x] Apply scoped Next.js PostCSS override 8.5.28.
+- [x] Resolve invalid nested PostCSS installation through targeted update.
+- [x] TypeScript and production build after dependency changes.
+- [x] Local Landing Action and nine webhook regression checks.
+- [x] Diff formatting check.
+- [x] Production-only npm audit reports zero vulnerabilities.
+- [x] Record remaining full-audit findings without forced downgrade/upgrade.
+- [x] Record manual Landing email-limit attempt as INCONCLUSIVE.
+
+Outstanding:
+- [ ] Review development/build-tool exposure from the unpatched braces chain.
+- [ ] Resolve or formally document the remaining five high audit findings.
+- [ ] Review the pending unrs-resolver install-script warning.
+- [ ] Establish lint verification.
+- [ ] Verify updated dependency deployment on Preview.
+- [ ] Install Playwright browser and implement automated Landing rate test.
+- [ ] Verify email, phone and shared Landing rate ceilings.
+- [ ] Continue remaining retry, concurrency, airport, cleanup, legacy-path,
+      atomic conversion, provider integration and release work.
+
+Manual rate test used six distinct synthetic inquiries. The sixth response
+was reported after a fixed-window boundary; exact server timestamps were
+not inspected. It establishes neither rate-limit success nor failure.
+
+Production-only audit results are scoped dependency findings, not a complete
+security assessment. Dependency changes are locally verified; updated
+Preview compatibility remains pending.

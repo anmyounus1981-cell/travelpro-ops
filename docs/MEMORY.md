@@ -475,3 +475,60 @@ Evidence limits:
 This supersedes pending local action-validation and honeypot unit checks.
 Real transport/integration tests, submission-lock and retry behaviour,
 Landing rate-limit integration and the remaining milestone work stay pending.
+
+## 15 October 2026: Dependency and Landing Rate-Test Preparation
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint: 7d71df6.
+Verified airport Preview application remains ee98bcc.
+Production baseline remains main 2e23db2.
+
+Local dependency changes, not yet committed:
+- Add Playwright 1.64.1 as an exact development dependency.
+- Compatible audit updates installed Next.js and eslint-config-next 15.5.28.
+- Add scoped npm override: next -> postcss 8.5.28.
+- Targeted PostCSS update resolved the initially invalid nested dependency.
+- Installed Tailwind PostCSS dependency is 8.5.30.
+- package.json and package-lock.json changed.
+- No forced audit fix or Next.js major upgrade was performed.
+
+Validation after updates:
+- npm ci passed; clean installation reproduced the expected dependency versions.
+- TypeScript check passed.
+- Production build passed on Next.js 15.5.28.
+- Local Landing Server Action suite passed with mocked dependencies.
+- All nine local webhook regression checks passed without intake writes.
+- Diff formatting check passed.
+- npm audit --omit=dev reported zero vulnerabilities.
+- Full npm audit still reports five high findings in the
+  braces -> micromatch -> fast-glob -> Next ESLint dependency chain.
+- Advisory GHSA-vfj7-8cjw-p6xm lists no patched braces version.
+- Development/build-tool exposure assessment and remediation remain pending.
+- A clean production-only audit is not a complete application security audit.
+- Build configuration still skips linting.
+- Webpack cache serialization warnings did not fail the build.
+- npm reported a pending unrs-resolver install-script approval warning;
+  no blanket script approval was performed.
+
+Manual Landing email-limit test:
+- Synthetic email: landing-limit-20261015@example.invalid.
+- Six successful receipts were reported:
+  5726395c-6542-41ef-abd1-76f9e808b053
+  35e12e51-1737-4881-830f-5aca2ac20255
+  f8e055b8-eb04-4bb4-94b2-a601c1f80d29
+  34359478-c4d9-4b35-b68d-7e961f205d93
+  5c00fe48-c625-4b4c-930a-84f184204087
+  465e2f52-2cc2-4587-a386-2a65b275dcf6
+- The sixth response was reported after the 01:15 Asia/Dhaka boundary.
+- Exact server submission timestamps were not inspected.
+- Result is INCONCLUSIVE; do not record rate enforcement as passed or failed.
+- Submissions were distinct inquiries, not identical retries.
+- Automated Landing browser rate-limit testing remains to be implemented.
+- Playwright browser installation and test execution remain pending.
+
+Next work:
+- Commit dependency changes with their verification and unresolved findings.
+- Verify the updated Preview before recording deployment compatibility.
+- Implement bounded automated Landing contact-limit tests.
+- Preserve the remaining validation, retry, shared-ceiling, concurrency,
+  cleanup, atomic conversion, provider integration and release tasks.
