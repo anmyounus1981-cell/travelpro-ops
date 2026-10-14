@@ -426,3 +426,46 @@ Still pending:
 
 Flight conversion was not invoked. These checks do not establish service
 fulfilment, AI parsing, client matching or case conversion safety.
+
+## 14 October 2026 — Airport Autocomplete Checkpoint
+
+Verified Preview application: ee98bcc.
+Branch: feature/multi-channel-inquiry-ingestion.
+Production baseline remains main 2e23db2.
+
+- [x] Generate local OurAirports dataset with source/licence metadata.
+- [x] Verify 8798 unique IATA codes, dataset size and SHA-256.
+- [x] Preserve generated JSON LF endings through Git attributes.
+- [x] Add shared lazy dataset loader with runtime validation.
+- [x] Allow only the airport dataset path through application middleware.
+- [x] Integrate reusable Origin/Destination autocomplete.
+- [x] Preview verify Dhaka city and lowercase lhr code search.
+- [x] Verify BKK selection during Suvarnabhumi name search.
+- [x] Verify editing selected text clears the previous code.
+- [x] Verify Arrow Down/Enter selection and Escape dismissal.
+- [x] Verify unselected airport text blocks browser submission.
+- [x] Verify submitted fields and raw message contain DAC/BKK codes.
+- [x] Verify airport fields reset after successful submission.
+- [x] Verify no-results message.
+- [x] TypeScript, production build and staged formatting checks.
+
+Synthetic receipt: 03f4c765-fc4f-41f7-9784-24eacaa12803.
+Preview testing passed Vercel protection without TravelPro owner login.
+
+Airport follow-up:
+- [ ] Mobile layout, touch interaction and dropdown clipping tests.
+- [ ] Screen-reader and keyboard edge-case verification.
+- [ ] Dataset load failure, timeout and retry recovery tests.
+- [ ] Execution-level IME interaction test.
+- [ ] Representative minor-airport and multi-airport city coverage checks.
+- [ ] Decide and document server-side airport membership policy.
+
+Coverage is limited to IATA-coded large, medium and small airports in the
+source snapshot. Closed airports, heliports, seaplane bases and metropolitan
+codes are excluded. Source accuracy and complete worldwide coverage are
+not guaranteed. Lint verification is not established.
+
+Contact validation testing was paused for autocomplete implementation.
+Remaining validation, rate-limit, concurrency, cleanup, legacy-path
+reconciliation, atomic conversion, provider integration and production
+release tasks are unchanged. The milestone remains incomplete.

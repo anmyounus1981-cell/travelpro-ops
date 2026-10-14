@@ -321,3 +321,63 @@ concurrency, retry behaviour, client matching or case conversion safety.
 Validation, honeypot, submission-lock, retry, Landing rate-limit integration,
 cleanup, legacy-path reconciliation, atomic conversion, real provider
 integration and production release checks remain pending.
+
+## 14 October 2026: Airport Autocomplete Preview Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed application commit: ee98bcc.
+Preview: https://travelpro-m72fq46ad-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2; milestone release is pending.
+
+Implementation:
+- Reusable Origin/Destination airport autocomplete with Tailwind styling.
+- Local OurAirports dataset; no paid API or runtime third-party data request.
+- Source commit: a5a1ab8c3d9d57568c4bf9a7d398a23a60623830.
+- Dataset contains 8798 unique IATA-coded airports, 785604 bytes.
+- Includes large, medium and small airports with valid three-letter codes.
+- Excludes closed airports, heliports, seaplane bases and metropolitan codes.
+- Missing municipality remains empty; source accuracy is not guaranteed.
+- Source metadata records licence, source hashes and generated dataset hash.
+- Git attributes preserve LF endings for generated JSON files.
+- Dataset integrity checks passed for count, unique codes, size and SHA-256.
+- Shared lazy loader validates data and uses same-origin credentials.
+- Only /data/airports.json was added to the middleware public-route list.
+- Search supports city, airport name and IATA, with normalized matching.
+- Dropdown shows up to 12 ranked results.
+- Selection passes uppercase IATA to the existing form state.
+- Editing selected text clears the previous code.
+- Keyboard navigation, Escape handling and an IME guard are implemented.
+- Nonempty unselected airport text blocks normal browser form submission.
+- TypeScript, production build and staged diff checks passed.
+- Build skips linting; lint verification is not established.
+
+Owner-guided Preview evidence:
+- Test used Incognito without TravelPro owner login after Vercel protection.
+- Dhaka city search displayed Hazrat Shahjalal International Airport (DAC).
+- Lowercase lhr search displayed London Heathrow Airport (LHR).
+- Owner reported BKK selection during Suvarnabhumi airport-name search.
+- Editing selected BKK to London cleared the selected-code helper.
+- Arrow Down and Enter selected LHR.
+- Escape closed the dropdown.
+- Unselected airport text displayed:
+  Select an airport from the search results.
+- Synthetic consultation with selected DAC and BKK was accepted.
+- Receipt: 03f4c765-fc4f-41f7-9784-24eacaa12803.
+- Owner Inbox raw message and submitted fields contained DAC and BKK,
+  not airport display labels.
+- Submitted name, email and notes matched; omitted fields remained absent.
+- Origin and Destination reset after successful submission.
+- Unmatched query displayed the no-results message.
+
+Remaining airport verification:
+- Mobile layout, touch interaction and dropdown clipping.
+- Screen-reader behaviour and keyboard edge cases.
+- Dataset load failure, timeout and retry recovery.
+- IME interaction; adding a guard is not execution-level verification.
+- Representative minor-airport and multi-airport city coverage.
+- Client-side selection validation is not server-side dataset membership validation.
+
+Contact validation testing was paused for this feature.
+The remaining inquiry-ingestion validation, rate-limit, concurrency,
+cleanup, legacy-path reconciliation, atomic conversion, provider
+integration and production release work remains pending.
