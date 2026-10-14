@@ -356,3 +356,34 @@ allowlisting remains unexplained. Lint verification is not established.
 
 This checkpoint supersedes earlier pending form-wiring and basic anonymous
 submission/private-Inbox verification items. The full milestone remains incomplete.
+
+## 14 October 2026 — Phone-Only and Corporate Landing Checkpoint
+
+Verified Preview application: 4de5c1d.
+Branch: feature/multi-channel-inquiry-ingestion.
+Production baseline remains main 2e23db2.
+
+- [x] Submit phone-only Individual / Retail consultation without owner login.
+- [x] Verify submitted phone and omitted email in the owner Inbox.
+- [x] Submit Corporate consultation without owner login.
+- [x] Verify company and contact person as separate submitted fields.
+- [x] Verify Corporate label, LANDING_PAGE source, new status and pending parsing.
+- [x] Verify submitted email/notes and omitted travel fields.
+
+Receipts:
+- Phone-only: 4619567a-4cf1-4611-b853-be2475d5d061.
+- Corporate: dbe02455-c6cc-41a9-9f9b-44f5673f7ca8.
+
+This supersedes the earlier pending phone-only and Corporate consultation
+submission checks. Tests passed Vercel protection without TravelPro owner login.
+
+Still pending:
+- [ ] Flight, visa and package submission verification.
+- [ ] Execution-level validation, honeypot and submission-lock tests.
+- [ ] Retry and ambiguous-response behaviour tests.
+- [ ] Landing contact/shared rate-limit integration tests.
+- [ ] Remaining concurrency, cleanup, legacy-path reconciliation,
+      atomic conversion, provider integration and production release work.
+
+These checks do not establish client-account creation or matching,
+duplicate prevention, rate-limit enforcement, or atomic conversion.

@@ -230,3 +230,42 @@ Limitations and next work:
   reconciliation, atomic reviewed conversion and real provider integration
   remain pending.
 - Documentation reconciliation, final review and production release remain pending.
+
+## 14 October 2026: Phone-Only and Corporate Landing Tests
+
+Verified Preview application: 4de5c1d.
+Branch: feature/multi-channel-inquiry-ingestion.
+Previous documentation checkpoint: 667d900.
+Production baseline remains main 2e23db2.
+
+Owner-guided tests used the Incognito application session without
+TravelPro owner login, after passing Vercel Preview protection.
+
+Phone-only consultation:
+- Receipt: 4619567a-4cf1-4611-b853-be2475d5d061.
+- Name: SYNTHETIC PHONE ONLY TEST.
+- Fictional test phone: +12025550123.
+- Email omitted; Inbox displayed Not provided.
+- Submitted name, phone and notes matched.
+- Omitted travel fields displayed Not provided.
+- Client type displayed Individual / Retail; service displayed Consultation.
+- Parsing remained pending.
+
+Corporate consultation:
+- Receipt: dbe02455-c6cc-41a9-9f9b-44f5673f7ca8.
+- Source LANDING_PAGE and status new appeared in the owner Inbox.
+- Company: SYNTHETIC CORPORATE LANDING TEST.
+- Contact person: SYNTHETIC CORPORATE CONTACT.
+- Email: corporate-landing@example.invalid.
+- Submitted company, contact name, email and notes matched.
+- Phone and omitted travel fields displayed Not provided.
+- Client type displayed Corporate; service displayed Consultation.
+- Company name suggestion appeared; parsing remained pending.
+
+These results supersede the earlier pending phone-only and Corporate
+consultation submission checks. They do not establish flight, visa or
+package submission behaviour, client-account creation or matching,
+duplicate prevention, rate-limit enforcement, or atomic conversion.
+
+Execution-level validation, honeypot, submission-lock and retry tests
+remain pending, alongside the remaining milestone integration and release work.
