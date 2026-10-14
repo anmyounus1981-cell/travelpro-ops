@@ -313,3 +313,46 @@ The concurrency check covers retries of an existing synthetic inquiry.
 It does not establish concurrent first-submission or conversion safety.
 Earlier pending rate-limiter implementation items are superseded;
 remaining integration and release checks are listed above.
+
+## 14 October 2026 — Landing Form and Anonymous Verification Checkpoint
+
+Verified Preview application: 4de5c1d.
+Branch: feature/multi-channel-inquiry-ingestion.
+Production baseline remains main 2e23db2.
+
+- [x] Wire the Landing Page form to the rate-limited Server Action.
+- [x] Add four service choices and conditional Corporate / Individual fields.
+- [x] Keep unknown travel details optional and cabin unselected.
+- [x] Add honeypot, field-length limits and submission-time field disabling.
+- [x] Explicitly allow /inquire through application middleware.
+- [x] TypeScript, production build and diff checks for form changes.
+- [x] TypeScript and diff checks for the public-route change.
+- [x] Preview verify conditional client and service fields.
+- [x] Verify email-only consultation submission and owner Inbox display.
+- [x] Verify consultation conversion controls disabled on b496798.
+- [x] Fresh Incognito: form access without TravelPro owner login.
+- [x] Fresh Incognito: private Inbox requires owner authentication.
+- [x] Anonymous consultation accepted; receipt:
+      eaee21a8-5d83-4e24-a1bc-f5010a1da0cb.
+- [x] Verify submitted values, LANDING_PAGE source, new status and pending parsing.
+- [x] Verify private Inbox still requires authentication after submission.
+
+Remaining:
+- [ ] Phone-only and Corporate submission verification.
+- [ ] Execution-level form validation, honeypot and submission-lock tests.
+- [ ] Retry and ambiguous-response behaviour tests.
+- [ ] Landing contact-limit and shared-ceiling integration tests.
+- [ ] Concurrent first-submission tests.
+- [ ] Rate-counter retention cleanup.
+- [ ] Reconcile legacy API and direct anonymous insert abuse controls.
+- [ ] Atomic reviewed conversion and execution-level guard tests.
+- [ ] Real provider/n8n integration.
+- [ ] Documentation reconciliation, final review and production release.
+
+Anonymous verification passed Vercel Preview protection using Vercel login,
+without TravelPro owner authentication. It does not establish unrestricted
+public internet access. The earlier unexpected /inquire visibility before
+allowlisting remains unexplained. Lint verification is not established.
+
+This checkpoint supersedes earlier pending form-wiring and basic anonymous
+submission/private-Inbox verification items. The full milestone remains incomplete.

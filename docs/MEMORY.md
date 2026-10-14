@@ -176,3 +176,57 @@ Pending:
 - Atomic reviewed inquiry-to-case conversion and its tests.
 - Real n8n / Meta / WhatsApp integration.
 - Documentation reconciliation and production release.
+
+## 14 October 2026: Landing Form and Anonymous Preview Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed application commit: 4de5c1d.
+Preview deployment reported Ready.
+Production baseline remains main 2e23db2; this milestone is not merged.
+
+Implementation:
+- b496798: wire the Travel Inquiry form to the rate-limited Server Action.
+- Add four service choices and Corporate / Individual conditional fields.
+- Keep travel details and passenger count optional; cabin starts unselected.
+- Add a honeypot, field-length limits and submission-time field disabling.
+- 4de5c1d: explicitly allow /inquire in the middleware public-route list.
+- TypeScript, production build and diff checks passed for form changes.
+- TypeScript and diff checks passed for the public-route change.
+- Build configuration skips linting; lint verification is not established.
+
+Owner-guided Preview evidence:
+- Corporate selection shows Company name and Contact person name.
+- Individual selection hides Company name and shows Full name.
+- Consultation selection hides passenger-count and cabin fields.
+- Email-only consultation submission succeeded on b496798.
+- Receipt: 24386950-cbeb-4e07-b8ae-0270b0c9184b.
+- Submitted values appeared correctly in the owner Inbox.
+- Consultation client selector, ADT/CHD/INF and conversion button were disabled.
+
+Anonymous application verification on 4de5c1d:
+- Fresh Incognito session passed Vercel protection using Vercel login only.
+- No TravelPro owner login was performed in that session.
+- /inquire displayed the form.
+- /inbox required owner authentication before submission.
+- Anonymous email-only consultation submission succeeded.
+- Receipt: eaee21a8-5d83-4e24-a1bc-f5010a1da0cb.
+- Owner Inbox showed SYNTHETIC ANONYMOUS LANDING TEST with source
+  LANDING_PAGE, status new and parsing pending.
+- Submitted name, email and notes matched; omitted fields showed Not provided.
+- After submission, Incognito /inbox still redirected to
+  /login?error=authentication_required.
+- This verifies access without TravelPro authentication after passing
+  Vercel Preview protection, not unrestricted public internet access.
+
+Limitations and next work:
+- Before /inquire was explicitly allowlisted, the owner reported the form
+  visible in Incognito despite the committed middleware configuration.
+  The cause remains unresolved; do not record it as a diagnosed issue.
+- Phone-only and Corporate submissions remain unverified.
+- Form validation, honeypot rejection, submission lock and retry behaviour
+  need execution-level tests.
+- Landing contact/shared rate-limit tests remain pending.
+- Concurrent first-submission tests, counter cleanup, legacy intake-path
+  reconciliation, atomic reviewed conversion and real provider integration
+  remain pending.
+- Documentation reconciliation, final review and production release remain pending.
