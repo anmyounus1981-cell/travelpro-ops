@@ -7,7 +7,7 @@ import {
 } from "react";
 
 import { submitLandingInquiry } from "./actions";
-
+import AirportAutocomplete from "@/components/inquiries/AirportAutocomplete";
 import styles from "./page.module.css";
 
 type InquiryFormValues = {
@@ -291,37 +291,21 @@ pattern="\+[1-9][0-9]{7,14}"
             />
           </div>
                     <div className={styles.grid}>
-            <div className={styles.field}>
-              <label htmlFor="origin">Origin</label>
-              <input
-                id="origin"
-                disabled={isSubmitting}
-                type="text"
-                value={form.origin}
-                onChange={(event) =>
-                  updateField("origin", event.target.value)
-                }
-                placeholder="DAC (optional)"
-                maxLength={3}
-                pattern="[A-Za-z]{3}"
-              />
-            </div>
+                        <AirportAutocomplete
+              id="origin"
+              label="Origin"
+              value={form.origin}
+              onChange={(iata) => updateField("origin", iata)}
+              disabled={isSubmitting}
+            />
 
-            <div className={styles.field}>
-              <label htmlFor="destination">Destination</label>
-              <input
-                id="destination"
-                disabled={isSubmitting}
-                type="text"
-                value={form.destination}
-                onChange={(event) =>
-                  updateField("destination", event.target.value)
-                }
-                placeholder="SIN (optional)"
-                maxLength={3}
-                pattern="[A-Za-z]{3}"
-              />
-            </div>
+                        <AirportAutocomplete
+              id="destination"
+              label="Destination"
+              value={form.destination}
+              onChange={(iata) => updateField("destination", iata)}
+              disabled={isSubmitting}
+            />
 
             <div className={styles.field}>
               <label htmlFor="departureDate">Departure date</label>

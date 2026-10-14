@@ -1,0 +1,28 @@
+{
+  "schemaVersion": 1,
+  "source": "OurAirports",
+  "sourceRepository": "https://github.com/davidmegginson/ourairports-data",
+  "sourceCommit": "a5a1ab8c3d9d57568c4bf9a7d398a23a60623830",
+  "sourcePage": "https://ourairports.com/data/",
+  "licence": "Public Domain",
+  "generatedAt": "2026-10-14T09:51:47.676Z",
+  "airportCount": 8798,
+  "datasetBytes": 785604,
+  "datasetSha256": "77e2ab5520006992de1a7c74ad899ec6eb6244ff4e277d2a30e421ae41935e18",
+  "sourceSha256": {
+    "airportsCsv": "f219659218d1f27e7907c284b87778047b84102435d3483c7ee0ce6990b95e77",
+    "countriesCsv": "2a9dbee691125b0cdb8ceb5fe227c48c903f99c488963b8e53e2ab366521c639"
+  },
+  "includedTypes": [
+    "large_airport",
+    "medium_airport",
+    "small_airport"
+  ],
+  "limitations": [
+    "Includes only airport records with three-letter IATA codes.",
+    "Closed airports, heliports and seaplane bases are excluded.",
+    "Municipality may be empty.",
+    "Metropolitan area codes are not included.",
+    "Source data has no accuracy guarantee."
+  ]
+}
