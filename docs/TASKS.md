@@ -387,3 +387,42 @@ Still pending:
 
 These checks do not establish client-account creation or matching,
 duplicate prevention, rate-limit enforcement, or atomic conversion.
+
+## 14 October 2026 — Flight, Visa and Package Landing Checkpoint
+
+Verified Preview application: 4de5c1d.
+Branch: feature/multi-channel-inquiry-ingestion.
+Production baseline remains main 2e23db2.
+
+- [x] Submit Flight Booking without TravelPro owner login.
+- [x] Verify submitted DAC-SIN route, departure/return dates,
+      passenger count 2 and economy cabin in owner Inbox.
+- [x] Verify submitted flight values remain separate from AI suggestions.
+- [x] Submit Visa Support without TravelPro owner login.
+- [x] Verify Visa submitted fields and service label.
+- [x] Verify Visa client selector, ADT/CHD/INF and conversion button disabled.
+- [x] Submit Package without TravelPro owner login.
+- [x] Verify Package submitted fields and service label.
+- [x] Verify Package client selector, ADT/CHD/INF and conversion button disabled.
+- [x] Verify all three records display LANDING_PAGE, new and pending parsing.
+
+Receipts:
+- Flight: c6889f87-77e0-4dd1-b90e-9cdb36462f99.
+- Visa: 70609f04-43a5-4df5-b8ff-1b7b75b74cb3.
+- Package: d4ac5a70-c038-4cce-a01d-cbdcbc84e5e2.
+
+This supersedes earlier pending basic Flight, Visa and Package submission
+checks. Tests passed Vercel protection without TravelPro owner login.
+
+Still pending:
+- [ ] Execution-level validation, honeypot and submission-lock tests.
+- [ ] Retry and ambiguous-response behaviour tests.
+- [ ] Landing contact/shared rate-limit integration tests.
+- [ ] Concurrent first-submission tests.
+- [ ] Rate-counter retention cleanup.
+- [ ] Legacy API and anonymous insert abuse-control reconciliation.
+- [ ] Reviewed atomic conversion and execution-level guard tests.
+- [ ] Real provider integration, documentation reconciliation and production release.
+
+Flight conversion was not invoked. These checks do not establish service
+fulfilment, AI parsing, client matching or case conversion safety.

@@ -269,3 +269,55 @@ duplicate prevention, rate-limit enforcement, or atomic conversion.
 
 Execution-level validation, honeypot, submission-lock and retry tests
 remain pending, alongside the remaining milestone integration and release work.
+
+## 14 October 2026: Flight, Visa and Package Landing Tests
+
+Verified Preview application: 4de5c1d.
+Branch: feature/multi-channel-inquiry-ingestion.
+Previous documentation checkpoint: d8c146c.
+Production baseline remains main 2e23db2.
+
+Owner-guided submissions used Incognito without TravelPro owner login,
+after passing Vercel Preview protection. Results were inspected separately
+in the authenticated owner Inbox.
+
+Flight Booking:
+- Receipt: c6889f87-77e0-4dd1-b90e-9cdb36462f99.
+- Name: SYNTHETIC LANDING FLIGHT TEST.
+- Submitted route DAC to SIN matched.
+- Departure 2026-11-15 and return 2026-11-20 matched.
+- Passenger count 2 and cabin economy matched.
+- Submitted name, email and notes matched; phone was omitted.
+- Source LANDING_PAGE, status new and parsing pending were displayed.
+- Submitted travel values remained separate from empty AI suggestions.
+- Convert to Active Case was displayed but was not invoked.
+- Flight-to-case conversion remains unverified and requires reviewed,
+  atomic conversion work.
+
+Visa Support:
+- Receipt: 70609f04-43a5-4df5-b8ff-1b7b75b74cb3.
+- Name: SYNTHETIC LANDING VISA TEST.
+- Submitted name, email and notes matched.
+- Omitted phone and travel fields displayed Not provided.
+- Source LANDING_PAGE, service Visa Support, status new and parsing
+  pending were displayed.
+- Owner verified client selector, ADT/CHD/INF fields and conversion
+  button disabled.
+
+Package:
+- Receipt: d4ac5a70-c038-4cce-a01d-cbdcbc84e5e2.
+- Name: SYNTHETIC LANDING PACKAGE TEST.
+- Submitted name, email and notes matched.
+- Omitted phone and travel fields displayed Not provided.
+- Source LANDING_PAGE, service Package, status new and parsing
+  pending were displayed.
+- Owner verified client selector, ADT/CHD/INF fields and conversion
+  button disabled.
+
+This supersedes earlier pending basic Flight, Visa and Package submission
+checks. It does not establish service fulfilment, AI parsing, first-submit
+concurrency, retry behaviour, client matching or case conversion safety.
+
+Validation, honeypot, submission-lock, retry, Landing rate-limit integration,
+cleanup, legacy-path reconciliation, atomic conversion, real provider
+integration and production release checks remain pending.
