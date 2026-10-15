@@ -780,3 +780,41 @@ Conclusion and limits:
 - Shared ceiling, identical retries, concurrency and timeout reliability
   investigation remain pending.
 - Remaining milestone and production release work is unchanged.
+
+## 15 October 2026: Isolated Shared-Ceiling Database Test
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: b72e56e.
+Production baseline remains main 2e23db2.
+
+Test file:
+supabase/tests/inquiry-intake/shared-ceiling-rollback-checks.sql.
+
+Method:
+- Call the installed consume_inquiry_rate_limit function as service_role.
+- Use random isolated test buckets, not the application's real global bucket.
+- Run inside BEGIN/ROLLBACK with statement and lock timeouts.
+- No schema recreation and no inquiry submissions.
+
+Verified:
+- First 100 requests allowed with correct remaining counts.
+- Attempts 101 and 102 denied with retry delays between 1 and 900 seconds.
+- Allowed requests return zero retry delay.
+- Stored request_count saturates at 101.
+- A different bucket retains its independent allowance.
+- Separate read-only query confirmed both test buckets absent after rollback:
+  remaining_test_buckets = 0.
+
+Result:
+PASS: 100 allowed, subsequent requests denied, counter saturation and
+bucket isolation. Rollback independently verified.
+
+Evidence limits:
+- This verifies the installed database counter's 100-request boundary.
+- It does not establish that all Landing requests use the same application
+  global bucket or that global denial prevents contact/intake calls.
+- Application shared-bucket wiring tests remain pending.
+- This sequential test does not establish concurrent-request behaviour.
+- Real shared quota was not deliberately exhausted.
+- Remaining retry, timeout, airport, dependency, cleanup, legacy-path,
+  atomic conversion, provider integration and release work stays pending.

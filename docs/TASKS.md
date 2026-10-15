@@ -773,3 +773,37 @@ Still pending:
 
 An earlier run stopped before submissions due to insufficient window time.
 The milestone remains incomplete.
+
+## 15 October 2026 — Isolated Shared-Ceiling Database Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: b72e56e.
+Production baseline remains main 2e23db2.
+
+Test:
+supabase/tests/inquiry-intake/shared-ceiling-rollback-checks.sql.
+
+- [x] Test the installed rate-limit function using isolated random buckets.
+- [x] Verify first 100 requests allowed with correct remaining counts.
+- [x] Verify attempts 101 and 102 denied with valid retry delays.
+- [x] Verify allowed requests return zero retry delay.
+- [x] Verify stored counter saturates at 101.
+- [x] Verify a different bucket retains independent allowance.
+- [x] Roll back test changes.
+- [x] Independently verify remaining_test_buckets = 0.
+
+These checks establish the database counter boundary only.
+The real application global bucket was not deliberately exhausted.
+No schema recreation or inquiry submissions were performed.
+
+Still pending:
+- [ ] Verify application shared-bucket identity and parameter wiring.
+- [ ] Verify global denial prevents contact-counter and intake calls.
+- [ ] Shared-ceiling end-to-end verification in an isolated environment.
+- [ ] Retry, ambiguous-response and concurrency verification.
+- [ ] Investigate the earlier submission-response timeout.
+- [ ] Remaining airport, dependency, cleanup and legacy-path checks.
+- [ ] Reviewed atomic conversion, provider integration and production release.
+
+This sequential rollback test does not establish concurrency safety.
+The inquiry-ingestion milestone remains incomplete.
