@@ -599,3 +599,48 @@ Conclusion and limits:
   investigation remains open.
 - Remaining airport, dependency, cleanup, legacy-path, atomic conversion,
   provider integration and production release tasks remain pending.
+
+## 15 October 2026: Landing Phone Rate-Limit Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 1a902dd.
+Tested Preview application: dec2cef.
+Production baseline remains main 2e23db2.
+
+Script changes:
+- Add email/phone mode to scripts/test-preview-landing-rate-limit.mjs.
+- Email mode retains a unique synthetic email.
+- Phone mode omits email and uses fictional number +12025550124.
+- Syntax and diff formatting checks passed.
+- Reusing the fixed phone within the same window may consume an existing quota;
+  do not automatically rerun expecting five new acceptances.
+
+Automated phone-mode result:
+- Fresh browser required owner authentication for private Inbox.
+- Public form loaded without TravelPro owner login after Vercel bypass.
+- Five distinct submissions accepted:
+  90b97467-953a-4054-b4a7-69c150641207
+  48e16054-ba1d-422c-b947-006fba75532a
+  aa11988e-69c2-4aaf-a8fa-76c3a7b7fc12
+  24176cfb-e48a-4744-8367-26e709dc8223
+  2ce803e7-1e8d-45f4-916c-9b751af25ba8
+- Sixth submission rate-limited with displayed retry delay of 702 seconds.
+- Client-observed fixed-window checks passed.
+- Private Inbox remained protected after submissions.
+
+Read-only database verification:
+- Matching Landing inquiries for +12025550124: 5.
+- First created_at: 2026-10-15 14:18:06.51805+00.
+- Last created_at: 2026-10-15 14:18:16.012159+00.
+- Distinct 15-minute creation windows: 1.
+- Inquiries without email: 5.
+- New inquiries with no matched client or converted case: 5.
+
+Conclusion:
+- Phone-only contact ceiling integration passed.
+- This supersedes the earlier pending phone-limit integration check.
+- Shared ceiling, email normalization, combined contacts, retries and
+  concurrency remain unverified by this test.
+- Earlier first-submission timeout remains unexplained; this successful
+  phone run does not establish full harness reliability.
+- Remaining milestone and production release work is unchanged.

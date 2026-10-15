@@ -622,3 +622,40 @@ Still pending:
 - [ ] Reviewed atomic conversion, real provider integration and release.
 
 The milestone remains incomplete.
+
+## 15 October 2026 — Landing Phone Limit Checkpoint
+
+Tested Preview application: dec2cef.
+Branch: feature/multi-channel-inquiry-ingestion.
+Production baseline remains main 2e23db2.
+
+- [x] Add email/phone modes to the existing Landing browser test.
+- [x] Verify script syntax and diff formatting.
+- [x] Submit phone-only inquiries without TravelPro owner login.
+- [x] Verify five accepted submissions and sixth rate-limited.
+- [x] Validate displayed retry delay: 702 seconds.
+- [x] Verify private Inbox protection before and after submissions.
+- [x] Verify exactly five matching database inquiries.
+- [x] Verify all creation timestamps fall in one fixed window.
+- [x] Verify all five omit email and remain new/unlinked.
+
+Database evidence for fictional phone +12025550124:
+- First creation: 2026-10-15 14:18:06.51805+00.
+- Last creation: 2026-10-15 14:18:16.012159+00.
+- Matching inquiries: 5; distinct creation windows: 1.
+- Without email: 5; new and unlinked: 5.
+
+This supersedes the pending phone-only rate-limit integration check.
+The fixed test phone can retain consumed quota within its current window.
+Do not automatically rerun expecting five new acceptances.
+
+Still pending:
+- [ ] Email normalization and combined-contact limit tests.
+- [ ] Shared Landing ceiling integration test.
+- [ ] Retry, ambiguous-response and concurrent-request tests.
+- [ ] Investigate the earlier submission-response timeout.
+- [ ] Remaining airport, dependency, cleanup and legacy-path checks.
+- [ ] Reviewed atomic conversion, provider integration and production release.
+
+This test used distinct submissions and does not establish retry
+deduplication or complete harness reliability. The milestone remains incomplete.

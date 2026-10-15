@@ -11,6 +11,11 @@ const MAX_SUBMISSIONS = 6;
 const TEST_NAME = "SYNTHETIC AUTOMATED LANDING LIMIT TEST";
 
 function loadConfig() {
+    const mode = process.argv[2] ?? "email";
+
+  if (!["email", "phone"].includes(mode)) {
+    throw new Error("Test mode must be email or phone.");
+  }
   const bypass = process.env.TRAVELPRO_PREVIEW_BYPASS?.trim();
 
   if (!bypass) {
@@ -35,10 +40,15 @@ function loadConfig() {
     );
   }
 
-  return {
+    return {
     origin: preview.origin,
     bypass,
-    email: `landing-limit-${randomUUID()}@example.invalid`,
+    mode,
+    email:
+      mode === "email"
+        ? `landing-limit-${randomUUID()}@example.invalid`
+        : "",
+    phone: mode === "phone" ? "+12025550124" : "",
   };
 }
 
@@ -174,7 +184,12 @@ async function runTests() {
     const startedAt = Date.now();
     const receipts = [];
 
-    console.log(`Synthetic email: ${config.email}`);
+        console.log(`Test mode: ${config.mode}`);
+    console.log(
+      `Synthetic contact: ${
+        config.mode === "email" ? config.email : config.phone
+      }`,
+    );
     console.log("Submitting at most six distinct synthetic inquiries.");
 
         for (let attempt = 1; attempt <= MAX_SUBMISSIONS; attempt += 1) {
@@ -190,7 +205,7 @@ async function runTests() {
       await page.locator("#serviceType").selectOption("consultation");
       await page.locator("#contactName").fill(TEST_NAME);
       await page.locator("#contactEmail").fill(config.email);
-      await page.locator("#contactPhone").fill("");
+      await page.locator("#contactPhone").fill(config.phone);
       await page.locator("#origin").fill("");
       await page.locator("#destination").fill("");
       await page.locator("#departureDate").fill("");
