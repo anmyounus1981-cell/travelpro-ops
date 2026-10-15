@@ -807,3 +807,41 @@ Still pending:
 
 This sequential rollback test does not establish concurrency safety.
 The inquiry-ingestion milestone remains incomplete.
+
+## 16 October 2026 — Local Rate-Limit Helper Wiring Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 2c23191.
+Production baseline remains main 2e23db2.
+
+- [x] Add scripts/test-inquiry-rate-limit-helper.mjs.
+- [x] Execute the current helper with a test secret and mocked RPC.
+- [x] Verify shared Landing global bucket identity and 100/900 parameters.
+- [x] Verify five-request contact limits and normalized email bucket identity.
+- [x] Verify separate email/phone buckets and minimum remaining allowance.
+- [x] Verify global denial skips contact-counter calls.
+- [x] Verify email denial skips the subsequent phone-counter call.
+- [x] Verify phone denial propagates.
+- [x] Verify final allowed global slot with zero remaining.
+- [x] Verify webhook parameters and scope isolation.
+- [x] Verify missing contact/secret and tested RPC failures fail closed.
+- [x] Verify tested malformed-response rejection and safe error-code logging.
+- [x] Syntax, local assertions and staged formatting checks passed.
+- [x] No network requests or real quota changes.
+
+This supersedes pending local shared-bucket identity/parameter wiring
+and global-denial contact-call checks. Existing Landing Action tests
+separately cover mocked rate denial preventing intake RPC.
+
+RPC is mocked. Database boundary tests and local helper tests do not
+together establish a real shared-ceiling end-to-end result.
+
+Still pending:
+- [ ] Isolated shared-ceiling end-to-end/global-denial verification.
+- [ ] Browser submission-lock, retry and ambiguous-response tests.
+- [ ] Concurrent first-submission verification.
+- [ ] Investigate the earlier submission-response timeout.
+- [ ] Remaining airport, dependency, cleanup and legacy-path checks.
+- [ ] Reviewed atomic conversion, provider integration and production release.
+
+The inquiry-ingestion milestone remains incomplete.

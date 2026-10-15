@@ -818,3 +818,55 @@ Evidence limits:
 - Real shared quota was not deliberately exhausted.
 - Remaining retry, timeout, airport, dependency, cleanup, legacy-path,
   atomic conversion, provider integration and release work stays pending.
+
+## 16 October 2026: Local Rate-Limit Helper Wiring Tests
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 2c23191.
+Production baseline remains main 2e23db2.
+
+Test script: scripts/test-inquiry-rate-limit-helper.mjs.
+Syntax check and all local assertions passed.
+
+Method:
+- Transpile and execute the current lib/inquiry-rate-limit.ts.
+- Use a test-only HMAC secret and mocked intake-client RPC.
+- Reject unexpected dependencies and network access.
+- No real database writes, inquiry submissions or quota consumption.
+
+Landing wiring verified:
+- Global bucket uses landing_page/global/all with limit 100 per 900 seconds.
+- Different contacts share the same Landing global bucket key.
+- Email case and surrounding whitespace normalize to one contact bucket.
+- Phone surrounding whitespace is trimmed.
+- Contact limits use five requests per 900 seconds.
+- Combined email/phone contacts use separate buckets.
+- Successful result returns the minimum remaining allowance.
+- Global denial skips both contact-counter calls.
+- Final allowed global slot remains allowed with zero remaining.
+- Email denial skips the subsequent phone-counter call.
+- Phone denial propagates after allowed global/email checks.
+- Missing contacts reject before counter RPC.
+
+Additional checks:
+- Webhook uses separate scope with global 500/60 and account 60/60 limits.
+- Webhook global denial skips account-counter call.
+- Invalid webhook source rejects before counter RPC.
+- Missing/short secret fails before counter RPC.
+- RPC errors and thrown failures stop subsequent contact checks.
+- RPC error logging exposes only the error code in the tested case.
+- Tested malformed responses fail closed.
+- Contact remaining counts are validated against the contact ceiling.
+
+Evidence limits:
+- RPC is mocked; this suite proves helper wiring and tested response handling.
+- Earlier isolated SQL tests independently verify database counter behaviour.
+- Together these are not isolated shared-ceiling end-to-end verification.
+- Existing Landing Action tests separately verify mocked rate denial prevents
+  intake RPC; no combined real transport/global-denial test was performed.
+- Concurrent behaviour, real quota enforcement and browser retries are not
+  established by this suite.
+
+This supersedes pending local shared-bucket identity/parameter wiring
+and global-denial contact-call checks.
+Isolated end-to-end, retry, concurrency and remaining milestone work stay pending.
