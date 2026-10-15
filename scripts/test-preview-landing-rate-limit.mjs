@@ -13,8 +13,8 @@ const TEST_NAME = "SYNTHETIC AUTOMATED LANDING LIMIT TEST";
 function loadConfig() {
     const mode = process.argv[2] ?? "email";
 
-  if (!["email", "phone"].includes(mode)) {
-    throw new Error("Test mode must be email or phone.");
+    if (!["email", "phone", "combined"].includes(mode)) {
+    throw new Error("Test mode must be email, phone or combined.");
   }
   const bypass = process.env.TRAVELPRO_PREVIEW_BYPASS?.trim();
 
@@ -48,7 +48,12 @@ function loadConfig() {
       mode === "email"
         ? `landing-limit-${randomUUID()}@example.invalid`
         : "",
-    phone: mode === "phone" ? "+12025550124" : "",
+        phone:
+      mode === "phone"
+        ? "+12025550124"
+        : mode === "combined"
+          ? "+12025550125"
+          : "",
   };
 }
 
@@ -204,7 +209,12 @@ async function runTests() {
       await page.locator("#clientType").selectOption("individual");
       await page.locator("#serviceType").selectOption("consultation");
       await page.locator("#contactName").fill(TEST_NAME);
-      await page.locator("#contactEmail").fill(config.email);
+            const attemptEmail =
+        config.mode === "combined"
+          ? `landing-combined-${randomUUID()}@example.invalid`
+          : config.email;
+
+      await page.locator("#contactEmail").fill(attemptEmail);
       await page.locator("#contactPhone").fill(config.phone);
       await page.locator("#origin").fill("");
       await page.locator("#destination").fill("");

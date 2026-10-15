@@ -644,3 +644,47 @@ Conclusion:
 - Earlier first-submission timeout remains unexplained; this successful
   phone run does not establish full harness reliability.
 - Remaining milestone and production release work is unchanged.
+
+## 15 October 2026: Combined-Contact Phone Ceiling Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 9525fb1.
+Tested Preview application: dec2cef.
+Production baseline remains main 2e23db2.
+
+Script:
+- Add combined mode to scripts/test-preview-landing-rate-limit.mjs.
+- Use a new synthetic email for every attempt.
+- Keep fictional phone +12025550125 constant.
+- Syntax and diff formatting checks passed.
+
+Automated result:
+- Fresh browser had no TravelPro owner authentication.
+- Private Inbox required owner login before and after submissions.
+- Public form was accessible after Vercel protection bypass.
+- Five distinct inquiries accepted:
+  0dec5957-1948-46e3-8f1e-6851f44203e2
+  b2bc1889-f99f-4811-9ef3-6aee451d4f21
+  ac13374b-d8f2-4898-8116-4dade0d7ffe4
+  5e3a6e53-8414-4db3-8cc8-fc5ccd673679
+  ec035732-6dff-4bde-bfe6-d1818f883275
+- Sixth attempt rate-limited with displayed retry delay of 814 seconds.
+- Client-observed window checks passed.
+
+Read-only database verification:
+- Matching Landing inquiries for +12025550125: 5.
+- Distinct submitted emails: 5.
+- First created_at: 2026-10-15 15:31:11.139128+00.
+- Last created_at: 2026-10-15 15:31:23.834289+00.
+- Distinct 15-minute creation windows: 1.
+- New inquiries with no matched client or converted case: 5.
+
+Conclusion and limits:
+- Changing email did not bypass the fixed phone ceiling in this test.
+- This covers one direction of combined-contact enforcement.
+- Keeping email constant while changing phone remains untested.
+- Email normalization variants and shared ceiling remain pending.
+- This does not establish identical-retry deduplication or concurrency safety.
+- Fixed test phone may retain quota until its window expires.
+- Earlier first-submission timeout investigation remains open.
+- Remaining milestone and production release work is unchanged.

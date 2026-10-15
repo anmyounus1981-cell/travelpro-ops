@@ -659,3 +659,41 @@ Still pending:
 
 This test used distinct submissions and does not establish retry
 deduplication or complete harness reliability. The milestone remains incomplete.
+
+## 15 October 2026 — Combined-Contact Phone Ceiling Checkpoint
+
+Tested Preview application: dec2cef.
+Branch: feature/multi-channel-inquiry-ingestion.
+Production baseline remains main 2e23db2.
+
+- [x] Add combined mode to the Landing browser test.
+- [x] Use a different synthetic email for each attempt with one fixed phone.
+- [x] Verify five accepted inquiries and sixth rate-limited.
+- [x] Validate displayed retry delay: 814 seconds.
+- [x] Verify private Inbox protection before and after submissions.
+- [x] Verify exactly five matching database inquiries.
+- [x] Verify five distinct emails and one fixed creation window.
+- [x] Verify all five inquiries remain new and unlinked.
+- [x] Script syntax and diff formatting checks.
+
+Database evidence for fictional phone +12025550125:
+- First creation: 2026-10-15 15:31:11.139128+00.
+- Last creation: 2026-10-15 15:31:23.834289+00.
+- Matching inquiries: 5; distinct emails: 5.
+- Distinct creation windows: 1; new and unlinked: 5.
+
+Changing email did not bypass the phone ceiling in this test.
+This completes only one direction of combined-contact verification.
+
+Still pending:
+- [ ] Fixed email with changing phone integration test.
+- [ ] Email normalization variant tests.
+- [ ] Shared Landing ceiling integration test.
+- [ ] Retry, ambiguous-response and concurrency verification.
+- [ ] Investigate the earlier submission-response timeout.
+- [ ] Remaining airport, dependency, cleanup and legacy-path checks.
+- [ ] Reviewed atomic conversion, provider integration and production release.
+
+Do not automatically rerun with the fixed phone while its quota is consumed.
+These distinct-submission tests do not establish retry deduplication.
+The milestone remains incomplete.
