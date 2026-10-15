@@ -735,3 +735,41 @@ Still pending:
 
 These tests do not establish retry deduplication, concurrency safety or
 protection against changing both contacts. The milestone remains incomplete.
+
+## 15 October 2026 — Email Case-Normalization Limit Checkpoint
+
+Tested Preview application: dec2cef.
+Branch: feature/multi-channel-inquiry-ingestion.
+Production baseline remains main 2e23db2.
+
+- [x] Add normalize mode to the Landing browser test.
+- [x] Alternate lowercase/uppercase variants of one synthetic email.
+- [x] Omit phone to isolate email-ceiling behaviour.
+- [x] Verify five accepted inquiries and sixth rate-limited.
+- [x] Validate displayed retry delay: 801 seconds.
+- [x] Verify private Inbox protection before and after submissions.
+- [x] Verify exactly five matching database inquiries.
+- [x] Verify two stored casing variants represent one lowercased identity.
+- [x] Verify one creation window and five new/unlinked inquiries.
+- [x] Script syntax and diff formatting checks.
+
+Database evidence:
+- First creation: 2026-10-15 16:16:27.827703+00.
+- Last creation: 2026-10-15 16:16:37.919046+00.
+- Matching inquiries: 5; stored email variants: 2.
+- Lowercased identities: 1; creation windows: 1.
+- New and unlinked: 5.
+
+This completes the email letter-case rate-limit integration check.
+It does not establish canonical email storage or client deduplication.
+Whitespace and provider-specific alias normalization were not tested.
+
+Still pending:
+- [ ] Shared Landing ceiling integration test.
+- [ ] Retry, ambiguous-response and concurrent-request verification.
+- [ ] Investigate the earlier submission-response timeout.
+- [ ] Remaining airport, dependency, cleanup and legacy-path checks.
+- [ ] Reviewed atomic conversion, provider integration and production release.
+
+An earlier run stopped before submissions due to insufficient window time.
+The milestone remains incomplete.

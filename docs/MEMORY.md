@@ -734,3 +734,49 @@ Conclusion and limits:
   deduplication, concurrency safety or protection against changing both contacts.
 - Earlier submission-response timeout investigation remains open.
 - Remaining milestone and production release work is unchanged.
+
+## 15 October 2026: Email Case-Normalization Limit Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 797f4eb.
+Tested Preview application: dec2cef.
+Production baseline remains main 2e23db2.
+
+Script:
+- Add normalize mode to scripts/test-preview-landing-rate-limit.mjs.
+- Generate one synthetic email and alternate lowercase/uppercase variants.
+- Omit phone so this test isolates the email ceiling.
+- Syntax and diff formatting checks passed.
+- An earlier attempt stopped before submissions because insufficient
+  fixed-window time remained.
+
+Successful automated result:
+- Five distinct inquiries accepted:
+  c3548efa-762f-4646-84d3-00a29cdd7da3
+  99435b45-09fb-4b69-bf85-e10b84523219
+  7d45271c-7ca9-494c-a06c-d4111541e997
+  f5b581e2-9da7-4303-b680-c6d22b5f5618
+  b0e8e22b-09c0-4bbb-950e-150e2422936e
+- Sixth attempt rate-limited with displayed retry delay of 801 seconds.
+- Client-observed fixed-window checks passed.
+- Private Inbox required owner authentication before and after intake.
+
+Read-only database verification:
+- Lowercase test identity:
+  landing-limit-dd5990ed-5e49-4c77-b9ee-ec9a4d8d5372@example.invalid.
+- Matching Landing inquiries: 5.
+- Distinct stored email variants: 2.
+- Distinct lowercased email identities: 1.
+- First created_at: 2026-10-15 16:16:27.827703+00.
+- Last created_at: 2026-10-15 16:16:37.919046+00.
+- Distinct 15-minute creation windows: 1.
+- New inquiries with no matched client or converted case: 5.
+
+Conclusion and limits:
+- Changing email letter case did not bypass the email rate ceiling.
+- Stored contact emails retained two casing variants; this test does not
+  establish canonical email storage or client-account deduplication.
+- Whitespace and provider-specific alias normalization were not tested.
+- Shared ceiling, identical retries, concurrency and timeout reliability
+  investigation remain pending.
+- Remaining milestone and production release work is unchanged.

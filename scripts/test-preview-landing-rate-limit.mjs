@@ -13,8 +13,12 @@ const TEST_NAME = "SYNTHETIC AUTOMATED LANDING LIMIT TEST";
 function loadConfig() {
     const mode = process.argv[2] ?? "email";
 
-      if (!["email", "phone", "combined", "reverse"].includes(mode)) {
-    throw new Error("Test mode must be email, phone, combined or reverse.");
+  if (
+    !["email", "phone", "combined", "reverse", "normalize"].includes(mode)
+  ) {
+    throw new Error(
+      "Test mode must be email, phone, combined, reverse or normalize.",
+    );
   }
   const bypass = process.env.TRAVELPRO_PREVIEW_BYPASS?.trim();
 
@@ -45,7 +49,7 @@ function loadConfig() {
     bypass,
     mode,
         email:
-      mode === "email" || mode === "reverse"
+      ["email", "reverse", "normalize"].includes(mode)
         ? `landing-limit-${randomUUID()}@example.invalid`
         : "",
         phone:
@@ -192,7 +196,7 @@ async function runTests() {
         console.log(`Test mode: ${config.mode}`);
     console.log(
       `Synthetic contact: ${
-        config.mode === "email" || config.mode === "reverse"
+        ["email", "reverse", "normalize"].includes(config.mode)
   ? config.email
   : config.phone
       }`,
@@ -211,10 +215,14 @@ async function runTests() {
       await page.locator("#clientType").selectOption("individual");
       await page.locator("#serviceType").selectOption("consultation");
       await page.locator("#contactName").fill(TEST_NAME);
-            const attemptEmail =
+                  const attemptEmail =
         config.mode === "combined"
           ? `landing-combined-${randomUUID()}@example.invalid`
-          : config.email;
+          : config.mode === "normalize"
+            ? attempt % 2 === 0
+              ? config.email.toUpperCase()
+              : config.email.toLowerCase()
+            : config.email;
 
       await page.locator("#contactEmail").fill(attemptEmail);
             const attemptPhone =
