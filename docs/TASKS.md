@@ -579,3 +579,46 @@ not inspected. It establishes neither rate-limit success nor failure.
 Production-only audit results are scoped dependency findings, not a complete
 security assessment. Dependency changes are locally verified; updated
 Preview compatibility remains pending.
+
+## 15 October 2026 — Automated Landing Email Limit Checkpoint
+
+Tested Preview application: dec2cef.
+Branch: feature/multi-channel-inquiry-ingestion.
+Production baseline remains main 2e23db2.
+
+- [x] Add bounded Playwright Landing email-limit test script.
+- [x] Establish Vercel bypass cookie without TravelPro owner login.
+- [x] Verify private Inbox protection before and after submissions.
+- [x] Submit five distinct inquiries with one unique synthetic email.
+- [x] Verify sixth submission is rate-limited.
+- [x] Validate displayed retry delay: 398 seconds.
+- [x] Verify database contains exactly five matching inquiries.
+- [x] Verify all five creation timestamps fall in one fixed window.
+- [x] Verify all five remain new with no matched client or converted case.
+- [x] Script syntax and staged formatting checks.
+
+Database evidence:
+- First creation: 2026-10-15 13:53:12.441946+00.
+- Last creation: 2026-10-15 13:53:20.767623+00.
+- Matching inquiries: 5; distinct creation windows: 1.
+- New, unlinked inquiries: 5.
+
+Script: scripts/test-preview-landing-rate-limit.mjs.
+One successful run after bypass-cookie setup and diagnostic additions.
+Earlier first-submission response timeout remains unexplained.
+
+This supersedes the earlier inconclusive manual email-limit test as
+successful integration evidence. It does not establish identical-retry
+behaviour, concurrent submissions, phone limits or shared ceilings.
+Retry delay was verified in the action message, not an HTTP header.
+
+Still pending:
+- [ ] Investigate initial submission-response timeout and harness reliability.
+- [ ] Phone contact-limit integration tests.
+- [ ] Email normalization and combined-contact limit tests.
+- [ ] Shared Landing ceiling integration tests.
+- [ ] Retry, ambiguous-response and concurrency verification.
+- [ ] Remaining airport, dependency, cleanup and legacy-path checks.
+- [ ] Reviewed atomic conversion, real provider integration and release.
+
+The milestone remains incomplete.

@@ -532,3 +532,70 @@ Next work:
 - Implement bounded automated Landing contact-limit tests.
 - Preserve the remaining validation, retry, shared-ceiling, concurrency,
   cleanup, atomic conversion, provider integration and release tasks.
+
+## 15 October 2026: Automated Landing Email Rate-Limit Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint: dec2cef.
+Tested Preview application: dec2cef.
+Preview: https://travelpro-4k792ne1s-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2; milestone release is pending.
+
+Test script:
+scripts/test-preview-landing-rate-limit.mjs.
+
+Implementation and scope:
+- Playwright fresh browser context without TravelPro owner authentication.
+- Restrict traffic to the exact configured Preview origin.
+- Read Vercel bypass from an environment variable; no secret stored in code.
+- Establish Vercel bypass cookie before browser navigation.
+- Verify private Inbox requires owner authentication before and after intake.
+- Use a unique synthetic email and at most six distinct submissions.
+- Guard against fixed-window boundary crossing.
+- Stop on unexpected outcomes; no automatic test reruns.
+
+Troubleshooting:
+- Initial browser navigation reached Vercel login.
+- Direct bypass requests confirmed health 200, Inbox redirect to login,
+  login 200 and inquiry form 200.
+- Adding bypass-cookie setup allowed browser access checks to pass.
+- A subsequent run timed out awaiting the first submission response.
+- Its email was not found in the owner-provided Inbox listing;
+  database absence was not independently verified.
+- Submission diagnostics were added before the successful run.
+- The first timeout cause remains unresolved.
+
+Successful automated run:
+- Email:
+  landing-limit-c90203a4-a5b9-4971-945f-8c443df5f6ce@example.invalid.
+- Five submissions accepted with distinct receipts:
+  0d946315-0563-4195-a99b-0c50bc8cbe2f
+  ab9ddf10-ae05-4bd1-8871-efa67575e72d
+  0a7e6063-14aa-4f8f-a0df-05419bbbd4fe
+  c3c571a6-880e-4fca-85c9-bd0d452528fb
+  6bb91f3a-cd0f-4c87-a7e8-693af3c86865
+- Sixth submission returned rate-limit message with 398-second retry delay.
+- Browser window checks passed.
+- Private Inbox remained protected after submissions.
+
+Read-only database verification:
+- Matching inquiries: 5.
+- First created_at: 2026-10-15 13:53:12.441946+00.
+- Last created_at: 2026-10-15 13:53:20.767623+00.
+- Distinct 15-minute creation windows: 1.
+- New inquiries with no matched client or converted case: 5.
+
+Conclusion and limits:
+- Landing email ceiling integration passed: five accepted, sixth denied.
+- This successful run supersedes the earlier inconclusive manual test
+  for email-limit enforcement evidence.
+- These were distinct submissions, not identical retries.
+- Phone ceiling, email normalization variants, shared ceiling,
+  concurrency and retry behaviour remain pending.
+- The displayed retry delay was checked, not an HTTP Retry-After header.
+- No unrestricted-public-access claim: Vercel protection was bypassed,
+  while TravelPro owner authentication remained absent.
+- Current script passed once after diagnostics; timeout reliability
+  investigation remains open.
+- Remaining airport, dependency, cleanup, legacy-path, atomic conversion,
+  provider integration and production release tasks remain pending.
