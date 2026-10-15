@@ -870,3 +870,53 @@ Evidence limits:
 This supersedes pending local shared-bucket identity/parameter wiring
 and global-denial contact-call checks.
 Isolated end-to-end, retry, concurrency and remaining milestone work stay pending.
+
+## 16 October 2026: Controlled Landing Lost-Response Retry Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 6fa7688.
+Tested Preview application: dec2cef.
+Preview: https://travelpro-4k792ne1s-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Test script: scripts/test-preview-landing-retry.mjs.
+
+Method:
+- Use a fresh Playwright context without TravelPro owner authentication.
+- Access the protected Preview using the environment-provided Vercel bypass.
+- Hold the first Server Action request while checking submission locking.
+- Dispatch two additional submit events while the first request is held.
+- Forward the first request and verify server acceptance.
+- Intentionally discard its response before it reaches the browser.
+- Retry the unchanged form through the normal submit button.
+- Add a cleanup guard so stopping the test does not release a held request
+  for forwarding.
+
+Verified browser behaviour:
+- Private Inbox required owner authentication before and after the test.
+- Visible consultation fields and submit button were disabled in flight.
+- Additional in-flight submit events produced no extra action requests
+  during the observed test.
+- Lost response retained form details and displayed the safe retry message.
+- Retry preserved the request ID and all serialized form fields.
+- Retry returned the already-received response with the original receipt.
+- Successful retry reset the form.
+- Script syntax and tracked diff formatting checks passed.
+
+Test identity:
+- Email: landing-retry-25b4c0f3-f1ae-4385-b9ab-d3fa368369d0@example.invalid.
+- Original and retry receipt: 217b7ec1-cfc8-4c28-80b8-987775db194d.
+
+Owner-run read-only database verification:
+- Matching inquiries for the test email: 1.
+- Matching original receipt among those inquiries: 1.
+
+Conclusion and limits:
+- This controlled lost-response scenario passed with one persisted inquiry.
+- It verifies an unchanged retry after confirmed server acceptance.
+- It does not establish concurrent first-submission safety, behaviour after
+  editing an ambiguous submission, or recovery after page reload.
+- The earlier unrelated first-submission timeout remains unexplained.
+- Isolated shared-ceiling end-to-end verification and remaining airport,
+  dependency, cleanup, legacy-path, atomic conversion, provider integration
+  and production release work remain pending.

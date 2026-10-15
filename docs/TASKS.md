@@ -845,3 +845,45 @@ Still pending:
 - [ ] Reviewed atomic conversion, provider integration and production release.
 
 The inquiry-ingestion milestone remains incomplete.
+
+## 16 October 2026 — Controlled Landing Retry Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 6fa7688.
+Tested Preview application: dec2cef.
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-retry.mjs.
+
+- [x] Add bounded browser test for controlled response loss and retry.
+- [x] Add cleanup guard for a held first request.
+- [x] Verify visible consultation fields and submit button lock in flight.
+- [x] Verify repeated in-flight submit events produce no extra action requests
+      during the observed test.
+- [x] Confirm first server acceptance before discarding its response.
+- [x] Verify form details remain populated with the safe retry message.
+- [x] Verify retry preserves request ID and all serialized form fields.
+- [x] Verify duplicate response returns the original receipt.
+- [x] Verify successful retry resets the form.
+- [x] Verify private Inbox protection before and after the test.
+- [x] Independently verify exactly one matching database inquiry.
+- [x] Verify that inquiry has the original receipt ID.
+- [x] Script syntax and tracked diff formatting checks passed.
+
+Receipt: 217b7ec1-cfc8-4c28-80b8-987775db194d.
+Matching inquiries: 1; matching original receipt: 1.
+
+This completes the tested unchanged retry after controlled response loss.
+It does not establish concurrent first-submission safety, recovery after
+page reload, or behaviour when details change after an ambiguous result.
+
+Still pending:
+- [ ] Define and verify safe handling of edits after an ambiguous submission.
+- [ ] Verify recovery after page reload.
+- [ ] Concurrent first-submission verification.
+- [ ] Isolated shared-ceiling end-to-end verification.
+- [ ] Investigate the earlier unrelated submission-response timeout.
+- [ ] Remaining airport, dependency, cleanup and legacy-path checks.
+- [ ] Reviewed atomic conversion, provider integration and production release.
+
+The inquiry-ingestion milestone remains incomplete.
