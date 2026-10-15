@@ -688,3 +688,49 @@ Conclusion and limits:
 - Fixed test phone may retain quota until its window expires.
 - Earlier first-submission timeout investigation remains open.
 - Remaining milestone and production release work is unchanged.
+
+## 15 October 2026: Reverse-Contact Email Ceiling Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 88d398b.
+Tested Preview application: dec2cef.
+Production baseline remains main 2e23db2.
+
+Script:
+- Add reverse mode to scripts/test-preview-landing-rate-limit.mjs.
+- Keep one unique synthetic email constant throughout the run.
+- Change fictional phone on each attempt, using +12025550131 through
+  +12025550136.
+- Syntax and diff formatting checks passed.
+
+Automated result:
+- Fresh browser had no TravelPro owner authentication.
+- Private Inbox required owner login before and after submissions.
+- Five distinct inquiries accepted:
+  a38f102a-687b-4b22-9960-8480c5bc16c9
+  b9002082-cc37-4bcc-9089-91162fdbfd28
+  fe57208b-e968-46e7-9b16-71eb4f256604
+  961c13f0-a735-449d-af23-49ac05d7d2f9
+  c9a0645b-4d91-4a92-ad32-fca4bea50e63
+- Sixth attempt rate-limited with displayed retry delay of 663 seconds.
+- Client-observed fixed-window checks passed.
+
+Read-only database verification:
+- Email:
+  landing-limit-7dfcce5f-5f98-4cda-9220-cbad73fbc894@example.invalid.
+- Matching Landing inquiries: 5.
+- Distinct submitted phones: 5.
+- First created_at: 2026-10-15 15:48:44.665858+00.
+- Last created_at: 2026-10-15 15:48:55.412887+00.
+- Distinct 15-minute creation windows: 1.
+- New inquiries with no matched client or converted case: 5.
+
+Conclusion and limits:
+- Changing phone did not bypass the fixed email ceiling in this test.
+- Together with the previous combined-mode test, both contact-ceiling
+  directions have browser and database evidence.
+- Email normalization variants and shared ceiling remain pending.
+- These distinct submissions do not establish identical-retry
+  deduplication, concurrency safety or protection against changing both contacts.
+- Earlier submission-response timeout investigation remains open.
+- Remaining milestone and production release work is unchanged.

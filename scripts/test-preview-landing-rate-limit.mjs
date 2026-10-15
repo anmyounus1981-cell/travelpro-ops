@@ -13,8 +13,8 @@ const TEST_NAME = "SYNTHETIC AUTOMATED LANDING LIMIT TEST";
 function loadConfig() {
     const mode = process.argv[2] ?? "email";
 
-    if (!["email", "phone", "combined"].includes(mode)) {
-    throw new Error("Test mode must be email, phone or combined.");
+      if (!["email", "phone", "combined", "reverse"].includes(mode)) {
+    throw new Error("Test mode must be email, phone, combined or reverse.");
   }
   const bypass = process.env.TRAVELPRO_PREVIEW_BYPASS?.trim();
 
@@ -44,8 +44,8 @@ function loadConfig() {
     origin: preview.origin,
     bypass,
     mode,
-    email:
-      mode === "email"
+        email:
+      mode === "email" || mode === "reverse"
         ? `landing-limit-${randomUUID()}@example.invalid`
         : "",
         phone:
@@ -192,7 +192,9 @@ async function runTests() {
         console.log(`Test mode: ${config.mode}`);
     console.log(
       `Synthetic contact: ${
-        config.mode === "email" ? config.email : config.phone
+        config.mode === "email" || config.mode === "reverse"
+  ? config.email
+  : config.phone
       }`,
     );
     console.log("Submitting at most six distinct synthetic inquiries.");
@@ -215,7 +217,12 @@ async function runTests() {
           : config.email;
 
       await page.locator("#contactEmail").fill(attemptEmail);
-      await page.locator("#contactPhone").fill(config.phone);
+            const attemptPhone =
+        config.mode === "reverse"
+          ? `+120255501${30 + attempt}`
+          : config.phone;
+
+      await page.locator("#contactPhone").fill(attemptPhone);
       await page.locator("#origin").fill("");
       await page.locator("#destination").fill("");
       await page.locator("#departureDate").fill("");

@@ -697,3 +697,41 @@ Still pending:
 Do not automatically rerun with the fixed phone while its quota is consumed.
 These distinct-submission tests do not establish retry deduplication.
 The milestone remains incomplete.
+
+## 15 October 2026 — Reverse-Contact Email Ceiling Checkpoint
+
+Tested Preview application: dec2cef.
+Branch: feature/multi-channel-inquiry-ingestion.
+Production baseline remains main 2e23db2.
+
+- [x] Add reverse mode to the Landing browser test.
+- [x] Keep one synthetic email fixed while changing phone per attempt.
+- [x] Verify five accepted inquiries and sixth rate-limited.
+- [x] Validate displayed retry delay: 663 seconds.
+- [x] Verify private Inbox protection before and after submissions.
+- [x] Verify exactly five matching database inquiries.
+- [x] Verify five distinct phones and one fixed creation window.
+- [x] Verify all five remain new and unlinked.
+- [x] Script syntax and diff formatting checks.
+
+Database evidence:
+- First creation: 2026-10-15 15:48:44.665858+00.
+- Last creation: 2026-10-15 15:48:55.412887+00.
+- Matching inquiries: 5; distinct phones: 5.
+- Distinct creation windows: 1; new and unlinked: 5.
+
+Changing phone did not bypass the fixed email ceiling.
+This supersedes the pending fixed-email/changing-phone integration check.
+Together with the previous combined test, both contact-ceiling directions
+have browser and database evidence.
+
+Still pending:
+- [ ] Email normalization variant tests.
+- [ ] Shared Landing ceiling integration test.
+- [ ] Retry, ambiguous-response and concurrent-request verification.
+- [ ] Investigate the earlier submission-response timeout.
+- [ ] Remaining airport, dependency, cleanup and legacy-path checks.
+- [ ] Reviewed atomic conversion, provider integration and production release.
+
+These tests do not establish retry deduplication, concurrency safety or
+protection against changing both contacts. The milestone remains incomplete.
