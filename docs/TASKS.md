@@ -1061,3 +1061,45 @@ Still pending:
 - [ ] Reviewed atomic conversion, provider integration and production release.
 
 The inquiry-ingestion milestone remains incomplete.
+
+## 16 October 2026 — Landing Conflict Browser Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 51dd570.
+Tested application implementation: 761eeff.
+Preview: https://travelpro-ohpsra6jm-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-conflict.mjs.
+
+- [x] Add browser test allowing at most two forwarded action requests.
+- [x] Confirm first server acceptance before discarding its response.
+- [x] Verify browser retry preserves original request ID and form fields.
+- [x] Deliberately alter forwarded retry notes while preserving request identity.
+- [x] Verify real Server Action returns a conflict outcome.
+- [x] Verify conflict locks visible consultation fields and disables submission.
+- [x] Verify browser retains original name, email and notes.
+- [x] Verify tested programmatic submits produce no additional action requests
+      during the bounded observation.
+- [x] Verify private Inbox protection before and after the test.
+- [x] Verify one matching inquiry with the original receipt and notes.
+- [x] Verify no matching inquiry contains the conflicting notes.
+- [x] Script syntax check passed.
+
+Receipt: 5ef5ef72-7236-4492-976d-e6196dd13c27.
+Database counts: matching inquiries 1; original receipt 1;
+original notes 1; conflicting notes 0.
+
+This supersedes the pending browser conflict-blocking check.
+The payload alteration was deliberate test interception, not normal form editing.
+The test does not establish concurrency safety or cross-tab conflict handling.
+
+Still pending:
+- [ ] Reload recovery, navigation persistence and cross-tab handling.
+- [ ] Integrated support-resolution workflow for unresolved conflicts.
+- [ ] Concurrent first-submission and isolated shared-ceiling end-to-end tests.
+- [ ] Earlier unrelated submission-response timeout investigation.
+- [ ] Remaining airport, dependency, lint, cleanup and legacy-path checks.
+- [ ] Reviewed atomic conversion, provider integration and production release.
+
+The inquiry-ingestion milestone remains incomplete.

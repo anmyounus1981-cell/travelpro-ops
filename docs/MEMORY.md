@@ -1110,3 +1110,50 @@ Conclusion and limits:
 - Conflict blocking still needs browser verification.
 - Reload recovery, navigation persistence, cross-tab handling, concurrency
   and remaining milestone/release work remain pending.
+
+## 16 October 2026: Landing Conflict Browser Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 51dd570.
+Tested application implementation: 761eeff.
+Preview: https://travelpro-ohpsra6jm-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-conflict.mjs.
+
+Method:
+- Use a fresh browser context with Vercel bypass and no TravelPro owner login.
+- Restrict traffic to the pinned Preview origin.
+- Allow at most two action requests to be forwarded.
+- Confirm first server acceptance, then discard its response.
+- Verify the browser retry preserves the original request ID and form fields.
+- Deliberately alter only the forwarded retry notes in test interception.
+- Preserve request identity and serializer metadata during re-encoding.
+- Receive a real Server Action conflict response for the altered payload.
+
+Verified browser behaviour:
+- Private Inbox required owner authentication before and after the test.
+- Conflict locked visible consultation fields and disabled submission.
+- Original name, email and notes remained displayed.
+- Two programmatic submit events produced no additional action requests
+  during the bounded observation.
+- Script syntax check passed.
+
+Test identity:
+- Email: landing-conflict-cff05765-3ba1-4a26-95cd-76da9626e207@example.invalid.
+- Original receipt: 5ef5ef72-7236-4492-976d-e6196dd13c27.
+
+Owner-run read-only database verification:
+- Matching inquiries: 1.
+- Matching original receipt: 1.
+- Inquiries with original notes: 1.
+- Inquiries with deliberately conflicting notes: 0.
+
+Conclusion and limits:
+- Tested conflict handling blocked further browser submission.
+- The original inquiry remained intact after the conflicting attempt.
+- Payload alteration was deliberate test interception, not normal form editing.
+- The test does not establish concurrency safety or cross-tab conflict handling.
+- Conflict messaging still has no integrated support-resolution workflow.
+- Reload recovery, navigation persistence and remaining milestone/release
+  work remain pending.
