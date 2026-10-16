@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { chromium } from "playwright";
 
 const ORIGIN =
-  "https://travelpro-ohpsra6jm-anmyounus1981-8496.vercel.app";
+  "https://travelpro-68nj4l8h6-anmyounus1981-8496.vercel.app";
 const TEST_NAME = "SYNTHETIC LANDING CONFLICT TEST";
 const NOTES = "Synthetic conflict guard test. Do not contact.";
 
@@ -15,7 +15,7 @@ function loadConfig() {
   assert.equal(url.protocol, "https:");
   assert.equal(
     url.hostname,
-    "travelpro-ohpsra6jm-anmyounus1981-8496.vercel.app",
+    "travelpro-68nj4l8h6-anmyounus1981-8496.vercel.app",
   );
 
   return {

@@ -1195,3 +1195,44 @@ Still pending:
 No WhatsApp message was sent. Number reachability and support operations
 have not been verified. Reload recovery remains a design proposal.
 The inquiry-ingestion milestone remains incomplete.
+
+## 17 October 2026 — WhatsApp Support Preview Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Tested implementation: 961e51e.
+Preview: https://travelpro-68nj4l8h6-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+- [x] Pin conflict browser test to the updated Preview.
+- [x] Verify real conflict response after deliberate forwarded-payload alteration.
+- [x] Verify fields stay locked and submission remains disabled.
+- [x] Verify disabled submit label is Submission Paused.
+- [x] Verify original form details remain displayed.
+- [x] Verify tested programmatic submits produce no additional action requests.
+- [x] Verify official WhatsApp support link is visible.
+- [x] Verify exact URL https://wa.me/8801842737654.
+- [x] Verify no query string, fragment or prefilled inquiry data.
+- [x] Verify _blank, noopener, noreferrer and no-referrer attributes.
+- [x] Verify private Inbox protection before and after the test.
+- [x] Verify one database inquiry with original receipt and notes.
+- [x] Verify no matching inquiry contains conflicting notes.
+
+Receipt: fdbeda7b-776e-4e26-9fd0-e48beab45860.
+Database counts: matching inquiries 1; original receipt 1;
+original notes 1; conflicting notes 0.
+
+This supersedes the pending Preview support-link attribute and conflict-lock
+checks. The test did not open WhatsApp or send a message.
+
+Still pending:
+- [ ] Verify support-number reachability and operational resolution procedures.
+- [ ] Mobile and assistive-technology verification of the support UI.
+- [ ] Integrate support into expired/blocked reload states when implemented.
+- [ ] Finalize recovery lifetime and clock tolerance.
+- [ ] Implement and verify reload recovery.
+- [ ] Review external cleanup jobs and establish retention policy.
+- [ ] Reconcile outdated architecture/security documentation.
+- [ ] Remaining concurrency, shared-ceiling, airport, dependency, lint,
+      cleanup, legacy-path, atomic conversion, provider integration and release work.
+
+The inquiry-ingestion milestone remains incomplete.

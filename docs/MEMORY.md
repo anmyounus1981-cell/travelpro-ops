@@ -1257,3 +1257,49 @@ Scope and pending:
 - Reload storage lifetime and clock-tolerance proposals remain unresolved.
 - No database schema changes were made.
 - Remaining inquiry-ingestion and production release work is unchanged.
+
+## 17 October 2026: WhatsApp Support Preview Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed implementation commit: 961e51e.
+Tested Preview: https://travelpro-68nj4l8h6-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2; production release is pending.
+
+Test: scripts/test-preview-landing-conflict.mjs.
+The script was pinned to the new Preview origin and hostname.
+
+Verified browser behaviour:
+- Fresh browser used Vercel bypass without TravelPro owner authentication.
+- Private Inbox required owner authentication before and after the test.
+- First inquiry was accepted before its response was deliberately discarded.
+- Altered forwarded retry payload produced a real conflict outcome.
+- Conflict kept visible fields locked and submission disabled.
+- Disabled submit label was Submission Paused.
+- Original name, email and notes remained displayed.
+- Tested programmatic submit events produced no additional action requests.
+- Official business WhatsApp support link was visible.
+- Link URL was exactly https://wa.me/8801842737654.
+- No query string, fragment or prefilled inquiry data was present.
+- Link used target _blank, noopener, noreferrer and no-referrer.
+- The test did not click the link or send a WhatsApp message.
+
+Test identity:
+- Email: landing-conflict-45e08ef9-006f-49e0-a717-041ff9882d28@example.invalid.
+- Original receipt: fdbeda7b-776e-4e26-9fd0-e48beab45860.
+
+Owner-run read-only database verification:
+- Matching inquiries: 1.
+- Matching original receipt: 1.
+- Inquiries with original notes: 1.
+- Inquiries with deliberately conflicting notes: 0.
+
+Conclusion and limits:
+- Conflict-state support-link attributes and existing submission locks passed
+  on this Preview.
+- The original database inquiry remained intact.
+- WhatsApp number reachability, delivery and support-resolution procedures
+  were not verified.
+- Mobile layout and assistive-technology behaviour were not established.
+- Expired/blocked reload recovery states remain unimplemented.
+- Reload recovery, retention decisions and remaining milestone/release work
+  remain pending.
