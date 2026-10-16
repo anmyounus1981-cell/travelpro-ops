@@ -328,11 +328,40 @@ async function runTests() {
     await assertLocked(page);
 
     const contactButton = page.getByRole("button", {
-      name: "Contact TravelPro",
+        name: "Submission Paused",
       exact: true,
     });
 
     assert.equal(await contactButton.isDisabled(), true);
+        const supportLink = page.getByRole("link", {
+      name: "WhatsApp Support: +880 1842737654 (opens in a new tab)",
+      exact: true,
+    });
+
+    assert.equal(await supportLink.isVisible(), true);
+
+    const supportHref = await supportLink.getAttribute("href");
+    assert.equal(supportHref, "https://wa.me/8801842737654");
+
+    const supportUrl = new URL(supportHref);
+    assert.equal(supportUrl.search, "");
+    assert.equal(supportUrl.hash, "");
+
+    assert.equal(await supportLink.getAttribute("target"), "_blank");
+    assert.equal(
+      await supportLink.getAttribute("referrerpolicy"),
+      "no-referrer",
+    );
+
+    const supportRel =
+      (await supportLink.getAttribute("rel"))?.split(/\s+/) ?? [];
+
+    assert.ok(supportRel.includes("noopener"));
+    assert.ok(supportRel.includes("noreferrer"));
+
+    console.log(
+      "PASS: official WhatsApp support link has no prefilled inquiry data",
+    );
     assert.equal(await page.locator("#contactName").inputValue(), TEST_NAME);
     assert.equal(
       await page.locator("#contactEmail").inputValue(),

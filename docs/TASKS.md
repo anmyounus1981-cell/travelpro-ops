@@ -1150,3 +1150,48 @@ No application or database changes were made for this design.
 Remaining concurrency, shared-ceiling, airport, dependency, lint, cleanup,
 legacy-path, atomic conversion, provider integration and release work is unchanged.
 The inquiry-ingestion milestone remains incomplete.
+
+## 17 October 2026 — Recovery Review and WhatsApp Support Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before these changes: 5f3e300.
+Production baseline remains main 2e23db2.
+
+Database review:
+- [x] Inspect installed intake identity lookup and payload-hash comparison.
+- [x] Verify existing lookup has no age-based cutoff.
+- [x] Verify identical-retry return precedes the new-submission past-date guard.
+- [x] Verify request-ID index is unique and valid.
+- [x] Document that inquiry deletion or identity/hash changes affect deduplication.
+- [ ] Review external cleanup jobs and establish long-term retention policy.
+
+Support contact and local implementation:
+- [x] Record owner-selected business WhatsApp: +880 1842737654.
+- [x] Add conflict-state support link: https://wa.me/8801842737654.
+- [x] Include no inquiry data or prefilled message in the link.
+- [x] Add noopener, noreferrer and no-referrer attributes.
+- [x] Keep conflict submission locked and label it Submission Paused.
+- [x] Add support styling and keyboard-focus treatment.
+- [x] Update local button-label assertion and pass recovery suite.
+- [x] Add browser support-link assertions and pass script syntax check.
+- [x] Pass separate TypeScript, production build and diff checks.
+
+Immediate follow-up:
+- [ ] Deploy the support UI to Preview.
+- [ ] Pin the conflict browser test to the updated deployment.
+- [ ] Execute support-link and conflict-lock browser assertions.
+- [ ] Independently verify one original inquiry after the conflict test.
+- [ ] Record Preview evidence without claiming WhatsApp delivery was tested.
+
+Still pending:
+- [ ] Define support identity-verification and resolution procedures.
+- [ ] Integrate support into expired/blocked reload states when implemented.
+- [ ] Finalize proposed storage lifetime and clock tolerance.
+- [ ] Implement and verify reload recovery.
+- [ ] Reconcile outdated architecture/security documentation.
+- [ ] Remaining concurrency, shared-ceiling, airport, dependency, lint,
+      cleanup, legacy-path, atomic conversion, provider integration and release work.
+
+No WhatsApp message was sent. Number reachability and support operations
+have not been verified. Reload recovery remains a design proposal.
+The inquiry-ingestion milestone remains incomplete.

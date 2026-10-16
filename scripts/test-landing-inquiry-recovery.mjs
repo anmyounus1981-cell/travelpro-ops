@@ -354,7 +354,7 @@ await test("conflict locks details and blocks further submission", async () => {
 
   assertLocked(h, true);
   assert.equal(h.button().props.disabled, true);
-  assert.equal(h.button().props.children, "Contact TravelPro");
+    assert.equal(h.button().props.children, "Submission Paused");
   assert.match(h.message(), /Contact TravelPro/);
 
   h.edit("notes", "CHANGED NOTES");

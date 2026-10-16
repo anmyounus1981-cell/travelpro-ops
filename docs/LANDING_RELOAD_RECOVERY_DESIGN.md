@@ -439,3 +439,56 @@ A blocked marker may remain for the browser page session. It is not a
 
 The proposed lifetime is not a legal-compliance claim or an exact-deletion
 guarantee.
+
+## Installed Database Findings — 17 October 2026
+
+Owner-run read-only inspection confirmed:
+
+- submit_inquiry_intake looks up existing request identity without an
+  age-based cutoff.
+- Matching payload hash returns the existing receipt with duplicate true.
+- Conflicting payload hash raises SQLSTATE 23505.
+- Existing identical retries return before the new-submission past-date guard.
+- inquiries_submission_request_id_unique is unique and valid.
+- The index covers submission_request_id where it is not null.
+
+Deduplication identity and payload hash are stored on the inquiry row.
+This is not an independent permanent idempotency ledger.
+
+Deleting the row or changing its identity/hash can remove or disrupt replay
+protection. Any future inquiry deletion, anonymization or retention workflow
+must explicitly preserve the required idempotency guarantees.
+
+The repository pattern search found no matching inquiry deletion/retention
+implementation in the searched tracked paths. This is not proof that external
+jobs, differently written code or manual deletion do not exist.
+
+No database changes or write-producing tests were performed for this inspection.
+Long-term retention policy and external cleanup-job review remain unresolved.
+
+## Selected Support Contact — 17 October 2026
+
+The owner selected the official business WhatsApp number:
++880 1842737654.
+
+Support URL: https://wa.me/8801842737654
+
+Integration requirements:
+- Show a separate actionable support link in blocked recovery messaging.
+- Include no prefilled message, inquiry fields, request ID or receipt in the URL.
+- Use noopener, noreferrer and no-referrer for the external link.
+- Open WhatsApp only following explicit user activation.
+- Do not automatically send messages.
+- Keep inquiry submission blocked while conflict remains unresolved.
+- Label the disabled submit button Submission Paused.
+
+Initial implementation covers the existing conflict state only.
+Expired and other blocked reload states remain unimplemented.
+
+The support contact is selected, but identity verification and authorization
+for resolving an inquiry remain a separate operational workflow.
+A WhatsApp message or knowledge of a request ID is not proof of ownership.
+
+Link destination attributes can be tested without opening WhatsApp.
+Number reachability and the support-resolution process are not established
+by those attribute checks.

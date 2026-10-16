@@ -497,7 +497,30 @@ pattern="\+[1-9][0-9]{7,14}"
               {message}
             </p>
           )}
+          {recoveryState === "conflict" && (
+            <div className={styles.recoverySupport}>
+              <p>
+                For help confirming your inquiry, contact TravelPro
+                customer support on WhatsApp.
+              </p>
 
+              <a
+                className={styles.supportLink}
+                href="https://wa.me/8801842737654"
+                target="_blank"
+                rel="noopener noreferrer"
+                referrerPolicy="no-referrer"
+              >
+                WhatsApp Support: +880 1842737654 (opens in a new tab)
+              </a>
+
+              <p className={styles.supportPrivacy}>
+                No inquiry details are included in this link.
+                Do not send passport images, payment details,
+                passwords or verification codes.
+              </p>
+            </div>
+          )}
           <button
             className={styles.submitButton}
             type="submit"
@@ -508,7 +531,7 @@ pattern="\+[1-9][0-9]{7,14}"
               : recoveryState === "unknown"
                 ? "Retry Same Inquiry"
                 : recoveryState === "conflict"
-                  ? "Contact TravelPro"
+                  ? "Submission Paused"
                   : "Submit Inquiry"}
           </button>
 

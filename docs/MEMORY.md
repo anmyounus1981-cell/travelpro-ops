@@ -1206,3 +1206,54 @@ Open decisions and verification:
   outside the proposed initial scope.
 - No application, database schema or deployment changes made for this design.
 - Existing milestone integration and production release work remains pending.
+
+## 17 October 2026: Recovery Database Review and WhatsApp Support
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before these changes: 5f3e300.
+Production baseline remains main 2e23db2.
+
+Read-only database review:
+- Inspected installed submit_inquiry_intake function.
+- Existing request lookup has no age-based cutoff.
+- Matching payload hash returns the original duplicate receipt.
+- Conflicting payload hash raises SQLSTATE 23505.
+- Existing identical retries return before the new-submission past-date guard.
+- Request-ID unique index is unique and valid, covering non-null IDs.
+- Identity/hash remain on the inquiry row, not an independent idempotency ledger.
+- Row deletion or identity/hash changes can disrupt replay protection.
+- External cleanup jobs and long-term retention policy remain unverified.
+- Findings added to docs/LANDING_RELOAD_RECOVERY_DESIGN.md.
+
+Owner-selected support:
+- Official business WhatsApp: +880 1842737654.
+- URL: https://wa.me/8801842737654.
+- No personal email address used.
+
+Local implementation:
+- Add actionable WhatsApp support link in the existing conflict state.
+- Keep conflict fields locked and submission disabled.
+- Rename disabled submit label to Submission Paused.
+- Link contains no prefilled message, inquiry fields, request ID or receipt.
+- External-link attributes include noopener, noreferrer and no-referrer.
+- Add scoped support styles and visible keyboard-focus treatment.
+- Add a reminder not to send sensitive documents or credentials.
+- Update local and browser conflict button-label checks.
+- Add browser assertions for support URL and privacy attributes.
+- No WhatsApp message sent and no automated contact action added.
+
+Verification:
+- Separate TypeScript check passed.
+- Production build passed on Next.js 15.5.28.
+- Local mocked recovery suite passed.
+- Updated browser script syntax passed.
+- Diff formatting checks passed.
+- Build still skips linting.
+- Updated support UI browser assertions have not yet run on Preview.
+
+Scope and pending:
+- Expired and other blocked reload states remain unimplemented.
+- Support-number reachability and operational identity verification are unverified.
+- Reload storage lifetime and clock-tolerance proposals remain unresolved.
+- No database schema changes were made.
+- Remaining inquiry-ingestion and production release work is unchanged.
