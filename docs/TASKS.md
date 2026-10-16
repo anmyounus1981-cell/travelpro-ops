@@ -932,3 +932,49 @@ Still pending:
 The updated browser script still targets the older dec2cef Preview.
 Do not run it there as verification of this implementation.
 The inquiry-ingestion milestone remains incomplete.
+
+## 16 October 2026 — Landing Recovery Preview Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Tested implementation: 761eeff.
+Preview: https://travelpro-ohpsra6jm-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+- [x] Access the Preview containing the recovery implementation.
+- [x] Pin the browser retry script to that deployment.
+- [x] Verify visible consultation fields and submit button lock in flight.
+- [x] Confirm first server acceptance before discarding its response.
+- [x] Verify submitted details remain populated after response loss.
+- [x] Verify fields remain locked after the unknown outcome.
+- [x] Verify Retry Same Inquiry remains available.
+- [x] Verify retry preserves request ID and all serialized form fields.
+- [x] Verify duplicate receipt matches the original receipt.
+- [x] Verify successful retry resets the form.
+- [x] Verify no extra action requests from tested in-flight submit events.
+- [x] Verify private Inbox protection before and after intake.
+- [x] Independently verify exactly one matching database inquiry.
+- [x] Verify that inquiry has the original receipt ID.
+
+Receipt: 0f102107-1a87-442d-8896-4481ea039eab.
+Matching inquiries: 1; matching original receipt: 1.
+
+An earlier run stopped before submissions because insufficient window
+time remained. The subsequent controlled retry run passed.
+
+This supersedes the pending Preview verification for this controlled
+unknown-outcome locking and unchanged-retry flow.
+
+Still pending:
+- [ ] Browser verification of editing after confirmed rejection.
+- [ ] Browser verification that rejection after uncertainty retains the lock.
+- [ ] Browser verification of conflict blocking.
+- [ ] Reload recovery, navigation persistence and cross-tab handling.
+- [ ] Integrated support workflow for unresolved conflicts.
+- [ ] Concurrent first-submission and isolated shared-ceiling end-to-end tests.
+- [ ] Investigate the earlier unrelated submission-response timeout.
+- [ ] Remaining airport, dependency, lint, cleanup and legacy-path checks.
+- [ ] Reviewed atomic conversion, provider integration and production release.
+
+Local mocked tests cover rejection editing, sticky uncertainty and
+conflict blocking; those browser scenarios remain unverified.
+The inquiry-ingestion milestone remains incomplete.

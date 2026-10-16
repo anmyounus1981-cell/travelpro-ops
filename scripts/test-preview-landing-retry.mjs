@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { chromium } from "playwright";
 
 const PREVIEW_ORIGIN =
-  "https://travelpro-4k792ne1s-anmyounus1981-8496.vercel.app";
+  "https://travelpro-ohpsra6jm-anmyounus1981-8496.vercel.app";
 
 const TEST_NAME = "SYNTHETIC LANDING RETRY TEST";
 
@@ -42,9 +42,9 @@ function loadConfig() {
 
   const origin = new URL(PREVIEW_ORIGIN);
   assert.equal(origin.protocol, "https:");
-  assert.equal(
+    assert.equal(
     origin.hostname,
-    "travelpro-4k792ne1s-anmyounus1981-8496.vercel.app",
+    "travelpro-ohpsra6jm-anmyounus1981-8496.vercel.app",
   );
 
   // Retries consume quota. Avoid beginning near a fixed-window boundary.

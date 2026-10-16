@@ -972,3 +972,53 @@ Evidence limits and next work:
 - Concurrency, isolated shared-ceiling end-to-end verification, airport,
   dependency, cleanup, legacy-path reconciliation, reviewed atomic conversion,
   provider integration and production release work remain pending.
+
+## 16 October 2026: Landing Recovery Preview Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed implementation commit: 761eeff.
+Tested Preview: https://travelpro-ohpsra6jm-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2; production release is pending.
+
+Test preparation:
+- Pin scripts/test-preview-landing-retry.mjs to the new Preview origin
+  and matching hostname assertion.
+- An initial run stopped before submissions because insufficient
+  fixed-window time remained.
+- The subsequent controlled retry run passed.
+
+Verified browser behaviour:
+- Fresh browser context used Vercel protection bypass without TravelPro
+  owner authentication.
+- Private Inbox required owner authentication before and after the test.
+- Visible consultation fields and submit button were locked in flight.
+- First inquiry acceptance was confirmed before discarding its response.
+- The browser retained submitted details and displayed the recovery message.
+- Fields remained disabled after the unknown outcome.
+- Retry Same Inquiry remained available.
+- Retry preserved the request ID and all serialized submission fields.
+- Duplicate receipt matched the original server acceptance.
+- Confirmed acceptance reset the form.
+- Repeated in-flight submit events produced no extra action requests
+  during the observed test.
+
+Test identity:
+- Email: landing-retry-f4a70093-8252-4753-b01c-c981e4d66432@example.invalid.
+- Original and retry receipt: 0f102107-1a87-442d-8896-4481ea039eab.
+
+Owner-run read-only database verification:
+- Matching inquiries for the test email: 1.
+- Matching original receipt among those inquiries: 1.
+
+Conclusion and limits:
+- Unknown-outcome field locking and unchanged retry passed on this Preview
+  with one persisted inquiry.
+- This supersedes the pending Preview check for this controlled retry flow.
+- Confirmed-rejection editing, rejection after prior uncertainty and conflict
+  blocking have local mocked component evidence; browser checks remain pending.
+- Recovery after reload, navigation persistence and cross-tab handling
+  remain pending.
+- This test does not establish concurrent first-submission safety.
+- Earlier unrelated submission-response timeout investigation and remaining
+  shared-ceiling, airport, dependency, lint, cleanup, legacy-path, atomic
+  conversion, provider integration and production release work remain pending.
