@@ -1157,3 +1157,52 @@ Conclusion and limits:
 - Conflict messaging still has no integrated support-resolution workflow.
 - Reload recovery, navigation persistence and remaining milestone/release
   work remain pending.
+
+## 17 October 2026: Landing Reload Recovery Architecture Proposal
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: e08753c.
+Current application recovery implementation: 761eeff.
+Production baseline remains main 2e23db2.
+
+Design document: docs/LANDING_RELOAD_RECOVERY_DESIGN.md.
+Status: proposed architecture; not implemented or execution-tested.
+
+Proposed scope:
+- Same-origin, same-tab reload recovery using sessionStorage.
+- Persist request ID and exact submitted snapshot before network dispatch.
+- Verify persistence before allowing submission.
+- Restore before enabling interaction; no automatic submission on restore.
+- Treat restored pending attempts as unknown outcomes.
+- Preserve sticky uncertainty and unchanged retry identity.
+- Separate pending, conflict, accepted and blocked record states.
+- Keep confirmed acceptance visible even when storage cleanup fails.
+- Block new submission until required cleanup is verified.
+
+Privacy and compatibility:
+- Store submitted snapshots only, not typing drafts.
+- Proposed snapshot lifetime: 24 hours; future-clock tolerance: five minutes.
+- These values remain design proposals, not approved retention policy.
+- No exact-time deletion or secure-erasure guarantee.
+- Minimize personal data in terminal/blocked markers.
+- No secrets, documents, authentication tokens or analytics snapshot logging.
+- Explicitly handle historical keys, incompatible records and multiple records.
+- Storage read failure must not be interpreted as an empty record.
+- Never clear unrelated sessionStorage data.
+- Request IDs do not authorize private reads.
+
+Review findings:
+- Reviewed ARCHITECTURE.md contains an outdated application checkpoint.
+- SECURITY.md contains historical demo/target permission descriptions.
+- Documentation reconciliation remains pending; these documents were not
+  treated as evidence of current deployed permissions.
+
+Open decisions and verification:
+- Confirm lifetime, clock tolerance and browser-storage notice.
+- Define a usable support-resolution route for blocked recovery states.
+- Check installed intake behaviour and deduplication retention assumptions.
+- Implement and test storage/module/component/browser failure cases.
+- Cross-tab coordination, tab/session loss and cross-device recovery are
+  outside the proposed initial scope.
+- No application, database schema or deployment changes made for this design.
+- Existing milestone integration and production release work remains pending.

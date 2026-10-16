@@ -1103,3 +1103,50 @@ Still pending:
 - [ ] Reviewed atomic conversion, provider integration and production release.
 
 The inquiry-ingestion milestone remains incomplete.
+
+## 17 October 2026 — Landing Reload Recovery Design Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: e08753c.
+Current application recovery implementation: 761eeff.
+Production baseline remains main 2e23db2.
+
+Design: docs/LANDING_RELOAD_RECOVERY_DESIGN.md.
+Status: proposal only; reload recovery is not implemented or execution-tested.
+
+- [x] Draft same-origin, same-tab sessionStorage recovery architecture.
+- [x] Define persistence-before-dispatch and immutable retry requirements.
+- [x] Define restore gating and conservative pending-state recovery.
+- [x] Define accepted, rejected, unknown and conflict handling with storage failures.
+- [x] Define expiry, invalid-record and compatibility blocking rules.
+- [x] Document personal-data exposure and deletion limitations.
+- [x] Address historical keys, multiple records and unavailable storage.
+- [x] Define local, component, browser and database verification matrix.
+- [x] Record outdated architecture/security documentation for reconciliation.
+
+Before implementation:
+- [ ] Confirm proposed 24-hour snapshot lifetime.
+- [ ] Confirm proposed five-minute future-clock tolerance.
+- [ ] Finalize browser-storage notice and sensitive-notes handling.
+- [ ] Define a usable support-resolution route for blocked recovery states.
+- [ ] Check installed intake behaviour and deduplication retention assumptions.
+- [ ] Define submission-contract compatibility expectations.
+
+Implementation and verification:
+- [ ] Implement client-safe recovery record validation and storage operations.
+- [ ] Integrate restore gating, immutable retries and explicit cleanup recovery.
+- [ ] Test denied storage, write/read-back failures and cleanup failures.
+- [ ] Test malformed, expired, incompatible and multiple records.
+- [ ] Test accepted-state preservation when cleanup fails.
+- [ ] Verify response loss followed by reload and unchanged retry on Preview.
+- [ ] Independently verify one persisted inquiry after recovered retry.
+- [ ] Verify no dispatch when required recovery persistence fails.
+
+Cross-tab coordination, tab/session-loss recovery and cross-device recovery
+remain outside the proposed initial scope. Browser-storage deletion can
+remove the evidence needed for duplicate prevention.
+
+No application or database changes were made for this design.
+Remaining concurrency, shared-ceiling, airport, dependency, lint, cleanup,
+legacy-path, atomic conversion, provider integration and release work is unchanged.
+The inquiry-ingestion milestone remains incomplete.
