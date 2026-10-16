@@ -978,3 +978,41 @@ Still pending:
 Local mocked tests cover rejection editing, sticky uncertainty and
 conflict blocking; those browser scenarios remain unverified.
 The inquiry-ingestion milestone remains incomplete.
+
+## 16 October 2026 — Confirmed-Rejection Editing Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 5be9837.
+Tested application implementation: 761eeff.
+Preview: https://travelpro-ohpsra6jm-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+- [x] Submit a synthetic consultation with past departure date 2020-01-01.
+- [x] Observe the generic inquiry-details/travel-dates rejection message.
+- [x] Verify departure date and notes remain editable after rejection.
+- [x] Clear departure date and update notes before resubmission.
+- [x] Verify corrected submission succeeds.
+- [x] Verify exactly one matching database inquiry.
+- [x] Verify the successful receipt matches that inquiry.
+- [x] Verify submitted departure is absent and corrected notes match exactly.
+
+Receipt: c6e00511-ce6c-4987-a297-6f0067325329.
+Database counts: matching inquiries 1; matching receipt 1;
+without departure 1; with corrected notes 1.
+
+This supersedes the pending browser check for editing after confirmed
+rejection. Browser network payloads and request-ID rotation were not
+inspected. The browser message did not expose the database error code.
+
+Still pending:
+- [ ] Browser verification that rejection after uncertainty retains the lock.
+- [ ] Browser verification of conflict blocking.
+- [ ] Reload recovery, navigation persistence and cross-tab handling.
+- [ ] Integrated support workflow for unresolved conflicts.
+- [ ] Concurrent first-submission and isolated shared-ceiling end-to-end tests.
+- [ ] Investigate the earlier unrelated submission-response timeout.
+- [ ] Remaining airport, dependency, lint, cleanup and legacy-path checks.
+- [ ] Reviewed atomic conversion, provider integration and production release.
+
+This test does not establish behaviour after an earlier unknown outcome.
+The inquiry-ingestion milestone remains incomplete.

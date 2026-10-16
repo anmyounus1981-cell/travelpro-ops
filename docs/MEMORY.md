@@ -1022,3 +1022,40 @@ Conclusion and limits:
 - Earlier unrelated submission-response timeout investigation and remaining
   shared-ceiling, airport, dependency, lint, cleanup, legacy-path, atomic
   conversion, provider integration and production release work remain pending.
+
+## 16 October 2026: Confirmed-Rejection Editing Preview Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint: 5be9837.
+Tested application implementation: 761eeff.
+Preview: https://travelpro-ohpsra6jm-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Owner-guided browser test:
+- Submit an Individual / Retail consultation with departure 2020-01-01.
+- Name: SYNTHETIC REJECTION EDIT TEST.
+- Email: rejection-edit-20261016@example.invalid.
+- Browser displayed: Check your inquiry details and travel dates.
+- No successful receipt was reported for that attempt.
+- Owner confirmed departure date and notes remained editable.
+- Clear departure date and replace notes with:
+  Synthetic corrected submission after confirmed rejection. Do not contact.
+- Corrected submission succeeded.
+- Receipt: c6e00511-ce6c-4987-a297-6f0067325329.
+
+Owner-run read-only database verification:
+- Matching inquiries for the test email: 1.
+- Matching successful receipt: 1.
+- Inquiries without submitted departure date: 1.
+- Inquiries with the exact corrected notes: 1.
+
+Conclusion and limits:
+- Editing after a confirmed rejection and subsequent corrected submission
+  passed on this Preview.
+- The single matching inquiry contains the corrected submitted values.
+- Browser network payloads and request-ID rotation were not inspected.
+- The past-date guard exists in the reviewed migration; the browser showed
+  the generic validation message, not a database error code.
+- This test does not cover rejection following an earlier unknown outcome.
+- Sticky uncertainty and conflict blocking still need browser verification.
+- Reload recovery, concurrency and remaining milestone/release work stay pending.
