@@ -920,3 +920,55 @@ Conclusion and limits:
 - Isolated shared-ceiling end-to-end verification and remaining airport,
   dependency, cleanup, legacy-path, atomic conversion, provider integration
   and production release work remain pending.
+
+## 16 October 2026: Landing Ambiguous-Outcome Recovery Implementation
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 08458ce.
+Production baseline remains main 2e23db2.
+These implementation changes have not yet been verified on Preview.
+
+Server Action:
+- Add explicit accepted, rejected, unknown and conflict outcomes.
+- Mark local validation and rate-limit denial as rejected for that attempt.
+- Mark handled database validation errors as rejected.
+- Mark submission-reference conflict separately.
+- Infrastructure failures and malformed receipts retain unknown outcome.
+
+Client recovery:
+- Capture the submitted form values in an in-memory snapshot.
+- Preserve request ID and snapshot for an unchanged retry.
+- Lock visible fields after an unknown outcome.
+- Keep Retry Same Inquiry available while no request is in flight.
+- Ignore field-update handlers while a submission snapshot is retained.
+- A later rejection does not unlock an earlier unknown outcome.
+- A confirmed rejection without earlier uncertainty releases the snapshot
+  and request ID, allowing correction and a fresh submission.
+- Conflict locks fields and blocks further submission in the current page.
+- Confirmed acceptance resets the form and recovery state.
+- Do not automatically issue a new request ID after an unknown outcome.
+
+Local verification:
+- TypeScript check passed.
+- Production build passed on Next.js 15.5.28.
+- Landing Server Action regression suite passed with explicit outcome assertions.
+- Ten component recovery scenarios passed using mocked React hooks and action.
+- Tests cover rejection editing, unchanged snapshot retry, sticky uncertainty,
+  conflict blocking, thrown failures, malformed responses and in-flight guards.
+- Updated browser retry script selectors and post-loss field-lock assertions.
+- Browser script syntax and tracked diff formatting checks passed.
+- Local suites made no real network requests or database writes.
+- Build still skips linting; lint verification is not established.
+
+Evidence limits and next work:
+- Component logic tests do not establish real DOM or browser behaviour.
+- Updated browser retry test has not yet run against these changes.
+- Existing browser test still targets the older dec2cef Preview and must
+  be repointed to the new verified deployment before execution.
+- Recovery state and request ID remain in memory only.
+- Reload recovery, navigation persistence and cross-tab handling remain pending.
+- Conflict messaging does not yet provide an integrated support workflow.
+- The earlier unrelated submission-response timeout remains unexplained.
+- Concurrency, isolated shared-ceiling end-to-end verification, airport,
+  dependency, cleanup, legacy-path reconciliation, reviewed atomic conversion,
+  provider integration and production release work remain pending.

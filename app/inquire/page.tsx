@@ -51,6 +51,11 @@ const INITIAL_FORM: InquiryFormValues = {
 export default function InquiryPage() {
   const requestIdRef = useRef<string | null>(null);
   const submissionInFlightRef = useRef(false);
+  const submissionSnapshotRef =
+    useRef<InquiryFormValues | null>(null);
+  const outcomeUncertainRef = useRef(false);
+  const [recoveryState, setRecoveryState] =
+    useState<"unknown" | "conflict" | null>(null);
   const [form, setForm] =
     useState<InquiryFormValues>(INITIAL_FORM);
 
@@ -64,59 +69,125 @@ export default function InquiryPage() {
     useState(false);  function updateField(
     field: keyof InquiryFormValues,
     value: string,
-  ) {
+    ) {
+    if (
+      submissionInFlightRef.current ||
+      submissionSnapshotRef.current !== null
+    ) {
+      return;
+    }
+
     setForm((current) => ({
       ...current,
       [field]: value,
     }));
   }
 
- async function handleSubmit(event: FormEvent<HTMLFormElement>) {
-  event.preventDefault();
+   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault();
 
-  if (submissionInFlightRef.current) {
-    return;
-  }
-
-  submissionInFlightRef.current = true;
-  setIsSubmitting(true);
-  setMessage("");
-  setIsSuccess(false);
-
-  try {
-    if (!requestIdRef.current) {
-      requestIdRef.current = crypto.randomUUID();
-    }
-
-    const submission = new FormData();
-    submission.set("requestId", requestIdRef.current);
-
-    for (const [field, value] of Object.entries(form)) {
-      submission.set(field, value);
-    }
-
-    const result = await submitLandingInquiry(submission);
-
-    if (!result.success || !result.receiptId) {
-      setMessage(result.message);
+    if (
+      submissionInFlightRef.current ||
+      recoveryState === "conflict"
+    ) {
       return;
     }
 
-    setIsSuccess(true);
-    setMessage(`${result.message} Reference: ${result.receiptId}`);
-    setForm({ ...INITIAL_FORM });
-    requestIdRef.current = null;
-  } catch {
-    setMessage(
-      "Unable to confirm receipt. Retry without changing your details.",
-    );
-  } finally {
-    submissionInFlightRef.current = false;
-    setIsSubmitting(false);
-  }
-}
+    submissionInFlightRef.current = true;
+    setIsSubmitting(true);
+    setMessage("");
+    setIsSuccess(false);
 
-return (
+    try {
+      if (!requestIdRef.current) {
+        requestIdRef.current = crypto.randomUUID();
+      }
+
+      if (!submissionSnapshotRef.current) {
+        submissionSnapshotRef.current = { ...form };
+      }
+
+      const submission = new FormData();
+      submission.set("requestId", requestIdRef.current);
+
+      for (const [field, value] of Object.entries(
+        submissionSnapshotRef.current,
+      )) {
+        submission.set(field, value);
+      }
+
+      const result = await submitLandingInquiry(submission);
+
+      if (
+        result.success === true &&
+        result.outcome === "accepted" &&
+        typeof result.receiptId === "string" &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(
+          result.receiptId,
+        )
+      ) {
+        setIsSuccess(true);
+        setMessage(`${result.message} Reference: ${result.receiptId}`);
+        setForm({ ...INITIAL_FORM });
+        requestIdRef.current = null;
+        submissionSnapshotRef.current = null;
+        outcomeUncertainRef.current = false;
+        setRecoveryState(null);
+        return;
+      }
+
+      if (
+        result.success === false &&
+        result.outcome === "rejected" &&
+        !outcomeUncertainRef.current
+      ) {
+        submissionSnapshotRef.current = null;
+        requestIdRef.current = null;
+        setRecoveryState(null);
+        setMessage(result.message);
+        return;
+      }
+
+      outcomeUncertainRef.current = true;
+
+      if (
+        result.success === false &&
+        result.outcome === "conflict"
+      ) {
+        setRecoveryState("conflict");
+        setMessage(
+          "This submission reference conflicts with existing details. " +
+            "Receipt cannot be confirmed. Contact TravelPro before submitting again.",
+        );
+        return;
+      }
+
+      setRecoveryState("unknown");
+      setMessage(
+        result.success === false &&
+          result.outcome === "rejected"
+          ? `${result.message} An earlier attempt is still unconfirmed. ` +
+              "Keep these details unchanged and retry when allowed."
+          : "Unable to confirm receipt. Your details are locked to prevent changes. " +
+              "Retry this submission without changing your details.",
+      );
+    } catch {
+      outcomeUncertainRef.current = true;
+      setRecoveryState("unknown");
+      setMessage(
+        "Unable to confirm receipt. Your details are locked to prevent changes. " +
+          "Retry this submission without changing your details.",
+      );
+    } finally {
+      submissionInFlightRef.current = false;
+      setIsSubmitting(false);
+    }
+  }
+
+  const fieldsLocked =
+    isSubmitting || recoveryState !== null;
+
+  return (
     <main className={styles.page}>
       <section className={styles.card}>
         <header className={styles.header}>
@@ -159,7 +230,7 @@ return (
 
             <select
               id="clientType"
-              disabled={isSubmitting}
+              disabled={fieldsLocked}
               value={form.clientType}
               onChange={(event) =>
                 updateField(
@@ -182,7 +253,7 @@ return (
 
   <select
     id="serviceType"
-    disabled={isSubmitting}
+    disabled={fieldsLocked}
     value={form.serviceType}
     onChange={(event) =>
       updateField("serviceType", event.target.value)
@@ -203,7 +274,7 @@ return (
 
               <input
                 id="corporateClient"
-                disabled={isSubmitting}
+                disabled={fieldsLocked}
                 maxLength={200}
                 type="text"
                 value={form.corporateClient}
@@ -227,7 +298,7 @@ return (
 
               <input
                 id="contactName"
-                disabled={isSubmitting}
+                disabled={fieldsLocked}
                 maxLength={200}
                 type="text"
                 value={form.contactName}
@@ -250,7 +321,7 @@ return (
 
               <input
                 id="contactEmail"
-                disabled={isSubmitting}
+                disabled={fieldsLocked}
                 maxLength={254}
                 type="email"
                 value={form.contactEmail}
@@ -274,7 +345,7 @@ return (
 
             <input
               id="contactPhone"
-              disabled={isSubmitting}
+              disabled={fieldsLocked}
               type="tel"
               value={form.contactPhone}
               onChange={(event) =>
@@ -296,7 +367,7 @@ pattern="\+[1-9][0-9]{7,14}"
               label="Origin"
               value={form.origin}
               onChange={(iata) => updateField("origin", iata)}
-              disabled={isSubmitting}
+              disabled={fieldsLocked}
             />
 
                         <AirportAutocomplete
@@ -304,14 +375,14 @@ pattern="\+[1-9][0-9]{7,14}"
               label="Destination"
               value={form.destination}
               onChange={(iata) => updateField("destination", iata)}
-              disabled={isSubmitting}
+              disabled={fieldsLocked}
             />
 
             <div className={styles.field}>
               <label htmlFor="departureDate">Departure date</label>
               <input
                 id="departureDate"
-                disabled={isSubmitting}
+                disabled={fieldsLocked}
                 type="date"
                 value={form.departureDate}
                 onChange={(event) =>
@@ -324,7 +395,7 @@ pattern="\+[1-9][0-9]{7,14}"
               <label htmlFor="returnDate">Return date</label>
               <input
                 id="returnDate"
-                disabled={isSubmitting}
+                disabled={fieldsLocked}
                 type="date"
                 value={form.returnDate}
                 min={form.departureDate || undefined}
@@ -343,7 +414,7 @@ pattern="\+[1-9][0-9]{7,14}"
 
                             <input
                 id="passengerCount"
-                disabled={isSubmitting}
+                disabled={fieldsLocked}
                 type="number"
                 min="1"
                 max="999"
@@ -363,7 +434,7 @@ pattern="\+[1-9][0-9]{7,14}"
 
               <select
                 id="cabinClass"
-                disabled={isSubmitting}
+                disabled={fieldsLocked}
                 value={form.cabinClass}
                 onChange={(event) =>
                   updateField(
@@ -400,7 +471,7 @@ pattern="\+[1-9][0-9]{7,14}"
 
             <textarea
               id="notes"
-              disabled={isSubmitting}
+              disabled={fieldsLocked}
               maxLength={4000}
               rows={5}
               value={form.notes}
@@ -430,11 +501,15 @@ pattern="\+[1-9][0-9]{7,14}"
           <button
             className={styles.submitButton}
             type="submit"
-            disabled={isSubmitting}
+            disabled={isSubmitting || recoveryState === "conflict"}
           >
             {isSubmitting
               ? "Submitting..."
-              : "Submit Inquiry"}
+              : recoveryState === "unknown"
+                ? "Retry Same Inquiry"
+                : recoveryState === "conflict"
+                  ? "Contact TravelPro"
+                  : "Submit Inquiry"}
           </button>
 
           <p className={styles.notice}>

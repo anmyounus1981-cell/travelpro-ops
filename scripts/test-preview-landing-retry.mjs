@@ -328,11 +328,11 @@ async function runTests() {
     console.log(`First server accepted receipt: ${serverReceipt}`);
 
     await page.getByRole("status").filter({
-      hasText: "Unable to confirm receipt. Retry without changing your details.",
+      hasText: "Unable to confirm receipt. Your details are locked to prevent changes.",
     }).waitFor();
 
     await page.getByRole("button", {
-      name: "Submit Inquiry",
+      name: "Retry Same Inquiry",
       exact: true,
     }).waitFor();
 
@@ -343,9 +343,29 @@ async function runTests() {
     );
     assert.equal(actionRequests, 1);
     console.log("PASS: lost response retains form details and shows safe retry");
+        for (const id of lockedFields) {
+      assert.equal(
+        await page.locator(`#${id}`).isDisabled(),
+        true,
+        `Field became editable after an unknown outcome: ${id}`,
+      );
+    }
+
+    assert.equal(
+      await page.getByRole("button", {
+        name: "Retry Same Inquiry",
+        exact: true,
+      }).isEnabled(),
+      true,
+      "Unchanged retry must remain available.",
+    );
+
+    console.log(
+      "PASS: unknown outcome keeps fields locked and unchanged retry available",
+    );
 
     await page.getByRole("button", {
-      name: "Submit Inquiry",
+      name: "Retry Same Inquiry",
       exact: true,
     }).click();
 

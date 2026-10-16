@@ -887,3 +887,48 @@ Still pending:
 - [ ] Reviewed atomic conversion, provider integration and production release.
 
 The inquiry-ingestion milestone remains incomplete.
+
+## 16 October 2026 — Landing Recovery Implementation Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 08458ce.
+Production baseline remains main 2e23db2.
+
+- [x] Add accepted/rejected/unknown/conflict Server Action outcomes.
+- [x] Add explicit outcome assertions to the local action tests.
+- [x] Capture an in-memory submission snapshot for unchanged retries.
+- [x] Lock fields after an unknown outcome and retain the original request ID.
+- [x] Keep unchanged retry available when no request is in flight.
+- [x] Preserve uncertainty when a subsequent retry is rejected.
+- [x] Allow correction after rejection when no earlier uncertainty exists.
+- [x] Block further submission after conflict in the current page.
+- [x] Reset form and recovery state after confirmed acceptance.
+- [x] Add ten local component recovery scenarios with mocked dependencies.
+- [x] Update browser retry selectors and post-loss field-lock assertions.
+- [x] TypeScript, production build, local suites and script syntax checks.
+- [x] Tracked diff formatting checks.
+
+Local component tests execute the current page with mocked React hooks
+and Server Action. They do not establish real browser or DOM behaviour.
+No real database writes were made by these local suites.
+
+Immediate follow-up:
+- [ ] Deploy the recovery implementation to Preview.
+- [ ] Pin the browser retry test to the new deployment.
+- [ ] Verify locked fields and unchanged retry after controlled response loss.
+- [ ] Independently verify exactly one matching database inquiry.
+- [ ] Record the new Preview evidence.
+
+Still pending:
+- [ ] Browser verification of rejection editing and sticky uncertainty.
+- [ ] Browser verification of conflict blocking.
+- [ ] Recovery after reload, navigation and cross-tab handling.
+- [ ] Integrated support workflow for unresolved conflicts.
+- [ ] Concurrent first-submission and isolated shared-ceiling end-to-end tests.
+- [ ] Investigate the earlier unrelated submission-response timeout.
+- [ ] Remaining airport, dependency, lint, cleanup and legacy-path checks.
+- [ ] Reviewed atomic conversion, provider integration and production release.
+
+The updated browser script still targets the older dec2cef Preview.
+Do not run it there as verification of this implementation.
+The inquiry-ingestion milestone remains incomplete.

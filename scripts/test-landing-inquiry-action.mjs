@@ -148,6 +148,7 @@ async function expectRejected(label, form, expectedMessage) {
   const result = await submitLandingInquiry(form);
 
   assert.equal(result.success, false, label);
+  assert.equal(result.outcome, "rejected", label);
   assert.equal(result.receiptId, null, label);
   assert.equal(result.duplicate, false, label);
   assert.match(result.message, expectedMessage, label);
@@ -293,6 +294,7 @@ async function expectAccepted(label, form, verifyPayload) {
   const result = await submitLandingInquiry(form);
 
   assert.equal(result.success, true, label);
+  assert.equal(result.outcome, "accepted", label);
   assert.equal(result.receiptId, RECEIPT_ID, label);
   assert.equal(result.duplicate, false, label);
   assert.equal(rateCalls, 1, label);
@@ -396,6 +398,7 @@ resetMocks();
 rateResult = { allowed: false, remaining: 0, retryAfterSeconds: 30 };
 let result = await submitLandingInquiry(validForm());
 assert.equal(result.success, false);
+assert.equal(result.outcome, "rejected");
 assert.match(result.message, /Try again in 30 seconds/);
 assert.equal(clientCalls, 0);
 assert.equal(rpcCalls, 0);
@@ -405,6 +408,7 @@ resetMocks();
 rateThrows = true;
 result = await submitLandingInquiry(validForm());
 assert.equal(result.success, false);
+assert.equal(result.outcome, "unknown");
 assert.equal(clientCalls, 0);
 assert.equal(rpcCalls, 0);
 console.log("PASS: rate-limit failure prevents intake RPC");
@@ -413,20 +417,23 @@ resetMocks();
 rpcResult.data.duplicate = true;
 result = await submitLandingInquiry(validForm());
 assert.equal(result.success, true);
+assert.equal(result.outcome, "accepted");
 assert.equal(result.duplicate, true);
 assert.equal(result.receiptId, RECEIPT_ID);
 assert.match(result.message, /already received/);
 console.log("PASS: duplicate RPC receipt handling");
 
-for (const [code, message] of [
-  ["23505", /already used with different details/],
-  ["22023", /Check your inquiry details/],
-  ["PGRST202", /Retry without changing your details/],
+for (const [code, message, outcome] of [
+  ["23505", /already used with different details/, "conflict"],
+  ["22023", /Check your inquiry details/, "rejected"],
+  ["PGRST202", /Retry without changing your details/, "unknown"],
 ]) {
   resetMocks();
   rpcResult = { data: null, error: { code } };
   result = await submitLandingInquiry(validForm());
+
   assert.equal(result.success, false);
+  assert.equal(result.outcome, outcome);
   assert.equal(result.receiptId, null);
   assert.match(result.message, message);
   console.log(`PASS: safe RPC error handling ${code}`);
@@ -443,6 +450,7 @@ for (const invalidReceipt of [
   rpcResult = { data: invalidReceipt, error: null };
   result = await submitLandingInquiry(validForm());
   assert.equal(result.success, false);
+  assert.equal(result.outcome, "unknown");
   assert.equal(result.receiptId, null);
   assert.match(result.message, /Retry without changing your details/);
 }
@@ -452,6 +460,7 @@ resetMocks();
 rpcThrows = true;
 result = await submitLandingInquiry(validForm());
 assert.equal(result.success, false);
+assert.equal(result.outcome, "unknown");
 assert.equal(result.receiptId, null);
 console.log("PASS: thrown RPC failure returns safe failure");
 

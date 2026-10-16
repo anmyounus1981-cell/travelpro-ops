@@ -4,10 +4,12 @@ import { createIntakeClient } from "@/lib/supabase/intake";
 import { checkLandingInquiryRateLimit } from "@/lib/inquiry-rate-limit";
 export type InquirySubmissionResult = {
   success: boolean;
+  outcome: "accepted" | "rejected" | "unknown" | "conflict";
   message: string;
   receiptId: string | null;
   duplicate: boolean;
 };
+
 
 const SERVICE_TYPES = [
   "flight_booking",
@@ -242,22 +244,28 @@ function buildCompleteLandingPayload(formData: FormData) {
 export async function submitLandingInquiry(
   formData: FormData,
 ): Promise<InquirySubmissionResult> {
-  const fail = (message: string): InquirySubmissionResult => ({
+      const fail = (
+    message: string,
+    outcome: "rejected" | "unknown" | "conflict" = "unknown",
+  ): InquirySubmissionResult => ({
     success: false,
+    outcome,
     message,
     receiptId: null,
     duplicate: false,
   });
+
 
   let payload: ReturnType<typeof buildCompleteLandingPayload>;
 
   try {
     payload = buildCompleteLandingPayload(formData);
   } catch (error) {
-    return fail(
+        return fail(
       error instanceof Error
         ? error.message
         : "Invalid inquiry submission.",
+      "rejected",
     );
   }
 
@@ -267,6 +275,7 @@ export async function submitLandingInquiry(
     if (!rateLimit.allowed) {
       return fail(
         `Too many attempts. Try again in ${rateLimit.retryAfterSeconds} seconds.`,
+        "rejected",
       );
     }
 
@@ -280,9 +289,10 @@ export async function submitLandingInquiry(
         code: error.code,
       });
 
-      if (error.code === "23505") {
+            if (error.code === "23505") {
         return fail(
           "This submission reference was already used with different details.",
+          "conflict",
         );
       }
 
@@ -291,7 +301,10 @@ export async function submitLandingInquiry(
           error.code,
         )
       ) {
-        return fail("Check your inquiry details and travel dates.");
+                return fail(
+          "Check your inquiry details and travel dates.",
+          "rejected",
+        );
       }
 
       return fail(
@@ -317,6 +330,7 @@ export async function submitLandingInquiry(
 
     return {
       success: true,
+            outcome: "accepted",
       message: data.duplicate
         ? "Your inquiry was already received."
         : "Your inquiry was received successfully.",
