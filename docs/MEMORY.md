@@ -1059,3 +1059,54 @@ Conclusion and limits:
 - This test does not cover rejection following an earlier unknown outcome.
 - Sticky uncertainty and conflict blocking still need browser verification.
 - Reload recovery, concurrency and remaining milestone/release work stay pending.
+
+## 16 October 2026: Sticky Recovery Browser Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: fa9ad29.
+Tested application implementation: 761eeff.
+Preview: https://travelpro-ohpsra6jm-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-sticky-recovery.mjs.
+
+Method:
+- Use a fresh browser context with Vercel bypass and no TravelPro owner login.
+- Restrict traffic to the pinned Preview origin.
+- Allow at most three action requests.
+- Forward the first request and confirm real server acceptance.
+- Discard its response to create an unknown outcome in the browser.
+- Intercept the second request without forwarding it to the server.
+- Supply a controlled rejected outcome using the captured action-response
+  framing and a synthetic rate-limit message.
+- Forward the third request as an unchanged real retry.
+- No deliberate exhaustion of real shared rate quota.
+
+Verified:
+- Private Inbox required owner authentication before and after the test.
+- Response loss left fields locked with unchanged retry available.
+- Controlled rejection after uncertainty did not unlock fields.
+- Submitted name, email and notes remained unchanged.
+- Both retries preserved the original request ID and all serialized fields.
+- Third request returned the original receipt as already received.
+- Confirmed acceptance reset and unlocked the form.
+- Script syntax check passed.
+
+Test identity:
+- Email: sticky-recovery-b001841c-1705-4ac2-9528-8ceaa4381f97@example.invalid.
+- Original and retry receipt: 815a9344-589d-46fb-ba17-db00f0c1c40c.
+
+Owner-run read-only database verification:
+- Matching inquiries: 1.
+- Matching original receipt: 1.
+
+Conclusion and limits:
+- Browser handling of rejection after an earlier unknown outcome passed
+  with a controlled rejection and one persisted inquiry.
+- The second attempt was not processed by the real Server Action or limiter.
+- This does not verify real rate-limit denial during recovery.
+- Response rewriting depends on the tested Next.js action-response format;
+  unsupported framing stops the test.
+- Conflict blocking still needs browser verification.
+- Reload recovery, navigation persistence, cross-tab handling, concurrency
+  and remaining milestone/release work remain pending.

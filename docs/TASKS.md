@@ -1016,3 +1016,48 @@ Still pending:
 
 This test does not establish behaviour after an earlier unknown outcome.
 The inquiry-ingestion milestone remains incomplete.
+
+## 16 October 2026 — Sticky Recovery Browser Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: fa9ad29.
+Tested application implementation: 761eeff.
+Preview: https://travelpro-ohpsra6jm-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-sticky-recovery.mjs.
+
+- [x] Add a bounded browser test with at most three action requests.
+- [x] Confirm first server acceptance before discarding its response.
+- [x] Verify unknown outcome keeps fields locked with retry available.
+- [x] Inject a controlled rejection without forwarding the second request.
+- [x] Verify that rejection does not unlock the earlier uncertain submission.
+- [x] Verify name, email and notes remain unchanged.
+- [x] Verify both retries preserve request ID and all serialized fields.
+- [x] Verify the third request returns the original duplicate receipt.
+- [x] Verify acceptance resets and unlocks the form.
+- [x] Verify private Inbox protection before and after the test.
+- [x] Independently verify one matching database inquiry and original receipt.
+- [x] Verify script syntax.
+
+Receipt: 815a9344-589d-46fb-ba17-db00f0c1c40c.
+Matching inquiries: 1; matching original receipt: 1.
+
+This supersedes the pending browser sticky-uncertainty check for a
+controlled rejected response. The second request did not reach the real
+Server Action or limiter. Real rate-limit denial during recovery remains
+unverified by this test.
+
+The response rewrite depends on the tested Next.js action-response format.
+Unsupported framing stops the test.
+
+Still pending:
+- [ ] Browser verification of conflict blocking.
+- [ ] Reload recovery, navigation persistence and cross-tab handling.
+- [ ] Integrated support workflow for unresolved conflicts.
+- [ ] Concurrent first-submission and isolated shared-ceiling end-to-end tests.
+- [ ] Earlier unrelated submission-response timeout investigation.
+- [ ] Remaining airport, dependency, lint, cleanup and legacy-path checks.
+- [ ] Reviewed atomic conversion, provider integration and production release.
+
+The inquiry-ingestion milestone remains incomplete.
