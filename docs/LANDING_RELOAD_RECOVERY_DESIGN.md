@@ -492,3 +492,25 @@ A WhatsApp message or knowledge of a request ID is not proof of ownership.
 Link destination attributes can be tested without opening WhatsApp.
 Number reachability and the support-resolution process are not established
 by those attribute checks.
+
+## Owner-Selected Recovery Settings — 17 October 2026
+
+The owner selected these settings for the initial implementation:
+
+- Snapshot lifetime: 24 hours from initial persistence.
+- Future-clock tolerance: five minutes.
+- Retrying does not extend the original expiry.
+- Clock tolerance does not add a grace period after expiry.
+- A createdAt value more than five minutes ahead of the current browser
+  clock blocks automatic replay.
+- Browser time remains untrusted and does not guarantee exact-time deletion.
+- Database inquiry retention remains a separate unresolved policy.
+
+These selections supersede the earlier proposed lifetime and clock-tolerance
+values as open product decisions. Storage-module implementation and local
+fake-storage checks now cover these settings. Form integration and real
+browser reload verification remain pending.
+
+Official blocked-recovery support:
++880 1842737654 via https://wa.me/8801842737654.
+Do not include inquiry data or identifiers automatically in that link.

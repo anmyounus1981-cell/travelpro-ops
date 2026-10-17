@@ -1341,3 +1341,60 @@ Next:
 - Continue reload recovery lifetime, clock-tolerance and implementation decisions.
 - Arrange owner-performed encrypted offsite backup and record verification
   separately without exposing passwords or private links.
+
+## 17 October 2026: Landing Recovery Storage Module Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before these changes: a3462b5.
+Production baseline remains main 2e23db2.
+
+Files:
+- lib/landing-inquiry-recovery.ts.
+- scripts/test-landing-inquiry-recovery-storage.mjs.
+- docs/LANDING_RELOAD_RECOVERY_DESIGN.md.
+
+Owner-selected settings:
+- Snapshot lifetime: 24 hours from initial persistence.
+- Future-clock tolerance: five minutes.
+- Retries do not extend expiry.
+- Clock tolerance provides no grace period after expiry.
+
+Local implementation:
+- Validate bounded, versioned pending, accepted, conflict and blocked records.
+- Preserve exact submitted snapshot strings.
+- Access storage through an injected provider, without browser access at import.
+- Distinguish unavailable storage from empty storage.
+- Refuse new persistence when a recognized recovery record already exists.
+- Verify persistence by reading the stored value back.
+- Require the stored pending record to match before retry.
+- Clear only an exact matching recognized record and verify absence.
+- Preserve unrelated storage keys.
+- Replace matching pending records with minimal outcome markers.
+- Accepted and conflict markers contain no submitted snapshot.
+- Expired markers retain only blocked-state metadata and optional identity.
+- Permit a confirmed acceptance marker after the pending deadline.
+- Reject invalid receipt format before accessing storage.
+
+Verification:
+- Local validation and fake-storage tests passed.
+- Separate TypeScript and tracked diff formatting checks passed.
+- Tests cover expiry boundaries, malformed records, changed records,
+  storage failures, silently ignored writes and conditional cleanup.
+- No real browser storage, network requests or database writes were used.
+
+Limits and remaining work:
+- The module is not integrated into the Landing form.
+- Real browser reload recovery has not been tested.
+- Malformed/incompatible-record privacy cleanup remains pending.
+- Historical-key migration and multiple-record scenarios need further verification.
+- Storage operations do not establish atomic cross-tab coordination.
+- A stored receipt marker is not fresh server verification or read authorization.
+- Receipt UUID validation does not establish server acceptance.
+- Accepted UI preservation during storage failure still needs integration tests.
+- No application deployment or database schema changes were made.
+- Remaining inquiry-ingestion and production release work stays pending.
+
+File protection and backup:
+- Preserve all nine protected untracked audit/backup files.
+- No protected file modification or upload was authorized.
+- Encrypted offsite backup execution remains unverified.

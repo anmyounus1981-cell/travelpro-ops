@@ -1273,3 +1273,51 @@ Next application work:
 - [ ] Finalize reload recovery lifetime and clock-tolerance decisions.
 - [ ] Continue reload recovery implementation and its verification matrix.
 - [ ] Preserve all remaining inquiry-ingestion and production release tasks.
+
+## 17 October 2026 — Landing Recovery Storage Module Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before these changes: a3462b5.
+Production baseline remains main 2e23db2.
+
+- [x] Record owner-selected 24-hour lifetime and five-minute clock tolerance.
+- [x] Add client-safe recovery record validation and storage helpers.
+- [x] Preserve exact snapshot strings and original expiry.
+- [x] Distinguish unavailable storage from empty storage.
+- [x] Refuse new persistence over an existing recognized record.
+- [x] Verify new writes and outcome markers by reading them back.
+- [x] Verify matching pending identity and snapshot before retry.
+- [x] Add conditional cleanup with verified absence.
+- [x] Preserve unrelated storage keys.
+- [x] Add minimal accepted, conflict and expired outcome markers.
+- [x] Verify confirmed acceptance can be recorded after pending expiry.
+- [x] Test malformed records, expiry boundaries and changed-record guards.
+- [x] Test storage failures and silently ignored writes/removals.
+- [x] Pass local fake-storage suite and separate TypeScript check.
+- [x] Pass tracked diff formatting checks.
+
+Tests use fake storage. No real browser storage, network requests or
+database writes were used. The module is not integrated into the form.
+
+Immediate follow-up:
+- [ ] Implement conservative privacy cleanup for malformed/incompatible records.
+- [ ] Verify historical-key and multiple-record handling.
+- [ ] Integrate restoration gating and persistence before network dispatch.
+- [ ] Restore pending submissions as unknown without automatic submission.
+- [ ] Preserve exact request identity and snapshot during recovered retries.
+- [ ] Preserve confirmed acceptance when storage operations fail.
+- [ ] Implement verified cleanup and blocked-state support messaging.
+- [ ] Test component integration and storage-failure paths.
+- [ ] Verify response loss, reload and unchanged retry on Preview.
+- [ ] Independently verify exactly one persisted inquiry.
+- [ ] Verify failed required persistence prevents action dispatch.
+
+Limits:
+- Storage operations do not establish atomic cross-tab coordination.
+- Stored receipt markers are not fresh server verification or authorization.
+- Reload, navigation and session-loss behaviour remain unverified.
+- No deployment or database schema changes were made.
+
+Preserve all nine protected untracked audit/backup files.
+Encrypted offsite backup execution remains unverified.
+Remaining inquiry-ingestion and production release work is unchanged.
