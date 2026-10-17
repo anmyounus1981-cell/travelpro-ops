@@ -1236,3 +1236,40 @@ Still pending:
       cleanup, legacy-path, atomic conversion, provider integration and release work.
 
 The inquiry-ingestion milestone remains incomplete.
+
+## 17 October 2026 — Backup and File Protection Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 90355df.
+Production baseline remains main 2e23db2.
+
+Policy: docs/BACKUP_AND_FILE_PROTECTION.md.
+Read this policy at the beginning of future working sessions.
+
+- [x] Document the exact inventory of nine protected untracked local files.
+- [x] Document explicit authorization requirements for modifying/removing them.
+- [x] Prohibit automated cleanup that could remove protected records.
+- [x] Require explicit-path staging and session-close push verification.
+- [x] Document single-C-drive risk and GitHub backup coverage limits.
+- [x] Define manual encrypted archive and private Google Drive backup procedure.
+- [x] Define password separation and archive integrity verification.
+- [x] Require downloaded checksum comparison and separate-directory restore test.
+- [x] Distinguish policy documentation from verified backup completion.
+- [x] Preserve all nine protected files without inspecting their contents.
+
+Pending backup execution:
+- [ ] Owner creates an AES-256 encrypted project archive outside the project folder.
+- [ ] Verify inclusion of all nine protected files and archive integrity.
+- [ ] Upload to private Google Drive and verify restricted sharing.
+- [ ] Download and compare archive checksum.
+- [ ] Verify decryption and restore into a separate directory.
+- [ ] Record verification metadata without passwords or private sharing links.
+- [ ] Establish separate database and document-storage backup/recovery procedures.
+
+No encrypted offsite backup has been verified in this session.
+No application code or database changes were made for this policy task.
+
+Next application work:
+- [ ] Finalize reload recovery lifetime and clock-tolerance decisions.
+- [ ] Continue reload recovery implementation and its verification matrix.
+- [ ] Preserve all remaining inquiry-ingestion and production release tasks.

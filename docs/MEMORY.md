@@ -1303,3 +1303,41 @@ Conclusion and limits:
 - Expired/blocked reload recovery states remain unimplemented.
 - Reload recovery, retention decisions and remaining milestone/release work
   remain pending.
+
+## 17 October 2026: Backup and Local File Protection Policy
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 90355df.
+Production baseline remains main 2e23db2.
+
+Policy: docs/BACKUP_AND_FILE_PROTECTION.md.
+Read this policy at the beginning of future working sessions.
+
+Documented:
+- Exact inventory of nine critical local untracked audit/backup files.
+- No overwrite, truncation, deletion, rename, move or replacement without
+  explicit owner authorization for the specific action.
+- No cleanup commands that could remove protected files.
+- No automatic staging or GitHub upload of protected local records.
+- Explicit-path staging for authorized project changes.
+- Session-close verification of commits, pushes and outstanding local work.
+- Single-C-drive risk and the limits of GitHub coverage.
+- Manual AES-256 encrypted project archive and private Google Drive upload.
+- Password separation, archive integrity checks, downloaded checksum comparison
+  and separate-directory restore verification.
+- Separate database/Storage backup planning remains necessary.
+
+Evidence:
+- Local status showed all nine protected filenames as untracked.
+- Tracked application work was committed and pushed at 90355df.
+- No protected file contents were inspected for this policy task.
+- Encrypted archive creation, Google Drive upload and restore verification
+  have not been performed or verified in this session.
+- Policy documentation is not evidence of an actual offsite backup.
+- No application code, database schema or deployment configuration changed.
+
+Next:
+- Commit and push the policy documentation checkpoint.
+- Continue reload recovery lifetime, clock-tolerance and implementation decisions.
+- Arrange owner-performed encrypted offsite backup and record verification
+  separately without exposing passwords or private links.
