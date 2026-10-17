@@ -1429,3 +1429,26 @@ Limits:
 - No deployment or database schema changes were made.
 - All nine protected local files remain outside this checkpoint.
 - Encrypted offsite backup execution remains unverified.
+
+## 17 October 2026: Recovery Recognized-Key Compatibility Checks
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 7223e36.
+
+Local fake-storage verification:
+- Temporarily extend the test VM's recognized-key registry with a synthetic key.
+- Verify a record under that key restores and prevents a new pending write.
+- Verify two recognized records produce multiple_records blocking.
+- Verify new persistence, retry verification, conditional cleanup,
+  outcome replacement and quarantine all refuse the multiple-record state.
+- Verify neither stored record nor unrelated data is changed.
+- Restore the test registry after each scenario.
+- Local storage suite and diff formatting checks passed.
+
+Limits:
+- Production registry still contains only the current v1 key.
+- These tests do not establish migration of a real historical schema.
+- No production module changes, browser storage, network or database writes.
+- Form integration and real browser reload verification remain pending.
+- Preserve all nine protected files.
+- Encrypted offsite backup execution remains unverified.

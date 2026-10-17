@@ -1353,3 +1353,32 @@ No deployment or database schema changes were made.
 Preserve all nine protected untracked files.
 Encrypted offsite backup execution remains unverified.
 Remaining milestone and production release work is unchanged.
+
+## 17 October 2026 — Recovery Recognized-Key Compatibility Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 7223e36.
+
+- [x] Test a synthetic historical key in the test VM registry.
+- [x] Verify its record restores and blocks new pending persistence.
+- [x] Verify multiple recognized records block restoration.
+- [x] Verify persistence, retry verification, cleanup, outcome replacement
+      and quarantine refuse the multiple-record state without mutations.
+- [x] Restore the test registry after each scenario.
+- [x] Pass local fake-storage suite and diff formatting checks.
+
+This completes the tested recognized-key and multiple-record guards.
+Production still recognizes only v1. Real historical-schema migration
+is not established by these synthetic-key tests.
+
+Next:
+- [ ] Integrate restoration gating and persistence before action dispatch.
+- [ ] Integrate immutable recovered retries and blocked-state support.
+- [ ] Preserve confirmed acceptance during storage failures.
+- [ ] Test component integration and browser reload recovery.
+- [ ] Independently verify one inquiry after recovered retry.
+
+No production module changes, real browser storage, network or database writes.
+Preserve all nine protected files.
+Encrypted offsite backup execution remains unverified.
+Remaining milestone and production release work is unchanged.

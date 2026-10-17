@@ -1157,6 +1157,98 @@ test("privacy cleanup detects a silently ignored write", () => {
   assert.equal(result.reason, "verification_failed");
   assert.equal(h.values.get(RECOVERY_STORAGE_KEY), original);
 });
+test("recognized historical record blocks a new submission", () => {
+  const historicalKey = "travelpro:test-only:historical-recovery";
+  const originalKeys = [...RECOVERY_STORAGE_KEYS];
+
+  try {
+    // Extend only this test VM's registry, not production source.
+    RECOVERY_STORAGE_KEYS.push(historicalKey);
+
+    const original = JSON.stringify(pending());
+    const h = fakeStorage({
+      [historicalKey]: original,
+      "unrelated:key": "keep",
+    });
+
+    const restored = readRecoveryStorage(() => h.storage, NOW);
+
+    assert.equal(restored.kind, "valid");
+    assert.equal(restored.key, historicalKey);
+    assert.equal(restored.record.requestId, REQUEST_ID);
+
+    const result = persistNewPendingRecovery(
+      () => h.storage,
+      pending(),
+      NOW,
+    );
+
+    assert.equal(result.ok, false);
+    assert.equal(result.reason, "existing_record");
+    assert.equal(h.values.get(historicalKey), original);
+    assert.equal(h.values.has(RECOVERY_STORAGE_KEY), false);
+    assert.equal(h.values.get("unrelated:key"), "keep");
+  } finally {
+    RECOVERY_STORAGE_KEYS.splice(
+      0,
+      RECOVERY_STORAGE_KEYS.length,
+      ...originalKeys,
+    );
+  }
+});
+test("multiple recognized records block recovery without changing either", () => {
+  const historicalKey = "travelpro:test-only:historical-recovery";
+  const originalKeys = [...RECOVERY_STORAGE_KEYS];
+
+  try {
+    RECOVERY_STORAGE_KEYS.push(historicalKey);
+
+    const expected = pending();
+    const h = fakeStorage({
+      [RECOVERY_STORAGE_KEY]: JSON.stringify(expected),
+      [historicalKey]: "{malformed historical record",
+      "unrelated:key": "keep",
+    });
+    const before = [...h.values.entries()];
+
+    const restored = readRecoveryStorage(() => h.storage, NOW);
+
+    assert.equal(restored.kind, "blocked");
+    assert.equal(restored.reason, "multiple_records");
+    assert.equal("requestId" in restored, false);
+
+    const results = [
+      persistNewPendingRecovery(() => h.storage, pending(), NOW),
+      verifyPendingRecovery(() => h.storage, expected, NOW),
+      clearMatchingRecovery(() => h.storage, expected),
+      persistPendingOutcome(
+        () => h.storage,
+        expected,
+        { outcome: "accepted", receiptId: RECEIPT_ID },
+        NOW,
+      ),
+      quarantineInvalidRecovery(() => h.storage, NOW),
+    ];
+
+    for (const result of results) {
+      assert.equal(result.ok, false);
+    }
+
+    assert.deepEqual([...h.values.entries()], before);
+    assert.equal(
+      h.operations.some(
+        ([operation]) => operation === "set" || operation === "remove",
+      ),
+      false,
+    );
+  } finally {
+    RECOVERY_STORAGE_KEYS.splice(
+      0,
+      RECOVERY_STORAGE_KEYS.length,
+      ...originalKeys,
+    );
+  }
+});
 console.log(
   "All recovery record validation checks passed. No browser storage, network or database writes.",
 );
