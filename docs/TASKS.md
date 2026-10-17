@@ -1429,3 +1429,46 @@ Still pending:
 Preserve all nine protected untracked files.
 Encrypted offsite backup execution remains unverified.
 The inquiry-ingestion milestone remains incomplete.
+
+## 18 October 2026 — Landing Reload Recovery Preview Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Tested implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-reload-recovery.mjs.
+
+- [x] Add a separate bounded browser test pinned to the new Preview.
+- [x] Confirm server acceptance before deliberately discarding its response.
+- [x] Verify pending storage matches the captured identity and fields.
+- [x] Reload and restore locked details with explicit retry available.
+- [x] Verify the stored record and expiry remain unchanged across reload.
+- [x] Observe no automatic action during the bounded restoration check.
+- [x] Verify explicit retry preserves request ID and all serialized fields.
+- [x] Verify duplicate response returns the original receipt.
+- [x] Verify acceptance clears recovery storage and resets/unlocks the form.
+- [x] Verify tested in-flight submit events create no extra action requests.
+- [x] Verify private Inbox protection before and after intake.
+- [x] Independently verify one inquiry with the original receipt.
+- [x] Pass browser test syntax check.
+
+Receipt: f5e35c6f-46b6-4bb9-9bf2-7443844eadb8.
+Matching inquiries: 1; matching original receipt: 1.
+
+This completes Preview verification of the controlled same-tab reload
+and unchanged-retry flow. It does not establish universal duplicate prevention.
+
+Still pending:
+- [ ] Browser storage-failure verification preventing action dispatch.
+- [ ] Browser cleanup-failure and broader blocked-state verification.
+- [ ] Mobile, accessibility and navigation verification.
+- [ ] Tab/session-loss and cross-tab handling decisions.
+- [ ] Support-resolution procedures and external retention-job review.
+- [ ] Remaining concurrency, shared-ceiling, timeout, airport, dependency,
+      lint, cleanup, legacy-path, atomic conversion, provider and release work.
+
+No production release or database schema changes were performed.
+Preserve all nine protected untracked files.
+Encrypted offsite backup execution remains unverified.
+The inquiry-ingestion milestone remains incomplete.

@@ -1505,3 +1505,53 @@ Limits and follow-up:
 
 Preserve all nine protected untracked files.
 Encrypted offsite backup execution remains unverified.
+
+## 18 October 2026: Landing Reload Recovery Preview Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Tested implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Test: scripts/test-preview-landing-reload-recovery.mjs.
+Created as a separate copy of the existing retry test.
+Pinned origin and hostname to the tested Preview.
+
+Verified browser behaviour:
+- Fresh browser required owner authentication for private Inbox.
+- Visible consultation fields and submit button locked during submission.
+- First server acceptance was confirmed before discarding its response.
+- Unknown outcome retained the submitted details with unchanged retry available.
+- Pending storage snapshot matched captured action fields and request ID.
+- Reload restored locked details and explicit retry availability.
+- Stored recovery record remained unchanged across reload, including expiry.
+- No automatic action occurred during the bounded post-restoration observation.
+- Explicit retry preserved the original request ID and all serialized fields.
+- Duplicate response returned the original receipt.
+- Confirmed acceptance cleared the recovery storage record.
+- Successful retry reset and unlocked the form.
+- Tested repeated in-flight submit events produced no extra action requests.
+- Private Inbox remained protected after the test.
+- Browser test syntax check passed.
+
+Test identity:
+- Email: landing-reload-42741fe2-0150-4ad7-9e17-2d88d71a2818@example.invalid.
+- Original and retry receipt: f5e35c6f-46b6-4bb9-9bf2-7443844eadb8.
+
+Owner-run read-only database verification:
+- Matching inquiries for the test email: 1.
+- Matching original receipt among those inquiries: 1.
+
+Conclusion and limits:
+- Controlled response loss, same-tab reload and unchanged retry passed
+  on this Preview with one persisted inquiry.
+- This establishes the tested flow, not universal duplicate prevention.
+- Browser storage-failure, cleanup-failure and broader blocked-state
+  scenarios remain pending.
+- Mobile, accessibility, navigation, tab/session-loss and cross-tab
+  behaviour are not established by this test.
+- Earlier unrelated timeout and remaining milestone/release work stay pending.
+- No production release or database schema changes were performed.
+
+Preserve all nine protected untracked audit/backup files.
+Encrypted offsite backup execution remains unverified.
