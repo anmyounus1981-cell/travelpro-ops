@@ -2,6 +2,7 @@
 
 import {
   type FormEvent,
+  useEffect,
   useRef,
   useState,
 } from "react";
@@ -9,6 +10,17 @@ import {
 import { submitLandingInquiry } from "./actions";
 import AirportAutocomplete from "@/components/inquiries/AirportAutocomplete";
 import styles from "./page.module.css";
+import {
+  type InquiryRecoveryRecord,
+  type PendingRecoveryRecord,
+  createPendingRecoveryRecord,
+  readRecoveryStorage,
+  persistNewPendingRecovery,
+  verifyPendingRecovery,
+  clearMatchingRecovery,
+  persistPendingOutcome,
+  quarantineInvalidRecovery,
+} from "@/lib/landing-inquiry-recovery";
 
 type InquiryFormValues = {
   clientType: "individual" | "corporate";
@@ -54,6 +66,16 @@ export default function InquiryPage() {
   const submissionSnapshotRef =
     useRef<InquiryFormValues | null>(null);
   const outcomeUncertainRef = useRef(false);
+  const recoveryRecordRef =
+    useRef<InquiryRecoveryRecord | null>(null);
+  const cleanupMessageRef = useRef("");
+  const storageGateRef = useRef<
+    "restoring" | "ready" | "unavailable" | "blocked" | "cleanup"
+  >("restoring");
+
+  const [storageGate, setStorageGate] = useState<
+    "restoring" | "ready" | "unavailable" | "blocked" | "cleanup"
+  >("restoring");
   const [recoveryState, setRecoveryState] =
     useState<"unknown" | "conflict" | null>(null);
   const [form, setForm] =
@@ -66,11 +88,203 @@ export default function InquiryPage() {
     useState("");
 
   const [isSuccess, setIsSuccess] =
-    useState(false);  function updateField(
+    useState(false);
+
+  function changeStorageGate(
+    next: "restoring" | "ready" | "unavailable" | "blocked" | "cleanup",
+  ) {
+    storageGateRef.current = next;
+    setStorageGate(next);
+  }
+  function restoreLocalRecovery() {
+    if (submissionInFlightRef.current) return;
+
+    changeStorageGate("restoring");
+
+    const restored = readRecoveryStorage(
+      () => window.sessionStorage,
+      Date.now(),
+    );
+
+    if (restored.kind === "unavailable") {
+      changeStorageGate("unavailable");
+      setMessage(
+        "Browser recovery storage could not be accessed. " +
+          "Submission is paused. Retry local recovery without submitting.",
+      );
+      return;
+    }
+    if (
+      outcomeUncertainRef.current &&
+      recoveryRecordRef.current?.state === "pending" &&
+      restored.kind === "valid"
+    ) {
+      const matching = verifyPendingRecovery(
+        () => window.sessionStorage,
+        recoveryRecordRef.current,
+        Date.now(),
+      );
+
+      if (!matching.ok) {
+        changeStorageGate("blocked");
+        setMessage(
+          "Saved recovery no longer matches the earlier unconfirmed " +
+            "submission. Submission remains paused. " +
+            "Contact TravelPro support before submitting again.",
+        );
+        return;
+      }
+    }
+    if (restored.kind === "empty") {
+            if (outcomeUncertainRef.current) {
+        changeStorageGate("blocked");
+        setMessage(
+          "An earlier submission is still unconfirmed, but its saved " +
+            "recovery record is missing. Submission remains paused. " +
+            "Contact TravelPro support before submitting again.",
+        );
+        return;
+      }
+      recoveryRecordRef.current = null;
+      requestIdRef.current = null;
+      submissionSnapshotRef.current = null;
+      outcomeUncertainRef.current = false;
+      setRecoveryState(null);
+      setIsSuccess(false);
+      setMessage("");
+      changeStorageGate("ready");
+      return;
+    }
+
+    if (restored.kind === "blocked") {
+      quarantineInvalidRecovery(
+        () => window.sessionStorage,
+        Date.now(),
+      );
+
+      recoveryRecordRef.current = null;
+      changeStorageGate("blocked");
+      setIsSuccess(false);
+      setMessage(
+        "Saved inquiry recovery could not be safely restored. " +
+          "Submission is paused. Contact TravelPro support before submitting again.",
+      );
+      return;
+    }
+
+    const record = restored.record;
+    recoveryRecordRef.current = record;
+
+    if (record.state === "pending") {
+      requestIdRef.current = record.requestId;
+      submissionSnapshotRef.current = { ...record.snapshot };
+      outcomeUncertainRef.current = true;
+      setForm({ ...record.snapshot });
+      setRecoveryState("unknown");
+      setIsSuccess(false);
+      setMessage(
+        "A previous submission is unconfirmed. Your saved details are locked. " +
+          "Retry the same inquiry without changing your details.",
+      );
+      changeStorageGate("ready");
+      return;
+    }
+
+    if (record.state === "accepted") {
+      setIsSuccess(false);
+      setMessage(
+        "Locally saved receipt: " + record.receiptId + ". " +
+          "This receipt has not been freshly verified with the server. " +
+          "Local recovery cleanup is required before a new inquiry.",
+      );
+      changeStorageGate("cleanup");
+      return;
+    }
+
+    if (record.state === "conflict") {
+      setRecoveryState("conflict");
+      setMessage(
+        "A saved submission conflict requires support. " +
+          "Contact TravelPro before submitting again.",
+      );
+    } else {
+      setMessage(
+        "Saved inquiry recovery is blocked. " +
+          "Contact TravelPro support before submitting again.",
+      );
+    }
+
+    setIsSuccess(false);
+    changeStorageGate("blocked");
+  }
+
+  useEffect(() => {
+    restoreLocalRecovery();
+  }, []);
+  function retryLocalCleanup() {
+    if (
+      submissionInFlightRef.current ||
+      storageGateRef.current !== "cleanup"
+    ) {
+      return;
+    }
+
+    const record = recoveryRecordRef.current;
+
+    if (record === null) {
+      changeStorageGate("blocked");
+      setMessage(
+        "The recovery cleanup target is unavailable. " +
+          "Contact TravelPro support before submitting again.",
+      );
+      return;
+    }
+
+    const resultMessage =
+      cleanupMessageRef.current ||
+      (record.state === "accepted"
+        ? `Locally saved receipt: ${record.receiptId}. ` +
+          "This receipt has not been freshly verified with the server."
+        : "");
+
+    if (!resultMessage) {
+      changeStorageGate("blocked");
+      setMessage(
+        "The previous outcome cannot be safely determined. " +
+          "Contact TravelPro support before submitting again.",
+      );
+      return;
+    }
+
+    const cleared = clearMatchingRecovery(
+      () => window.sessionStorage,
+      record,
+    );
+
+    if (!cleared.ok) {
+      setMessage(
+        resultMessage +
+          " Local cleanup is still incomplete. New submission remains paused.",
+      );
+      return;
+    }
+
+    recoveryRecordRef.current = null;
+    requestIdRef.current = null;
+    submissionSnapshotRef.current = null;
+    outcomeUncertainRef.current = false;
+    cleanupMessageRef.current = "";
+    setRecoveryState(null);
+    setMessage(resultMessage + " Local recovery cleanup completed.");
+    changeStorageGate("ready");
+  }
+
+  function updateField(
     field: keyof InquiryFormValues,
     value: string,
     ) {
     if (
+      storageGateRef.current !== "ready" ||
       submissionInFlightRef.current ||
       submissionSnapshotRef.current !== null
     ) {
@@ -87,9 +301,11 @@ export default function InquiryPage() {
     event.preventDefault();
 
     if (
+      storageGateRef.current !== "ready" ||
       submissionInFlightRef.current ||
       recoveryState === "conflict"
     ) {
+
       return;
     }
 
@@ -105,6 +321,80 @@ export default function InquiryPage() {
 
       if (!submissionSnapshotRef.current) {
         submissionSnapshotRef.current = { ...form };
+      }
+      let pendingRecord: PendingRecoveryRecord;
+
+      if (recoveryRecordRef.current === null) {
+        const created = createPendingRecoveryRecord(
+          requestIdRef.current,
+          submissionSnapshotRef.current,
+          Date.now(),
+        );
+
+        if (created === null) {
+          changeStorageGate("blocked");
+          setMessage(
+            "Recovery information could not be prepared. " +
+              "No inquiry was sent by this attempt.",
+          );
+          return;
+        }
+
+        const persisted = persistNewPendingRecovery(
+          () => window.sessionStorage,
+          created,
+          Date.now(),
+        );
+
+        if (!persisted.ok) {
+          changeStorageGate(
+            persisted.reason === "unavailable"
+              ? "unavailable"
+              : "blocked",
+          );
+          setMessage(
+            "Recovery information could not be safely saved. " +
+              "No inquiry was sent by this attempt. Submission is paused.",
+          );
+          return;
+        }
+
+        recoveryRecordRef.current = created;
+        pendingRecord = created;
+      } else if (recoveryRecordRef.current.state === "pending") {
+        pendingRecord = recoveryRecordRef.current;
+      } else {
+        changeStorageGate("blocked");
+        setMessage(
+          "An existing recovery record prevents this submission. " +
+            "Contact TravelPro support.",
+        );
+        return;
+      }
+
+      const verified = verifyPendingRecovery(
+        () => window.sessionStorage,
+        pendingRecord,
+        Date.now(),
+      );
+
+      if (!verified.ok) {
+        if (verified.reason !== "unavailable") {
+          quarantineInvalidRecovery(
+            () => window.sessionStorage,
+            Date.now(),
+          );
+        }
+        changeStorageGate(
+          verified.reason === "unavailable"
+            ? "unavailable"
+            : "blocked",
+        );
+        setMessage(
+          "The saved inquiry could not be verified for retry. " +
+            "No inquiry was sent by this attempt. Submission is paused.",
+        );
+        return;
       }
 
       const submission = new FormData();
@@ -126,13 +416,57 @@ export default function InquiryPage() {
           result.receiptId,
         )
       ) {
+        // Preserve confirmed acceptance even if local storage fails.
+                cleanupMessageRef.current =
+          `${result.message} Reference: ${result.receiptId}`;
         setIsSuccess(true);
-        setMessage(`${result.message} Reference: ${result.receiptId}`);
         setForm({ ...INITIAL_FORM });
         requestIdRef.current = null;
         submissionSnapshotRef.current = null;
         outcomeUncertainRef.current = false;
         setRecoveryState(null);
+
+        const acceptedRecord: InquiryRecoveryRecord = {
+          schemaVersion: 1,
+          submissionContractVersion: 1,
+          state: "accepted",
+          requestId: pendingRecord.requestId,
+          receiptId: result.receiptId,
+        };
+
+        const marked = persistPendingOutcome(
+          () => window.sessionStorage,
+          pendingRecord,
+          { outcome: "accepted", receiptId: result.receiptId },
+          Date.now(),
+        );
+
+        const cleanupTarget = marked.ok
+          ? acceptedRecord
+          : pendingRecord;
+
+        recoveryRecordRef.current = cleanupTarget;
+
+        const cleared = clearMatchingRecovery(
+          () => window.sessionStorage,
+          cleanupTarget,
+        );
+
+        if (cleared.ok) {
+          recoveryRecordRef.current = null;
+          changeStorageGate("ready");
+          setMessage(
+            `${result.message} Reference: ${result.receiptId}`,
+          );
+        } else {
+          changeStorageGate("cleanup");
+          setMessage(
+            `${result.message} Reference: ${result.receiptId}. ` +
+              "Your inquiry is confirmed, but local recovery cleanup failed. " +
+              "New submission is paused. Do not submit this inquiry again.",
+          );
+        }
+
         return;
       }
 
@@ -141,10 +475,29 @@ export default function InquiryPage() {
         result.outcome === "rejected" &&
         !outcomeUncertainRef.current
       ) {
-        submissionSnapshotRef.current = null;
-        requestIdRef.current = null;
-        setRecoveryState(null);
-        setMessage(result.message);
+      cleanupMessageRef.current = result.message;
+        const cleared = clearMatchingRecovery(
+          () => window.sessionStorage,
+          pendingRecord,
+        );
+
+        if (cleared.ok) {
+          recoveryRecordRef.current = null;
+          submissionSnapshotRef.current = null;
+          requestIdRef.current = null;
+          setRecoveryState(null);
+          changeStorageGate("ready");
+          setMessage(result.message);
+        } else {
+          // Keep the known rejection and block editing until cleanup succeeds.
+          changeStorageGate("cleanup");
+          setMessage(
+            `${result.message} ` +
+              "This attempt was rejected, but local recovery cleanup failed. " +
+              "Retry local cleanup before editing or submitting again.",
+          );
+        }
+
         return;
       }
 
@@ -154,7 +507,27 @@ export default function InquiryPage() {
         result.success === false &&
         result.outcome === "conflict"
       ) {
+        const marked = persistPendingOutcome(
+          () => window.sessionStorage,
+          pendingRecord,
+          { outcome: "conflict" },
+          Date.now(),
+        );
+
+        if (marked.ok) {
+          recoveryRecordRef.current = {
+            schemaVersion: 1,
+            submissionContractVersion: 1,
+            state: "conflict",
+            requestId: pendingRecord.requestId,
+            createdAt: pendingRecord.createdAt,
+            expiresAt: pendingRecord.expiresAt,
+          };
+        }
+
+        changeStorageGate("blocked");
         setRecoveryState("conflict");
+
         setMessage(
           "This submission reference conflicts with existing details. " +
             "Receipt cannot be confirmed. Contact TravelPro before submitting again.",
@@ -185,7 +558,9 @@ export default function InquiryPage() {
   }
 
   const fieldsLocked =
-    isSubmitting || recoveryState !== null;
+    storageGate !== "ready" ||
+    isSubmitting ||
+    recoveryState !== null;
 
   return (
     <main className={styles.page}>
@@ -484,7 +859,18 @@ pattern="\+[1-9][0-9]{7,14}"
               placeholder="Preferred airline, baggage, flexible dates, or other requirements"
             />
           </div>
-
+          <p className={styles.notice}>
+            When you submit, this browser tab stores your submitted
+            contact details and requirements to help recover an
+            interrupted submission. Recovery expires after 24 hours;
+            retries do not extend that time. Closing the tab or clearing
+            browser data may remove recovery information. Browser
+            session restoration may retain it. Expired details are
+            checked for cleanup when this page is opened or used;
+            deletion at an exact time is not guaranteed.
+            Do not enter passport numbers, payment details, passwords
+            or verification codes in this form.
+          </p>
           {message && (
             <p
               className={
@@ -497,7 +883,37 @@ pattern="\+[1-9][0-9]{7,14}"
               {message}
             </p>
           )}
-          {recoveryState === "conflict" && (
+                    {storageGate === "restoring" && (
+            <p className={styles.notice} role="status">
+              Checking saved inquiry recovery...
+            </p>
+          )}
+
+          {storageGate === "unavailable" && (
+            <button
+              className={styles.submitButton}
+              type="button"
+              onClick={restoreLocalRecovery}
+              disabled={isSubmitting}
+            >
+              Retry Local Recovery
+            </button>
+          )}
+
+          {storageGate === "cleanup" && (
+            <button
+              className={styles.submitButton}
+              type="button"
+              onClick={retryLocalCleanup}
+              disabled={isSubmitting}
+            >
+              Retry Local Cleanup
+            </button>
+          )}
+
+          {(storageGate === "blocked" ||
+            storageGate === "cleanup" ||
+            recoveryState === "conflict") && (
             <div className={styles.recoverySupport}>
               <p>
                 For help confirming your inquiry, contact TravelPro
@@ -524,15 +940,22 @@ pattern="\+[1-9][0-9]{7,14}"
           <button
             className={styles.submitButton}
             type="submit"
-            disabled={isSubmitting || recoveryState === "conflict"}
+            disabled={
+              storageGate !== "ready" ||
+              isSubmitting ||
+              recoveryState === "conflict"
+            }
           >
             {isSubmitting
               ? "Submitting..."
-              : recoveryState === "unknown"
-                ? "Retry Same Inquiry"
-                : recoveryState === "conflict"
+              : storageGate === "restoring"
+                ? "Checking Recovery..."
+                : storageGate !== "ready" ||
+                    recoveryState === "conflict"
                   ? "Submission Paused"
-                  : "Submit Inquiry"}
+                  : recoveryState === "unknown"
+                    ? "Retry Same Inquiry"
+                    : "Submit Inquiry"}
           </button>
 
           <p className={styles.notice}>

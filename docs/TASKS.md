@@ -1382,3 +1382,50 @@ No production module changes, real browser storage, network or database writes.
 Preserve all nine protected files.
 Encrypted offsite backup execution remains unverified.
 Remaining milestone and production release work is unchanged.
+
+## 18 October 2026 — Landing Reload Recovery Integration Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 123379d.
+Production baseline remains main 2e23db2.
+
+- [x] Gate interaction until local recovery restoration finishes.
+- [x] Persist and verify the exact snapshot before action dispatch.
+- [x] Restore pending submissions as unknown without automatic dispatch.
+- [x] Preserve request identity and snapshot during recovered retries.
+- [x] Block missing or changed records after known uncertainty.
+- [x] Integrate rejected-record quarantine attempts.
+- [x] Preserve confirmed acceptance during cleanup failure.
+- [x] Require verified cleanup before fresh submission or rejection editing.
+- [x] Add local-only recovery and cleanup retry buttons.
+- [x] Integrate blocked-state WhatsApp support and storage privacy notice.
+- [x] Label restored receipt markers as locally saved information.
+- [x] Update component harness to execute the actual storage module.
+- [x] Pass existing scenarios and eight new local integration scenarios.
+- [x] Pass storage and Server Action regression suites.
+- [x] Pass separate TypeScript, production build and diff checks.
+
+Local component tests mock React hooks, effects, browser storage and
+Server Action. They do not establish real browser or DOM behaviour.
+Build skips linting. No database schema changes were made.
+
+Immediate follow-up:
+- [ ] Deploy the implementation to Preview and verify its source commit.
+- [ ] Add a bounded response-loss, reload and unchanged-retry browser test.
+- [ ] Verify no automatic action dispatch during restoration.
+- [ ] Verify recovered retry preserves original identity and fields.
+- [ ] Verify receipt matches the original server acceptance.
+- [ ] Independently verify exactly one matching database inquiry.
+- [ ] Verify browser storage failure prevents action dispatch.
+- [ ] Record Preview evidence and remaining limitations.
+
+Still pending:
+- [ ] Broader browser coverage of cleanup failures and blocked states.
+- [ ] Lint verification and recovery UI accessibility checks.
+- [ ] Support-resolution procedures and external retention-job review.
+- [ ] Remaining concurrency, shared-ceiling, timeout, airport, dependency,
+      cleanup, legacy-path, atomic conversion, provider and release work.
+
+Preserve all nine protected untracked files.
+Encrypted offsite backup execution remains unverified.
+The inquiry-ingestion milestone remains incomplete.

@@ -1452,3 +1452,56 @@ Limits:
 - Form integration and real browser reload verification remain pending.
 - Preserve all nine protected files.
 - Encrypted offsite backup execution remains unverified.
+
+## 18 October 2026: Landing Reload Recovery Form Integration
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 123379d.
+Production baseline remains main 2e23db2.
+
+Implementation:
+- Integrate the recovery storage module into app/inquire/page.tsx.
+- Gate editing and submission until initial storage restoration finishes.
+- Persist and verify the submitted snapshot before Server Action dispatch.
+- Restore pending records as unknown without automatic submission.
+- Preserve original request ID and exact fields for explicit retry.
+- Block missing or changed recovery records after known uncertainty.
+- Attempt quarantine when restoration or retry encounters rejected records.
+- Preserve confirmed acceptance even when storage cleanup fails.
+- Require verified cleanup before a fresh submission.
+- Allow local-only recovery and cleanup retries.
+- Preserve rejection editing only after verified cleanup and no prior uncertainty.
+- Store minimal conflict markers when persistence succeeds.
+- Show official WhatsApp support in blocked and cleanup states.
+- Add a browser-storage privacy notice before submission.
+- Label restored receipt markers as local information, not fresh verification.
+
+Local verification:
+- Update component harness with fake sessionStorage and effect execution.
+- Execute the actual recovery module with mocked React hooks and Server Action.
+- Existing recovery scenarios and eight new integration scenarios passed.
+- Test simulated reload, unchanged retry and no automatic dispatch.
+- Test persistence failure preventing dispatch.
+- Test accepted and rejected cleanup failures and local-only cleanup retry.
+- Test missing and changed records after uncertainty.
+- Test expired-record quarantine and locally saved receipt messaging.
+- Storage and Server Action regression suites passed.
+- Separate TypeScript and diff formatting checks passed.
+- Production build passed on Next.js 15.5.28.
+- Build skips linting; lint verification remains pending.
+- Local suites used no real browser storage, network or database writes.
+
+Limits and follow-up:
+- Mocked effects do not establish real React scheduling or DOM behaviour.
+- Updated form has not been verified on a new Preview deployment.
+- Real response loss, reload and recovered retry require browser verification.
+- Independently verify exactly one inquiry after that browser test.
+- Storage deletion, tab/session loss and cross-device recovery remain limitations.
+- Failed marker writes can leave an older pending record in storage.
+- Quarantine failure can leave personal data in storage.
+- Storage operations are not atomic cross-tab coordination or secure erasure.
+- Existing unrelated timeout and remaining milestone/release work stay pending.
+- No database schema changes or production release were performed.
+
+Preserve all nine protected untracked files.
+Encrypted offsite backup execution remains unverified.
