@@ -720,3 +720,71 @@ export function persistPendingOutcome(
     return { ok: false, reason: "unavailable" };
   }
 }
+
+export function quarantineInvalidRecovery(
+  getStorage: RecoveryStorageProvider,
+  now: number,
+): RecoveryOperationResult {
+  if (!isTimestamp(now)) {
+    return { ok: false, reason: "invalid_record" };
+  }
+
+  try {
+    const storage = getStorage();
+    const found: Array<{ key: string; raw: string }> = [];
+
+    for (const key of RECOVERY_STORAGE_KEYS) {
+      const raw = storage.getItem(key);
+      if (raw !== null) found.push({ key, raw });
+    }
+
+    if (found.length !== 1) {
+      return { ok: false, reason: "record_changed" };
+    }
+
+    const saved = found[0];
+    const parsed = parseRecoveryRecord(saved.raw, now);
+
+    if (parsed.kind !== "blocked") {
+      return { ok: false, reason: "invalid_record" };
+    }
+
+    const marker: BlockedRecoveryRecord = {
+      schemaVersion: 1,
+      state: "blocked",
+      reason: parsed.reason,
+      ...(parsed.requestId ? { requestId: parsed.requestId } : {}),
+    };
+
+    const markerRaw = serializeValidRecord(marker, now);
+
+    if (markerRaw === null) {
+      return { ok: false, reason: "invalid_record" };
+    }
+
+    // Recheck every recognized key before replacing the observed record.
+    for (const key of RECOVERY_STORAGE_KEYS) {
+      const expected = key === saved.key ? saved.raw : null;
+
+      if (storage.getItem(key) !== expected) {
+        return { ok: false, reason: "record_changed" };
+      }
+    }
+
+    storage.setItem(saved.key, markerRaw);
+
+    if (storage.getItem(saved.key) !== markerRaw) {
+      return { ok: false, reason: "verification_failed" };
+    }
+
+    for (const key of RECOVERY_STORAGE_KEYS) {
+      if (key !== saved.key && storage.getItem(key) !== null) {
+        return { ok: false, reason: "record_changed" };
+      }
+    }
+
+    return { ok: true };
+  } catch {
+    return { ok: false, reason: "unavailable" };
+  }
+}

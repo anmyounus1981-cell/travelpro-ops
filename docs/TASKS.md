@@ -1321,3 +1321,35 @@ Limits:
 Preserve all nine protected untracked audit/backup files.
 Encrypted offsite backup execution remains unverified.
 Remaining inquiry-ingestion and production release work is unchanged.
+
+## 17 October 2026 — Recovery Privacy Cleanup Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 0560f0b.
+Production baseline remains main 2e23db2.
+
+- [x] Add conditional quarantine of a single parser-rejected record.
+- [x] Replace rejected content with minimal blocked-state metadata.
+- [x] Recheck recognized keys before writing and verify the saved marker.
+- [x] Preserve valid pending records and unrelated storage.
+- [x] Test malformed and incompatible record cleanup.
+- [x] Test changes during inspection and failed or ignored writes.
+- [x] Pass local fake-storage suite, TypeScript and diff checks.
+
+The helper is not integrated into the form. Successful quarantine does
+not permit a fresh submission. Failed replacement can leave original
+data in storage. This is not secure erasure or atomic cross-tab protection.
+
+Next:
+- [ ] Verify historical-key and multiple-record scenarios.
+- [ ] Integrate restore gating and persistence before action dispatch.
+- [ ] Integrate blocked-state support and storage-failure handling.
+- [ ] Preserve confirmed acceptance when storage operations fail.
+- [ ] Test component integration and real browser reload recovery.
+- [ ] Independently verify one inquiry after a recovered retry.
+
+No real browser storage, network or database writes were used by these tests.
+No deployment or database schema changes were made.
+Preserve all nine protected untracked files.
+Encrypted offsite backup execution remains unverified.
+Remaining milestone and production release work is unchanged.

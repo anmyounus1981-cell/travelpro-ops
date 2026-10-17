@@ -1398,3 +1398,34 @@ File protection and backup:
 - Preserve all nine protected untracked audit/backup files.
 - No protected file modification or upload was authorized.
 - Encrypted offsite backup execution remains unverified.
+
+## 17 October 2026: Recovery Privacy Cleanup Helper
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 0560f0b.
+Production baseline remains main 2e23db2.
+
+Implementation:
+- Add quarantineInvalidRecovery to the client-safe storage module.
+- Replace a single parser-rejected record with a minimal blocked marker.
+- Retain only the blocked reason and a valid request ID when available.
+- Recheck recognized keys before writing and verify the saved marker.
+- Refuse valid records, missing records and multiple recognized records.
+- Preserve unrelated storage keys.
+- Successful quarantine does not authorize a new submission.
+
+Verification:
+- Local fake-storage suite and separate TypeScript check passed.
+- Diff formatting checks passed.
+- New tests cover malformed and incompatible records, valid pending
+  protection, changes during inspection and failed or silently ignored writes.
+- No real browser storage, network requests or database writes were used.
+
+Limits:
+- Failed replacement may leave original personal data in storage.
+- Operations are not atomic cross-tab coordination or secure erasure.
+- Historical-key and multiple-record scenarios need further verification.
+- Form integration, blocked-state UI and browser reload tests remain pending.
+- No deployment or database schema changes were made.
+- All nine protected local files remain outside this checkpoint.
+- Encrypted offsite backup execution remains unverified.

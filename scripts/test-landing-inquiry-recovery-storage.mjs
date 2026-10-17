@@ -51,6 +51,7 @@ const {
   verifyPendingRecovery,
   clearMatchingRecovery,
   persistPendingOutcome,
+    quarantineInvalidRecovery,
   RECOVERY_STORAGE_KEY,
   RECOVERY_STORAGE_KEYS,
   RECOVERY_LIFETIME_MS,
@@ -1016,6 +1017,145 @@ test("invalid accepted receipt is rejected before storage access", () => {
   assert.equal(result.ok, false);
   assert.equal(result.reason, "invalid_record");
   assert.equal(storageAccesses, 0);
+});
+test("malformed recovery is replaced with a minimal blocked marker", () => {
+  const h = fakeStorage({
+    [RECOVERY_STORAGE_KEY]: '{"snapshot":"PRIVATE TEST DATA"',
+    "unrelated:key": "keep",
+  });
+
+  const result = quarantineInvalidRecovery(
+    () => h.storage,
+    NOW,
+  );
+
+  assert.equal(result.ok, true);
+
+  const saved = JSON.parse(h.values.get(RECOVERY_STORAGE_KEY));
+
+  assert.deepEqual(saved, {
+    schemaVersion: 1,
+    state: "blocked",
+    reason: "invalid_record",
+  });
+
+  assert.equal(h.values.get("unrelated:key"), "keep");
+  assert.equal(
+    h.operations.some(([operation]) => operation === "remove"),
+    false,
+  );
+});
+test("incompatible recovery retains only blocked metadata and valid identity", () => {
+  const incompatible = {
+    ...pending(),
+    submissionContractVersion: 2,
+  };
+
+  const h = fakeStorage({
+    [RECOVERY_STORAGE_KEY]: JSON.stringify(incompatible),
+    "unrelated:key": "keep",
+  });
+
+  const result = quarantineInvalidRecovery(
+    () => h.storage,
+    NOW,
+  );
+
+  assert.equal(result.ok, true);
+
+  const saved = JSON.parse(h.values.get(RECOVERY_STORAGE_KEY));
+
+  assert.deepEqual(saved, {
+    schemaVersion: 1,
+    state: "blocked",
+    reason: "incompatible_version",
+    requestId: REQUEST_ID,
+  });
+
+  assert.equal(h.values.get("unrelated:key"), "keep");
+});
+test("privacy cleanup never replaces a valid pending submission", () => {
+  const original = JSON.stringify(pending());
+  const h = fakeStorage({
+    [RECOVERY_STORAGE_KEY]: original,
+  });
+
+  const result = quarantineInvalidRecovery(
+    () => h.storage,
+    NOW,
+  );
+
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "invalid_record");
+  assert.equal(h.values.get(RECOVERY_STORAGE_KEY), original);
+  assert.equal(
+    h.operations.some(([operation]) => operation === "set"),
+    false,
+  );
+});
+test("privacy cleanup refuses a record changed after inspection", () => {
+  const h = fakeStorage({
+    [RECOVERY_STORAGE_KEY]: "{malformed",
+  });
+
+  const replacement = JSON.stringify(pending());
+  const originalGet = h.storage.getItem;
+  let reads = 0;
+
+  h.storage.getItem = (key) => {
+    if (key === RECOVERY_STORAGE_KEY) {
+      reads += 1;
+
+      if (reads === 2) {
+        h.values.set(key, replacement);
+      }
+    }
+
+    return originalGet(key);
+  };
+
+  const result = quarantineInvalidRecovery(
+    () => h.storage,
+    NOW,
+  );
+
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "record_changed");
+  assert.equal(h.values.get(RECOVERY_STORAGE_KEY), replacement);
+  assert.equal(
+    h.operations.some(([operation]) => operation === "set"),
+    false,
+  );
+});
+test("privacy cleanup write failure preserves the original data", () => {
+  const original = "{malformed";
+  const h = fakeStorage(
+    { [RECOVERY_STORAGE_KEY]: original },
+    { writeThrows: true },
+  );
+
+  const result = quarantineInvalidRecovery(() => h.storage, NOW);
+
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "unavailable");
+  assert.equal(h.values.get(RECOVERY_STORAGE_KEY), original);
+});
+
+test("privacy cleanup detects a silently ignored write", () => {
+  const original = "{malformed";
+  const h = fakeStorage({
+    [RECOVERY_STORAGE_KEY]: original,
+  });
+
+  h.storage.setItem = (key) => {
+    h.operations.push(["set", key]);
+  };
+
+  const result = quarantineInvalidRecovery(() => h.storage, NOW);
+
+  assert.equal(result.ok, false);
+  assert.equal(result.reason, "verification_failed");
+  assert.equal(h.values.get(RECOVERY_STORAGE_KEY), original);
 });
 console.log(
   "All recovery record validation checks passed. No browser storage, network or database writes.",
