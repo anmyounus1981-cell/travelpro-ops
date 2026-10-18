@@ -1919,3 +1919,55 @@ Conclusion and limits:
 
 Preserve all nine protected untracked audit/backup files.
 Encrypted offsite backup execution remains unverified.
+
+## 18 October 2026: Cleanup Read-Back Failure Browser Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 4b5eec8.
+Tested application implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-cleanup-readback-failure.mjs.
+Created separately from the existing accepted-cleanup failure test.
+
+Method:
+- Accept one synthetic inquiry in a fresh browser context.
+- Allow recovery-key removeItem to complete.
+- Inject getItem failure after removal to block absence verification.
+- Use the original getter only in a test-only physical-absence assertion.
+- Permit at most one forwarded inquiry action.
+- Restore reads before retrying local cleanup.
+
+Verified browser behaviour:
+- Server acceptance returned a confirmed receipt.
+- Recovery record was physically removed, but failed verification kept
+  new submission and visible fields locked.
+- Confirmed receipt remained visible despite the storage failure.
+- Repeated submits and failed local cleanup retry sent no additional action.
+- Failed local cleanup retry exercised the read fault again.
+- Restoring reads allowed local cleanup to verify already-empty storage.
+- Successful verification preserved receipt and unlocked the form.
+- Exactly one non-GET request and one forwarded action were observed.
+- Private Inbox required owner authentication before and after the test.
+- Script syntax and tracked diff formatting checks passed.
+
+Test identity:
+- Email: cleanup-readback-05d4d6d6-d8bf-4bd8-b2dc-8ad5daf57e43@example.invalid.
+- Receipt: c24cfcba-f2f3-4c51-8ff9-4e626e36fc81.
+
+Owner-run read-only database verification:
+- Matching inquiries: 1.
+- Matching original receipt: 1.
+
+Conclusion and limits:
+- Confirmed acceptance survived the tested cleanup read-back failure.
+- Physical removal alone did not unlock submission before verified absence.
+- This test covers an injected read exception after successful removal.
+- Reload while reads remain unavailable, silently ignored removal and
+  changed-record cleanup races were not established by this browser test.
+- No production release or database schema changes were performed.
+- Remaining milestone and release work is unchanged.
+
+Preserve all nine protected untracked audit/backup files.
+Encrypted offsite backup execution remains unverified.

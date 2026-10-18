@@ -1788,3 +1788,48 @@ No production release or database schema changes were performed.
 Preserve all nine protected untracked files.
 Encrypted offsite backup execution remains unverified.
 The inquiry-ingestion milestone remains incomplete.
+
+## 18 October 2026 — Cleanup Read-Back Failure Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 4b5eec8.
+Tested application implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-cleanup-readback-failure.mjs.
+
+- [x] Add a separate bounded cleanup read-back failure browser test.
+- [x] Accept one real synthetic inquiry.
+- [x] Allow recovery-key removal, then inject absence-verification read failure.
+- [x] Independently assert physical absence through a test-only original getter.
+- [x] Verify failed verification keeps submission and fields locked.
+- [x] Verify confirmed receipt remains visible.
+- [x] Verify repeated submits and failed local cleanup retry send no extra action.
+- [x] Verify local retry exercises the read fault again.
+- [x] Restore reads and verify already-empty storage through local cleanup.
+- [x] Verify receipt remains visible and the form unlocks.
+- [x] Observe exactly one non-GET request and one forwarded action.
+- [x] Verify private Inbox protection before and after intake.
+- [x] Independently verify one inquiry with the original receipt.
+- [x] Pass script syntax and tracked diff formatting checks.
+
+Receipt: c24cfcba-f2f3-4c51-8ff9-4e626e36fc81.
+Matching inquiries: 1; matching original receipt: 1.
+
+This completes the tested read exception after successful cleanup removal.
+Physical removal did not permit fresh submission until absence was verified.
+
+Still pending:
+- [ ] Broader blocked-state, mobile, accessibility and navigation verification.
+- [ ] Tab/session-loss and cross-tab handling decisions.
+- [ ] Support-resolution procedures and external retention-job review.
+- [ ] Remaining concurrency, shared-ceiling, timeout, airport, dependency,
+      lint, cleanup, legacy-path, atomic conversion, provider and release work.
+
+Reload while reads remain unavailable, silently ignored removal and changed-record
+cleanup races were not established by this browser test.
+No production release or database schema changes were performed.
+Preserve all nine protected untracked files.
+Encrypted offsite backup execution remains unverified.
+The inquiry-ingestion milestone remains incomplete.
