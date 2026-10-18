@@ -1862,3 +1862,60 @@ Conclusion and limits:
 
 Preserve all nine protected untracked audit/backup files.
 Encrypted offsite backup execution remains unverified.
+
+## 18 October 2026: Combined Marker-Failure Reload Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: d9808bb.
+Tested application implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-marker-failure-reload.mjs.
+Created separately from the existing marker-write failure test.
+
+Method:
+- Accept one synthetic inquiry with accepted-marker writes and fallback
+  removal both configured to fail.
+- Verify confirmed acceptance remains visible while cleanup is paused.
+- Reload with the original pending snapshot still stored.
+- Restore both storage operations before explicit unchanged inquiry retry.
+- Permit at most two forwarded inquiry actions.
+- An initial run stopped before browser setup because insufficient
+  fixed-window time remained. The later run completed successfully.
+
+Verified browser behaviour:
+- Initial marker-write and removal failures were exercised.
+- Pending snapshot remained stored while confirmed receipt stayed visible.
+- Failed local cleanup retry and tested repeated submits sent no extra action.
+- Reload restored the pending snapshot as unknown with locked fields.
+- Stored identity, snapshot and expiry remained unchanged across reload.
+- No automatic action occurred during the bounded restoration observation.
+- Explicit retry preserved request ID and all serialized form fields.
+- Real duplicate response returned the original receipt.
+- Duplicate acceptance cleared recovery storage and reset/unlocked the form.
+- Exactly two non-GET requests and two forwarded actions were observed.
+- Private Inbox required owner authentication before and after the test.
+- Script syntax and tracked diff formatting checks passed.
+
+Test identity:
+- Email: marker-failure-reload-2ff18f03-4722-452f-8c83-692efd693caa@example.invalid.
+- Original and retry receipt: 96ebbf60-a37a-4363-973d-ad41c8878ed0.
+
+Owner-run read-only database verification:
+- Matching inquiries: 1.
+- Matching original receipt: 1.
+
+Conclusion and limits:
+- Combined marker-write/removal failure followed by same-tab reload and
+  unchanged retry passed on this Preview with one persisted inquiry.
+- Personal data remained in the pending snapshot until successful cleanup.
+- Storage operations were restored before the explicit inquiry retry.
+- This does not establish behaviour when both faults persist during retry,
+  nor universal duplicate prevention after storage or session loss.
+- Cleanup read-back failures and broader blocked-state browser checks remain pending.
+- No production release or database schema changes were performed.
+- Remaining milestone and release work is unchanged.
+
+Preserve all nine protected untracked audit/backup files.
+Encrypted offsite backup execution remains unverified.

@@ -1738,3 +1738,53 @@ No production release or database schema changes were performed.
 Preserve all nine protected untracked files.
 Encrypted offsite backup execution remains unverified.
 The inquiry-ingestion milestone remains incomplete.
+
+## 18 October 2026 — Combined Marker-Failure Reload Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: d9808bb.
+Tested application implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-marker-failure-reload.mjs.
+
+- [x] Add a separate bounded combined-failure reload browser test.
+- [x] Accept one inquiry with marker writes and fallback removal failing.
+- [x] Verify confirmed receipt remains visible while submission is paused.
+- [x] Verify the pending snapshot remains after failed marker replacement.
+- [x] Verify failed local cleanup retry and repeated submits send no extra action.
+- [x] Reload and restore the unchanged pending record as unknown.
+- [x] Verify fields stay locked and no automatic action is observed.
+- [x] Restore storage operations before explicit unchanged retry.
+- [x] Verify retry preserves request ID and all serialized fields.
+- [x] Verify real duplicate response returns the original receipt.
+- [x] Verify duplicate acceptance clears storage and resets/unlocks the form.
+- [x] Observe exactly two non-GET requests and two forwarded actions.
+- [x] Verify private Inbox protection before and after intake.
+- [x] Independently verify one inquiry with the original receipt.
+- [x] Pass script syntax and tracked diff formatting checks.
+
+Receipt: 96ebbf60-a37a-4363-973d-ad41c8878ed0.
+Matching inquiries: 1; matching original receipt: 1.
+
+An initial run stopped before browser setup due to insufficient fixed-window
+time. The subsequent controlled run passed.
+
+Personal data remained in the pending snapshot until successful cleanup.
+Storage faults were removed before the explicit inquiry retry.
+This does not establish recovery after storage/session loss or behaviour
+when both injected faults persist during retry.
+
+Still pending:
+- [ ] Cleanup read-back failure browser scenarios.
+- [ ] Broader blocked-state, mobile, accessibility and navigation verification.
+- [ ] Tab/session-loss and cross-tab handling decisions.
+- [ ] Support-resolution procedures and external retention-job review.
+- [ ] Remaining concurrency, shared-ceiling, timeout, airport, dependency,
+      lint, cleanup, legacy-path, atomic conversion, provider and release work.
+
+No production release or database schema changes were performed.
+Preserve all nine protected untracked files.
+Encrypted offsite backup execution remains unverified.
+The inquiry-ingestion milestone remains incomplete.
