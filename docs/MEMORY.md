@@ -1808,3 +1808,57 @@ Conclusion and limits:
 
 Preserve all nine protected untracked audit/backup files.
 Encrypted offsite backup execution remains unverified.
+
+## 18 October 2026: Accepted Marker-Write Failure Browser Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 58d074f.
+Tested application implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-marker-write-failure.mjs.
+Created separately from the existing accepted-cleanup failure test.
+
+Method:
+- Use a fresh browser context without TravelPro owner authentication.
+- Allow initial pending-record persistence.
+- Inject setItem failure specifically for accepted marker writes.
+- Also inject recovery-key removal failure to block fallback cleanup.
+- Permit at most one forwarded inquiry action.
+- Restore removal for local cleanup while marker-write failure remains active.
+
+Verified browser behaviour:
+- One synthetic inquiry received real server acceptance.
+- Confirmed receipt remained visible despite marker-write and removal failures.
+- New submission and visible form fields remained locked.
+- Both marker-write and removal fault counters confirmed fault execution.
+- Failed marker replacement left the original pending snapshot in storage.
+- Failed local cleanup retry preserved the stored record.
+- Tested repeated submits and local cleanup retries produced no extra action.
+- Restoring removal allowed local cleanup without another marker write.
+- Successful cleanup removed the record, preserved receipt and unlocked the form.
+- Exactly one non-GET request and one forwarded action were observed.
+- Private Inbox required owner authentication before and after the test.
+- Script syntax and tracked diff formatting checks passed.
+
+Test identity:
+- Email: marker-write-failure-dac1656f-7348-4414-bf7a-99da6e9974c5@example.invalid.
+- Receipt: 30c77368-a35f-450d-aa77-97e10e297daa.
+
+Owner-run read-only database verification:
+- Matching inquiries: 1.
+- Matching original receipt: 1.
+
+Conclusion and limits:
+- Confirmed acceptance survived the tested combined storage failures.
+- The pending snapshot retained personal data until removal succeeded.
+- Reload during these combined failures was not tested.
+- Marker-write failure alone may permit successful fallback cleanup;
+  this test deliberately blocked both operations.
+- Cleanup read-back failures and broader blocked-state scenarios remain pending.
+- No production release or database schema changes were performed.
+- Remaining milestone and release work is unchanged.
+
+Preserve all nine protected untracked audit/backup files.
+Encrypted offsite backup execution remains unverified.

@@ -1691,3 +1691,50 @@ No production release or database schema changes were performed.
 Preserve all nine protected untracked files.
 Encrypted offsite backup execution remains unverified.
 The inquiry-ingestion milestone remains incomplete.
+
+## 18 October 2026 — Accepted Marker-Write Failure Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 58d074f.
+Tested application implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-marker-write-failure.mjs.
+
+- [x] Add a separate bounded browser test for accepted marker-write failure.
+- [x] Permit initial pending persistence and one forwarded inquiry action.
+- [x] Inject accepted-marker setItem failure and fallback removeItem failure.
+- [x] Confirm both injected faults execute.
+- [x] Verify confirmed receipt remains visible and new submission stays locked.
+- [x] Verify the original pending snapshot remains after failed replacement.
+- [x] Verify failed local cleanup retry preserves the record.
+- [x] Verify tested repeated submits produce no additional action requests.
+- [x] Restore removal while leaving marker-write failure active.
+- [x] Verify local cleanup removes the record without another inquiry action.
+- [x] Verify receipt remains visible and the form unlocks.
+- [x] Observe exactly one non-GET request and one forwarded action.
+- [x] Verify private Inbox protection before and after intake.
+- [x] Independently verify one inquiry with the original receipt.
+- [x] Pass script syntax and tracked diff formatting checks.
+
+Receipt: 30c77368-a35f-450d-aa77-97e10e297daa.
+Matching inquiries: 1; matching original receipt: 1.
+
+This completes the tested combined marker-write and fallback-removal failure.
+Personal data remained in the pending snapshot until removal succeeded.
+Marker-write failure alone may allow successful fallback cleanup.
+
+Still pending:
+- [ ] Reload during combined marker-write and cleanup failures.
+- [ ] Cleanup read-back failure browser scenarios.
+- [ ] Broader blocked-state, mobile, accessibility and navigation verification.
+- [ ] Tab/session-loss and cross-tab handling decisions.
+- [ ] Support-resolution procedures and external retention-job review.
+- [ ] Remaining concurrency, shared-ceiling, timeout, airport, dependency,
+      lint, cleanup, legacy-path, atomic conversion, provider and release work.
+
+No production release or database schema changes were performed.
+Preserve all nine protected untracked files.
+Encrypted offsite backup execution remains unverified.
+The inquiry-ingestion milestone remains incomplete.
