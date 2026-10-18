@@ -1757,3 +1757,54 @@ Conclusion and limits:
 
 Preserve all nine protected untracked audit/backup files.
 Encrypted offsite backup execution remains unverified.
+
+## 18 October 2026: Rejected Cleanup-Failure Reload Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: a73f931.
+Tested application implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-rejected-cleanup-reload.mjs.
+Created separately from the existing rejected-cleanup test.
+
+Method:
+- Submit a synthetic consultation with past departure date 2020-01-01.
+- Confirm real validation rejection while recovery-key removal is blocked.
+- Reload with the pending record still stored.
+- Make removal available, then explicitly retry the unchanged inquiry.
+- Confirm a second real validation rejection.
+- Permit at most two forwarded inquiry actions.
+
+Verified browser behaviour:
+- Initial cleanup failure retained and locked submitted details.
+- Reload restored pending details as unknown without automatic submission.
+- Restored form offered Retry Same Inquiry and no local cleanup button.
+- Explicit retry preserved request ID and all captured fields.
+- Second rejection did not clear the restored uncertainty or unlock editing.
+- Pending storage identity, snapshot and expiry remained unchanged.
+- Exactly two non-GET requests and two forwarded actions were observed.
+- Private Inbox required owner authentication before and after the test.
+- Script syntax and tracked diff formatting checks passed.
+
+Test identity:
+- Email: rejected-cleanup-reload-138de42a-e1a5-4a27-9d42-505b2d2f491e@example.invalid.
+
+Owner-run read-only database verification:
+- Matching inquiries for the test email: 0.
+
+Conclusion and limits:
+- Reload after rejected-attempt cleanup failure conservatively restored
+  unknown status and preserved it after another rejection.
+- Both tested actions were rejected; no matching inquiry was persisted.
+- Conservative restoration does not establish that the earlier attempt
+  was accepted. It reflects the lack of a durable rejection marker.
+- The test does not establish an operational resolution path for this state.
+- Marker-write failures, cleanup read-back failures and broader blocked-state
+  browser scenarios remain pending.
+- No production release or database schema changes were performed.
+- Remaining milestone and release work is unchanged.
+
+Preserve all nine protected untracked audit/backup files.
+Encrypted offsite backup execution remains unverified.

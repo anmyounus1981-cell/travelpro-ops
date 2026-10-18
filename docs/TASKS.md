@@ -1646,3 +1646,48 @@ No production release or database schema changes were performed.
 Preserve all nine protected untracked files.
 Encrypted offsite backup execution remains unverified.
 The inquiry-ingestion milestone remains incomplete.
+
+## 18 October 2026 — Rejected Cleanup-Failure Reload Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: a73f931.
+Tested application implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-rejected-cleanup-reload.mjs.
+
+- [x] Add a separate bounded browser test for rejected cleanup followed by reload.
+- [x] Confirm initial real validation rejection with removal failure injected.
+- [x] Verify cleanup failure retains and locks the submitted details.
+- [x] Reload and restore the pending record as unknown.
+- [x] Observe no automatic action during the bounded restoration check.
+- [x] Verify Retry Same Inquiry is available without a local cleanup button.
+- [x] Restore removal availability and explicitly retry the unchanged inquiry.
+- [x] Verify request ID and all captured fields remain unchanged.
+- [x] Confirm a second real rejection without unlocking or clearing uncertainty.
+- [x] Verify stored identity, snapshot and expiry remain unchanged.
+- [x] Observe exactly two non-GET requests and two forwarded actions.
+- [x] Verify private Inbox protection before and after the test.
+- [x] Independently verify zero matching database inquiries.
+- [x] Pass script syntax and tracked diff formatting checks.
+
+Matching inquiries: 0.
+
+This completes the tested conservative restoration after rejected-attempt
+cleanup failure. Unknown restoration is not evidence of server acceptance.
+A usable resolution path for this state remains unresolved.
+
+Still pending:
+- [ ] Marker-write and cleanup read-back failure browser scenarios.
+- [ ] Broader blocked-state, mobile, accessibility and navigation verification.
+- [ ] Tab/session-loss and cross-tab handling decisions.
+- [ ] Support-resolution procedures, including unresolved restored attempts.
+- [ ] External retention-job review.
+- [ ] Remaining concurrency, shared-ceiling, timeout, airport, dependency,
+      lint, cleanup, legacy-path, atomic conversion, provider and release work.
+
+No production release or database schema changes were performed.
+Preserve all nine protected untracked files.
+Encrypted offsite backup execution remains unverified.
+The inquiry-ingestion milestone remains incomplete.
