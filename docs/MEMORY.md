@@ -1704,3 +1704,56 @@ Conclusion and limits:
 
 Preserve all nine protected untracked audit/backup files.
 Encrypted offsite backup execution remains unverified.
+
+## 18 October 2026: Accepted Cleanup-Failure Reload Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 946dc72.
+Tested application implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-cleanup-reload.mjs.
+Created separately from the existing accepted-cleanup failure test.
+
+Method:
+- Accept one synthetic inquiry while recovery-key removal is blocked.
+- Verify failed local cleanup keeps submission paused.
+- Reload the same browser tab while the accepted marker remains stored.
+- Restore removal and complete local cleanup without another inquiry action.
+
+Verified browser behaviour:
+- Confirmed receipt remained visible during initial cleanup failure.
+- Stored accepted marker contained no submitted snapshot.
+- Failed cleanup retry and tested repeated submits produced no extra action.
+- Reload preserved the accepted storage marker unchanged.
+- Restored receipt was explicitly labeled locally saved and not freshly
+  verified with the server.
+- Restored cleanup state kept submission disabled and contact fields empty.
+- No automatic action occurred during the bounded restoration observation.
+- Successful local cleanup preserved the receipt and unlocked the form.
+- Exactly one non-GET request and one forwarded action were observed.
+- Private Inbox required owner authentication before and after the test.
+- Script syntax and tracked diff formatting checks passed.
+
+Test identity:
+- Email: cleanup-reload-6b8fd2e3-caf7-4290-b8da-245c283805b9@example.invalid.
+- Receipt: 4b361bf9-12b9-4863-8a91-a4c022d11b9d.
+
+Owner-run read-only database verification:
+- Matching inquiries: 1.
+- Matching original receipt: 1.
+
+Conclusion and limits:
+- Reload during accepted-inquiry cleanup failure passed on this Preview
+  with one persisted inquiry.
+- The restored marker is local information, not fresh server verification
+  or authorization to read private inquiry data.
+- This does not cover reload after rejected-outcome cleanup failure,
+  marker-write failure or cleanup read-back failure.
+- Broader blocked-state, navigation and cross-tab scenarios remain pending.
+- No production release or database schema changes were performed.
+- Remaining milestone and release work is unchanged.
+
+Preserve all nine protected untracked audit/backup files.
+Encrypted offsite backup execution remains unverified.
