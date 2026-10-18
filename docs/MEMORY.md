@@ -1649,3 +1649,58 @@ Conclusion and limits:
 
 Preserve all nine protected untracked audit/backup files.
 Encrypted offsite backup execution remains unverified.
+
+## 18 October 2026: Rejected-Inquiry Cleanup-Failure Browser Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 273ad3c.
+Tested application implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-rejected-cleanup.mjs.
+
+Method:
+- Use a fresh browser context without TravelPro owner authentication.
+- Inject removeItem failure only for the recognized recovery storage key.
+- Forward at most two inquiry actions.
+- Submit a consultation with departure date 2020-01-01.
+- Confirm a real rejected outcome and the expected validation message.
+- Exercise local cleanup while removal remains blocked.
+- Restore removal, complete local cleanup and correct the form.
+- Submit the corrected inquiry using a fresh request ID.
+
+Verified browser behaviour:
+- Confirmed rejection with cleanup failure retained and locked form details.
+- The stored pending record remained unchanged during failed cleanup retry.
+- Repeated programmatic submits produced no additional action requests.
+- Successful local cleanup removed the record and unlocked editing.
+- Local cleanup retries did not dispatch another inquiry action.
+- Corrected submission omitted departure and used the exact corrected notes.
+- Corrected action used a different request ID and received acceptance.
+- Acceptance cleared recovery storage and reset the form.
+- Exactly two non-GET requests and two forwarded actions were observed.
+- Private Inbox required owner authentication before and after the test.
+- Script syntax and tracked diff formatting checks passed.
+
+Test identity:
+- Email: rejected-cleanup-2f6bcf87-c6d7-4633-9aa9-de54b701961d@example.invalid.
+- Successful receipt: d6cba5ed-1961-414b-9a2e-6102cc70e5c8.
+
+Owner-run read-only database verification:
+- Matching inquiries: 1.
+- Matching successful receipt: 1.
+- Inquiries without submitted departureDate: 1.
+- Inquiries with exact corrected notes: 1.
+
+Conclusion and limits:
+- Confirmed rejection, failed local cleanup and subsequent correction passed
+  on this Preview with one matching corrected inquiry.
+- This scenario had no earlier unknown outcome.
+- Reload during failed rejection cleanup was not tested.
+- Other storage failure modes and broader blocked-state scenarios remain pending.
+- No production release or database schema changes were performed.
+- Remaining milestone and release work is unchanged.
+
+Preserve all nine protected untracked audit/backup files.
+Encrypted offsite backup execution remains unverified.

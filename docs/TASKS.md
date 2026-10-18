@@ -1555,3 +1555,49 @@ No production release or database schema changes were performed.
 Preserve all nine protected untracked files.
 Encrypted offsite backup execution remains unverified.
 The inquiry-ingestion milestone remains incomplete.
+
+## 18 October 2026 — Rejected-Inquiry Cleanup-Failure Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 273ad3c.
+Tested application implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-rejected-cleanup.mjs.
+
+- [x] Inject recovery-key removeItem failure in a fresh browser context.
+- [x] Confirm real validation rejection for a past departure date.
+- [x] Verify failed cleanup retains and locks submitted details.
+- [x] Verify failed local cleanup retry preserves the pending record.
+- [x] Verify repeated submits produce no additional action requests.
+- [x] Restore removal and verify local cleanup unlocks editing.
+- [x] Verify local cleanup retries do not dispatch inquiry actions.
+- [x] Correct departure and notes, then submit with a fresh request ID.
+- [x] Verify corrected submission is accepted and recovery storage clears.
+- [x] Observe exactly two non-GET requests and two forwarded actions.
+- [x] Verify private Inbox protection before and after intake.
+- [x] Independently verify one inquiry with the successful receipt.
+- [x] Verify departureDate is absent and corrected notes match exactly.
+- [x] Pass script syntax and tracked diff formatting checks.
+
+Receipt: d6cba5ed-1961-414b-9a2e-6102cc70e5c8.
+Database counts: matching inquiries 1; receipt 1;
+without departure 1; corrected notes 1.
+
+This completes the tested confirmed-rejection cleanup-failure scenario.
+There was no earlier unknown outcome. Reload during failed cleanup
+and other storage failure modes are not established by this test.
+
+Still pending:
+- [ ] Reload during failed cleanup and broader blocked-state verification.
+- [ ] Marker-write and cleanup read-back failure browser scenarios.
+- [ ] Mobile, accessibility, navigation and cross-tab handling.
+- [ ] Support-resolution procedures and external retention-job review.
+- [ ] Remaining concurrency, shared-ceiling, timeout, airport, dependency,
+      lint, cleanup, legacy-path, atomic conversion, provider and release work.
+
+No production release or database schema changes were performed.
+Preserve all nine protected untracked files.
+Encrypted offsite backup execution remains unverified.
+The inquiry-ingestion milestone remains incomplete.
