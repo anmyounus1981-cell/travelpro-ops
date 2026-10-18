@@ -1555,3 +1555,46 @@ Conclusion and limits:
 
 Preserve all nine protected untracked audit/backup files.
 Encrypted offsite backup execution remains unverified.
+
+## 18 October 2026: Browser Storage-Failure Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 781d4c1.
+Tested application implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-storage-failure.mjs.
+
+Method:
+- Use a fresh browser context for each controlled fault.
+- Inject faults only for the recognized recovery sessionStorage key.
+- Test getItem throwing, setItem throwing and silently ignored setItem.
+- Restrict browser traffic to the pinned Preview origin.
+- Abort every non-GET browser request rather than forwarding it.
+- Count attempted non-GET requests independently of the routing guard.
+- Use synthetic form details and bounded observation periods.
+
+Verified browser behaviour:
+- All three fault modes were exercised.
+- Read denial kept the form locked during restoration.
+- Write failure and ignored write paused submission after a valid form attempt.
+- Tested programmatic submit events produced no non-GET requests.
+- Zero non-GET requests were observed in every scenario.
+- No inquiry POST was forwarded.
+- Read/write fault removal allowed Retry Local Recovery to unlock the form.
+- Local recovery retry produced no submission.
+- Private Inbox required owner authentication before and after each scenario.
+- Script syntax and tracked diff formatting checks passed.
+
+Evidence limits:
+- These are injected method failures, not every native browser failure mode.
+- SessionStorage getter denial, read-back exceptions and cleanup failures
+  were not covered by this browser test.
+- This test does not establish all reload, navigation or cross-tab behaviour.
+- No database count query was performed for these scenarios.
+- No production release or database schema changes were made.
+- Remaining milestone and release work stays pending.
+
+Preserve all nine protected untracked audit/backup files.
+Encrypted offsite backup execution remains unverified.

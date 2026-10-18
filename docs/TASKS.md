@@ -1472,3 +1472,42 @@ No production release or database schema changes were performed.
 Preserve all nine protected untracked files.
 Encrypted offsite backup execution remains unverified.
 The inquiry-ingestion milestone remains incomplete.
+
+## 18 October 2026 — Browser Storage-Failure Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 781d4c1.
+Tested application implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-storage-failure.mjs.
+
+- [x] Add separate browser test with fresh contexts and pinned origin.
+- [x] Inject recovery-key read denial, write failure and ignored write.
+- [x] Verify all injected fault modes are exercised.
+- [x] Verify restoration or submission remains paused as appropriate.
+- [x] Exercise programmatic submit events while paused.
+- [x] Observe zero non-GET browser requests in every scenario.
+- [x] Guard against forwarding any inquiry POST.
+- [x] Verify read/write local recovery unlocks without submission.
+- [x] Verify private Inbox protection before and after each scenario.
+- [x] Pass script syntax and tracked diff formatting checks.
+
+This completes the tested controlled storage-failure dispatch checks.
+It does not cover every native browser failure mode.
+No inquiry POST was forwarded and no database count query was performed.
+
+Still pending:
+- [ ] Browser cleanup-failure and broader blocked-state verification.
+- [ ] SessionStorage getter denial and read-back exception browser scenarios.
+- [ ] Mobile, accessibility and navigation verification.
+- [ ] Tab/session-loss and cross-tab handling decisions.
+- [ ] Support-resolution procedures and external retention-job review.
+- [ ] Remaining concurrency, shared-ceiling, timeout, airport, dependency,
+      lint, cleanup, legacy-path, atomic conversion, provider and release work.
+
+No production release or database schema changes were made.
+Preserve all nine protected untracked files.
+Encrypted offsite backup execution remains unverified.
+The inquiry-ingestion milestone remains incomplete.
