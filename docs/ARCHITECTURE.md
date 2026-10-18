@@ -33,7 +33,8 @@ The inspected implementation uses:
 
 - app/: App Router pages, route handlers, and Server Actions.
 - app/inquire/: public inquiry form.
-- app/api/v1/inquiry/: existing HTTP inquiry intake.
+- app/api/v1/inquiry/: retired legacy POST endpoint returning 410 Gone
+  in current branch source; deployment verification remains pending.
 - app/inbox/: protected inquiry review and case conversion UI.
 - app/travellers/: client selection and traveller creation / lookup.
 - app/travellers/passport-drafts/: passport extraction and owner review.
@@ -139,7 +140,11 @@ inquiries, cases, payment evidence, or audit history.
 The current implementation contains:
 
 - /inquire: public flight inquiry form.
-- /api/v1/inquiry: web, email, and WhatsApp intake.
+- /api/v1/inquiry: retired in current branch source after owner confirmation
+  that no active consumers remain. Public intake uses /inquire; provider
+  intake uses authenticated /api/webhooks/inquiries.
+- Anonymous direct database INSERT access remains a separate security
+  finding until the reviewed permission cutover is applied and verified.
 - lib/inquiries.ts: deterministic parsing with optional AI parsing.
 - inquiries: raw messages, parsed suggestions, source metadata,
   review state, matched client, and converted case link.

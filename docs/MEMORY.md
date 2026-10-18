@@ -1971,3 +1971,60 @@ Conclusion and limits:
 
 Preserve all nine protected untracked audit/backup files.
 Encrypted offsite backup execution remains unverified.
+
+## 18 October 2026: Legacy Intake Review and Local Endpoint Retirement
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before these changes: 021cf56.
+Production baseline remains main 2e23db2.
+
+Review: docs/LEGACY_INTAKE_SECURITY_REVIEW.md.
+
+Verified findings:
+- /api/v1/inquiry is public in middleware.
+- Its previous implementation parsed input before database insertion,
+  without application rate limiting or request-ID deduplication.
+- Optional external AI parsing could run before write authorization.
+- Installed anon table INSERT is false but column INSERT is true.
+- Installed public_inquiry_insert policy permits restricted new inquiries.
+- Existing constraints permit null request identity and payload hash.
+- No user-defined inquiry triggers were found.
+- Anonymous direct insert controls do not require the new intake RPC.
+- No live anonymous insert or exploit reproduction was performed.
+
+Owner decision:
+- Owner confirmed no active consumers of /api/v1/inquiry.
+- Retire the endpoint instead of implementing a compatibility adapter.
+- This supersedes the earlier adapter proposal.
+
+Local implementation:
+- Replace legacy POST with HTTP 410 Gone and Cache-Control: no-store.
+- Remove request parsing, AI parser and database client dependencies.
+- Keep the middleware path public so callers receive explicit retirement.
+- Update ingestion contract and architecture references.
+- Separate TypeScript, production build and diff checks passed.
+- Build skips linting; lint verification remains pending.
+- Endpoint retirement is not yet deployment-verified.
+
+Separate conversion findings:
+- requireOwnerId verifies authenticated identity and owner membership.
+- Existing conversion inserts case, updates inquiry and audits separately.
+- Conversion lacks a single transaction and inquiry row lock.
+- Explicit reviewed-field validation and retry-safe conversion remain pending.
+
+Unresolved security work:
+- Installed anonymous INSERT grants and policy remain unchanged.
+- Endpoint retirement alone does not close direct database insert access.
+- Prepare and verify a migration covering table and column privileges.
+- Review shared Preview/production database compatibility before cutover.
+- Implement owner-authorized atomic inquiry-to-case conversion.
+
+Execution priorities:
+- Do not expand browser storage or recovery tests.
+- Finish legacy retirement and database permission remediation.
+- Then complete atomic conversion and necessary authorization,
+  rollback, retry and concurrency checks.
+- No production release or database schema changes were performed here.
+
+Preserve all nine protected untracked audit/backup files.
+Encrypted offsite backup execution remains unverified.

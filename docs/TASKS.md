@@ -1833,3 +1833,45 @@ No production release or database schema changes were performed.
 Preserve all nine protected untracked files.
 Encrypted offsite backup execution remains unverified.
 The inquiry-ingestion milestone remains incomplete.
+
+## 18 October 2026 — Legacy Intake Review and Retirement Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before these changes: 021cf56.
+Production baseline remains main 2e23db2.
+
+- [x] Inspect legacy route, middleware, parser and database client.
+- [x] Inspect installed inquiry grants, policies, constraints and triggers.
+- [x] Identify anonymous column INSERT access outside the new intake RPC.
+- [x] Identify public parser/resource exposure before write authorization.
+- [x] Confirm with owner that the legacy endpoint has no active consumers.
+- [x] Document findings in docs/LEGACY_INTAKE_SECURITY_REVIEW.md.
+- [x] Replace legacy POST locally with 410 Gone and no-store response.
+- [x] Remove parser and database dependencies from the retired route.
+- [x] Update compatibility decision and architecture references.
+- [x] Pass separate TypeScript, production build and diff checks.
+
+Immediate follow-up:
+- [ ] Commit and push the endpoint retirement checkpoint.
+- [ ] Verify the new Preview source commit and deployed 410 response.
+- [ ] Prepare anonymous INSERT policy/grant removal migration.
+- [ ] Review shared-database production compatibility before applying it.
+- [ ] Verify anonymous table and column INSERT privileges are absent.
+- [ ] Verify intended privileged intake and owner access remain functional.
+
+Atomic conversion:
+- [ ] Replace separate case/inquiry/audit writes with an authorized atomic RPC.
+- [ ] Validate owner-reviewed fields, client compatibility and eligibility.
+- [ ] Lock the inquiry and handle identical/conflicting conversion retries.
+- [ ] Verify rollback, authorization and concurrent conversion behaviour.
+
+Installed anonymous INSERT access remains unresolved.
+Local endpoint retirement is not yet deployment-verified.
+Build skips linting; lint verification remains pending.
+No database schema changes or production release were performed.
+
+Do not expand browser storage or recovery tests.
+Prioritize legacy intake remediation and reviewed atomic conversion.
+Preserve all nine protected untracked files.
+Encrypted offsite backup execution remains unverified.
+The inquiry-ingestion milestone remains incomplete.

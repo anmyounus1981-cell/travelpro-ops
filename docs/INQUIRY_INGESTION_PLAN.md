@@ -10,8 +10,13 @@ production main 2e23db2. PR #16 production verification is complete.
 - Meta Lead Ads / WhatsApp / email -> provider-authenticated n8n trigger
   -> normalize original event -> authenticated POST /api/webhooks/inquiries
   -> the same intake and Inbox. n8n must preserve original provider event IDs.
-- Keep /api/v1/inquiry compatibility using an adapter to shared intake.
-  Review existing callers before changing its authentication contract.
+- Retire unused /api/v1/inquiry with HTTP 410 Gone. On 18 October 2026,
+  the owner confirmed there are no active consumers. This supersedes the
+  earlier compatibility-adapter proposal. Website intake uses /inquire;
+  provider integrations use authenticated /api/webhooks/inquiries.
+- Remove anonymous direct inquiry INSERT policy and column grants through
+  a reviewed database cutover. Endpoint retirement alone does not close
+  direct database insert access.
 
 Landing Page is public without owner sign-in. Public submission creates only
 an unreviewed inquiry and returns a receipt. Matching existing clients and
