@@ -2028,3 +2028,31 @@ Execution priorities:
 
 Preserve all nine protected untracked audit/backup files.
 Encrypted offsite backup execution remains unverified.
+
+## 19 October 2026: Legacy Retirement Preview and Production Dependency
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint: 19e5283.
+
+Preview retirement verified:
+- https://travelpro-47uh3k4u8-anmyounus1981-8496.vercel.app
+- Malformed JSON POST returned 410, retirement code and Cache-Control: no-store.
+
+Current production was confirmed from the owner-provided Vercel Overview:
+- Domain: travelpro-ops.vercel.app.
+- Ready; main commit 2e23db2fb23f81cc8fee202d3df0500e19f52cc4.
+- This commit's /inquire form calls /api/v1/inquiry.
+
+Correction to earlier consumer assumption:
+- The owner reported no active consumers, but source inspection identified
+  the built-in production form dependency.
+- Do not treat the legacy endpoint as unused across production.
+- Do not independently revoke anonymous INSERT while this dependency remains.
+- Coordinate compatible production intake deployment and permission cutover.
+
+Review evidence: docs/LEGACY_INTAKE_SECURITY_REVIEW.md.
+Anonymous direct INSERT exposure remains unresolved.
+Atomic inquiry-to-case conversion remains pending.
+No production deployment or database permission changes were performed.
+No further browser storage/recovery test expansion is planned.
+Preserve all nine protected files; encrypted offsite backup remains unverified.

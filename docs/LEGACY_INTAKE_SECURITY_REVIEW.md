@@ -171,3 +171,47 @@ Preserve all nine protected local audit/backup files.
 Use explicit paths for staging.
 Encrypted offsite backup execution remains unverified.
 Payment verification and GDS issuance, reissue, refund and void remain manual.
+
+## Preview Retirement Verification — 18 October 2026
+
+Tested commit: 19e5283.
+Preview: https://travelpro-47uh3k4u8-anmyounus1981-8496.vercel.app
+
+Owner-run scoped HTTP check passed:
+- POST with intentionally malformed JSON returned 410.
+- Response code was LEGACY_INQUIRY_ENDPOINT_RETIRED.
+- inquiryPage was /inquire.
+- Cache-Control was no-store.
+
+This verifies the tested Preview response. It does not establish production
+retirement or removal of direct anonymous database INSERT access.
+Installed database grants and policies remain unchanged.
+
+## Production Dependency Found — 18 October 2026
+
+Historical production baseline 2e23db2 contains a direct caller:
+app/inquire/page.tsx submits to /api/v1/inquiry.
+
+The earlier no-active-consumer assumption is insufficient for cutover.
+Current live production deployment commit still requires verification.
+
+Do not apply anonymous INSERT revocation while production depends on
+the legacy direct-insert path. Coordinate controlled Landing deployment,
+endpoint retirement and database permission changes.
+
+Preview retirement is verified; production retirement is not.
+The identified security exposure remains unresolved until coordinated cutover.
+
+## Current Production Confirmed — 19 October 2026
+
+Owner-provided Vercel Project Overview confirms:
+- Canonical domain: travelpro-ops.vercel.app.
+- Status: Ready.
+- Source branch: main.
+- Commit: 2e23db2fb23f81cc8fee202d3df0500e19f52cc4.
+
+Source inspection of this commit confirms /inquire calls /api/v1/inquiry.
+Anonymous INSERT revocation must be coordinated with a compatible production
+intake deployment. It must not be applied independently while this caller remains.
+
+No production deployment or database permissions were changed by this inspection.

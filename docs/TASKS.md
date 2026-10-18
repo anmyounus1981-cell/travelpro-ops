@@ -1875,3 +1875,29 @@ Prioritize legacy intake remediation and reviewed atomic conversion.
 Preserve all nine protected untracked files.
 Encrypted offsite backup execution remains unverified.
 The inquiry-ingestion milestone remains incomplete.
+
+## 19 October 2026 — Legacy Retirement Deployment Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: 19e5283.
+
+- [x] Verify retired endpoint on Preview commit 19e5283.
+- [x] Verify malformed JSON POST returns 410 and retirement response code.
+- [x] Verify Cache-Control: no-store.
+- [x] Confirm current production is Ready on main commit 2e23db2.
+- [x] Identify production /inquire dependency on /api/v1/inquiry.
+- [x] Document correction to the earlier no-consumer assumption.
+
+Release blocker:
+- [ ] Prepare a compatible production intake cutover.
+- [ ] Prepare anonymous table/column INSERT revocation and policy removal.
+- [ ] Apply permission changes only in the coordinated cutover sequence.
+- [ ] Verify intended server intake and owner access after cutover.
+- [ ] Complete reviewed atomic inquiry-to-case conversion and necessary checks.
+
+Preview retirement does not establish production retirement.
+Anonymous direct INSERT exposure remains unresolved.
+No production deployment or database permissions were changed.
+Do not expand browser storage/recovery tests.
+Preserve all nine protected files.
+Encrypted offsite backup execution remains unverified.
