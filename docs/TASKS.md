@@ -1901,3 +1901,43 @@ No production deployment or database permissions were changed.
 Do not expand browser storage/recovery tests.
 Preserve all nine protected files.
 Encrypted offsite backup execution remains unverified.
+
+## 19 October 2026 — Atomic Inquiry Conversion Draft Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: cedf4b0.
+
+Draft:
+supabase/migrations/20261018184518_reviewed_atomic_inquiry_conversion.sql.
+
+- [x] Inspect Inbox review inputs and existing conversion action.
+- [x] Inspect installed case schema, client-type mapping, RLS and audit RPC.
+- [x] Generate migration with pinned Supabase CLI 2.121.0.
+- [x] Draft owner-authorized SECURITY INVOKER conversion RPC.
+- [x] Draft reviewed-field validation and client compatibility checks.
+- [x] Draft inquiry locking, retry identity and conflicting-retry handling.
+- [x] Draft transactional case creation, inquiry linkage and audit.
+- [x] Add update-row-count and post-lock time guards.
+
+Not applied or execution-tested:
+- [ ] Establish an isolated PostgreSQL/Supabase test environment.
+- [ ] Verify migration and function compilation.
+- [ ] Test owner/non-owner/anonymous authorization.
+- [ ] Test reviewed-field validation and service/client compatibility.
+- [ ] Test success, identical retry and conflicting conversion requests.
+- [ ] Prove audit failure rolls back case and inquiry changes.
+- [ ] Test concurrent conversion behaviour and identity uniqueness.
+- [ ] Integrate explicit owner review UI and RPC-backed Server Action.
+- [ ] Run scoped application and owner workflow verification.
+
+Environment blocker:
+- docker and psql were not found on the laptop PATH.
+- No confirmed disposable Supabase test project is available.
+- Do not modify existing paused projects as an assumed test environment.
+- Do not apply the draft to the shared production/Preview database.
+
+Anonymous INSERT revocation remains tied to coordinated production intake cutover.
+No database changes or production deployment were performed.
+Do not expand browser storage/recovery tests.
+Preserve all nine protected files.
+Encrypted offsite backup execution remains unverified.

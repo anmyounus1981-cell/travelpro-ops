@@ -2056,3 +2056,48 @@ Atomic inquiry-to-case conversion remains pending.
 No production deployment or database permission changes were performed.
 No further browser storage/recovery test expansion is planned.
 Preserve all nine protected files; encrypted offsite backup remains unverified.
+
+## 19 October 2026: Atomic Inquiry Conversion Draft — Not Applied
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: cedf4b0.
+
+Draft migration:
+supabase/migrations/20261018184518_reviewed_atomic_inquiry_conversion.sql.
+
+Preparation:
+- Generated the migration using pinned Supabase CLI 2.121.0.
+- Inspected installed case schema, client-type constraint and relevant RLS.
+- Inspected record_operational_audit and its execution permissions.
+- Reviewed the existing Inbox form and non-atomic conversion action.
+
+Draft implementation:
+- Add conversion request identity, review snapshot, hash and reviewer metadata.
+- Extend case source compatibility for landing_page and meta_lead_ads.
+- Add SECURITY INVOKER convert_inquiry_to_case(jsonb).
+- Verify authenticated owner and validate explicit reviewed flight fields.
+- Lock inquiry and return the original case for an identical conversion retry.
+- Reject conflicting retries and incompatible client types.
+- Create case, update inquiry linkage and record audit in one transaction.
+- Check exactly one inquiry row was updated.
+- Refresh current time after waiting for the inquiry lock.
+
+Verification status:
+- Static source review only; SQL execution and database tests have not run.
+- Function compilation, rollback, authorization and concurrency remain unverified.
+- Existing Inbox UI and Server Action have not been integrated with the draft RPC.
+- Do not apply this draft to the shared Preview/production database.
+
+Test-environment blocker:
+- docker and psql commands were not found on the laptop PATH.
+- No confirmed disposable Supabase test project is available.
+- Existing paused projects are not authorized for test-data/schema changes.
+- Establish an isolated test environment before execution testing.
+
+Production:
+- main 2e23db2 still uses the legacy intake path.
+- Anonymous INSERT revocation requires coordinated production intake cutover.
+- No database schema, permission or production deployment changes were performed.
+
+Preserve all nine protected untracked files.
+Encrypted offsite backup execution remains unverified.
