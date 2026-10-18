@@ -1598,3 +1598,54 @@ Evidence limits:
 
 Preserve all nine protected untracked audit/backup files.
 Encrypted offsite backup execution remains unverified.
+
+## 18 October 2026: Accepted-Inquiry Cleanup-Failure Browser Verification
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Latest pushed checkpoint before this change: e3989e0.
+Tested application implementation: d48ffd0.
+Preview: https://travelpro-db0u20j5b-anmyounus1981-8496.vercel.app
+Production baseline remains main 2e23db2.
+
+Script: scripts/test-preview-landing-cleanup-failure.mjs.
+
+Method:
+- Use a fresh browser context without TravelPro owner authentication.
+- Inject removeItem failure only for the recognized recovery storage key.
+- Permit at most one inquiry action to be forwarded.
+- Block additional actions and unexpected non-GET requests.
+- Restore storage removal only before the successful local cleanup retry.
+
+Verified browser behaviour:
+- First synthetic inquiry received real server acceptance.
+- Confirmed receipt remained visible when local cleanup failed.
+- New submission and visible form fields remained locked.
+- Saved accepted marker contained the receipt and no submitted snapshot.
+- Repeated programmatic submits produced no additional action requests.
+- Local cleanup retry while the fault remained active stayed paused.
+- Removing the fault allowed local cleanup to clear the recovery marker.
+- Successful cleanup preserved the receipt and unlocked the form.
+- Exactly one non-GET request was observed and one action was forwarded.
+- Private Inbox required owner authentication before and after the test.
+- Script syntax and tracked diff formatting checks passed.
+
+Test identity:
+- Email: cleanup-failure-33de0211-f828-4f1d-b1ff-f3a4bb7f477b@example.invalid.
+- Receipt: aef0f116-0036-4176-b754-c88fefb7a2ce.
+
+Owner-run read-only database verification:
+- Matching inquiries: 1.
+- Matching original receipt: 1.
+
+Conclusion and limits:
+- Controlled accepted-inquiry removal failure and local cleanup recovery
+  passed on this Preview with one persisted inquiry.
+- The test covers injected removeItem failure, not every storage failure.
+- Marker-write failures, cleanup read-back failures and reload during
+  failed cleanup remain outside this browser test.
+- Rejected-outcome cleanup failure and broader blocked states remain pending.
+- No production release or database schema changes were performed.
+- Remaining milestone and release work is unchanged.
+
+Preserve all nine protected untracked audit/backup files.
+Encrypted offsite backup execution remains unverified.
