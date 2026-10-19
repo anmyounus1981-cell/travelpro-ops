@@ -123,3 +123,41 @@ This establishes only the same-request-ID/different-notes concurrency scenario.
 Concurrent different request IDs and cross-inquiry request-ID uniqueness
 remain unverified. Application integration and production security cutover
 remain pending. The milestone is not release-ready.
+
+## 20 October 2026: Cross-Inquiry Request-ID Uniqueness
+
+Isolated project: tpfipndxhroliabwlgyb.
+Previous pushed checkpoint: f26e54f.
+
+cross-inquiry-uniqueness.sql:
+- Sequential second inquiry reuse rejected with SQLSTATE 23505 and:
+  Conversion identity already belongs to another inquiry.
+- Second inquiry remained unconverted, without case or conversion audit.
+- Original conversion and identical retry assertions passed.
+- Test ended with ROLLBACK; owner-run exit code 0.
+
+concurrent-cross-inquiry.cjs:
+- Uses the same pg 8.16.3, synthetic owner/client, password environment
+  variable and CA argument prerequisites as concurrent-identical.cjs.
+- Two different inquiries attempted the same conversion request ID.
+- A PID 54362; B PID 54364.
+- B waited on transactionid; pg_blocking_pids(B) included A.
+- After A committed, B received SQLSTATE 23505 with constraint:
+  inquiries_conversion_request_id_unique.
+- After ROLLBACK TO SAVEPOINT, B's own transaction saw no loser case,
+  no conversion audit and all conversion/linkage metadata null.
+- B remained new; its transaction then committed.
+- Winner readback confirmed original case/review, one request owner,
+  one winner case, zero loser cases and one conversion audit.
+- Runner returned PASS; owner-run exit code 0.
+
+Evidence identifiers:
+- Inquiry A: c0671a53-a06a-4118-9181-002e5afaeaa5.
+- Inquiry B: ce40c408-216f-44de-a60f-776f7af2b25a.
+- Request: 65de636f-f060-4012-934d-9d7f57ab95be.
+- Winner case: fd68362a-a5b2-4405-b759-3829339c90ae.
+
+Concurrent synthetic fixtures and winner case/audit remain in the isolated
+database. These are database-role tests, not browser/JWT verification.
+No application integration or production security cutover was performed.
+Milestone remains incomplete and not release-ready.

@@ -1988,3 +1988,28 @@ and coordinated production intake/permission cutover.
 No production database or deployment changes were performed by this test.
 Preserve all nine protected files. Encrypted offsite backup remains unverified.
 Milestone incomplete; not release-ready.
+
+## 20 October 2026: Cross-Inquiry Uniqueness Tests Passed
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Previous pushed checkpoint: f26e54f.
+Isolated test project: tpfipndxhroliabwlgyb only.
+
+Sequential cross-inquiry request-ID rejection passed with unchanged loser state.
+Concurrent cross-inquiry collision passed with observed lock blocking,
+SQLSTATE 23505 from inquiries_conversion_request_id_unique, and loser
+case/linkage/audit rollback verified inside its transaction after savepoint
+recovery. Winner readback showed one request owner, one case and one audit.
+Both owner-run tests returned exit code 0.
+
+Scripts and exact evidence:
+supabase/tests/atomic-inquiry-conversion/README.md
+supabase/tests/atomic-inquiry-conversion/cross-inquiry-uniqueness.sql
+supabase/tests/atomic-inquiry-conversion/concurrent-cross-inquiry.cjs
+
+Remaining: concurrent same-inquiry different request IDs, remaining
+eligibility/client checks, owner-reviewed UI/action integration and
+coordinated production intake/anonymous INSERT permission cutover.
+No shared database changes or production deployment were performed here.
+Preserve all nine protected files. Encrypted offsite backup remains unverified.
+Milestone incomplete; not release-ready.
