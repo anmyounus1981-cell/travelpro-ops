@@ -2101,3 +2101,30 @@ Production:
 
 Preserve all nine protected untracked files.
 Encrypted offsite backup execution remains unverified.
+
+## 20 October 2026: Isolated Atomic Conversion Database Test Checkpoint
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Source checkpoint: 18a0471.
+Test project: tpfipndxhroliabwlgyb only.
+
+Applied 28 migrations through 20261018184518 in the isolated project.
+Replay included demo data. Two temporary scheduler migration copies used
+transactional cron.alter_job(active := false); originals remain unchanged.
+Readback confirmed both jobs inactive and expected conversion RPC permissions.
+
+Owner-run tests passed for authorization rejection, corporate success,
+identical retry, conflicting retry, eight invalid payloads, one client
+mismatch direction, audit-failure rollback and real identical concurrency.
+Direct concurrency observed B blocked by A, same returned case, one audit.
+Detailed evidence and limits: supabase/tests/atomic-inquiry-conversion/README.md.
+
+Remaining: concurrent conflicts, cross-inquiry request identity uniqueness,
+additional eligibility/client coverage, reviewed UI/action integration,
+coordinated production cutover and anonymous INSERT remediation.
+
+No shared production/Preview database or deployment changes were performed.
+Synthetic concurrency evidence remains in the isolated database.
+Seven test scripts added; application dependencies were not changed.
+Milestone incomplete; not release-ready.
+Preserve all nine protected files. Encrypted offsite backup remains unverified.
