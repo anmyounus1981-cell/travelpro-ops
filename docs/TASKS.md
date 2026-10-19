@@ -1968,3 +1968,23 @@ Synthetic concurrency evidence remains in the isolated database.
 Seven test scripts added; application dependencies were not changed.
 Milestone incomplete; not release-ready.
 Preserve all nine protected files. Encrypted offsite backup remains unverified.
+
+## 20 October 2026: Concurrent Conflict Test Passed
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Previous pushed checkpoint: 071fedc.
+Isolated test project: tpfipndxhroliabwlgyb.
+
+Real concurrent same-inquiry/same-request-ID/different-notes test passed.
+Observed B blocked by A; after A commit, B received expected SQLSTATE 23505.
+Original review and case notes remained unchanged; one case and one audit.
+Runner and exact evidence:
+supabase/tests/atomic-inquiry-conversion/README.md
+supabase/tests/atomic-inquiry-conversion/concurrent-conflicting-payload.cjs
+
+Still pending: concurrent different request identities, cross-inquiry identity
+uniqueness, remaining eligibility/client checks, reviewed UI/action integration
+and coordinated production intake/permission cutover.
+No production database or deployment changes were performed by this test.
+Preserve all nine protected files. Encrypted offsite backup remains unverified.
+Milestone incomplete; not release-ready.

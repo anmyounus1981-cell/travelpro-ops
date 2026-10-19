@@ -97,3 +97,29 @@ This milestone is incomplete and is not release-ready.
 Preserve all nine protected local files.
 Encrypted offsite backup execution remains unverified.
 Payment verification and GDS issuance/reissue/refund/void remain manual.
+## 20 October 2026: Concurrent Conflicting Reviewed Payload
+
+Isolated project: tpfipndxhroliabwlgyb.
+Runner: concurrent-conflicting-payload.cjs.
+Uses the same pg dependency, CA argument, password environment variable
+and synthetic owner prerequisites as concurrent-identical.cjs.
+
+Scenario: same inquiry and request ID, different reviewed notes.
+Owner-run execution returned PASS and exit code 0.
+
+Observed evidence:
+- Session A PID 52171; session B PID 52173.
+- B waited on transactionid; pg_blocking_pids(B) included A.
+- After A committed, B returned SQLSTATE 23505 and exact message:
+  Conversion identity or reviewed details conflict.
+- Inquiry: 53adf3f8-87bd-4a4d-8ac9-8e4dfae31f59.
+- Request: cfb59300-5971-42b8-b9fd-657fdf5c98f4.
+- Case: d4a5941b-5e52-4d7e-9a63-80fed5bcf751.
+- Original request ID, reviewed notes and case notes remained unchanged.
+- One linked case, one conversion audit, zero cases with conflicting notes.
+
+Synthetic evidence remains in the isolated database.
+This establishes only the same-request-ID/different-notes concurrency scenario.
+Concurrent different request IDs and cross-inquiry request-ID uniqueness
+remain unverified. Application integration and production security cutover
+remain pending. The milestone is not release-ready.
