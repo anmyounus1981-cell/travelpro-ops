@@ -161,3 +161,34 @@ Concurrent synthetic fixtures and winner case/audit remain in the isolated
 database. These are database-role tests, not browser/JWT verification.
 No application integration or production security cutover was performed.
 Milestone remains incomplete and not release-ready.
+
+## 23 October 2026: Same Inquiry, Concurrent Different Request IDs
+
+Isolated project: tpfipndxhroliabwlgyb.
+Previous pushed checkpoint: adc488f.
+Runner: concurrent-different-request-ids.cjs.
+
+Uses the same pg 8.16.3, synthetic owner/client, CA argument and password
+environment variable prerequisites as concurrent-identical.cjs.
+
+The runner asserts that A and B have different request IDs while all other
+reviewed payload fields are identical.
+
+Owner-run execution evidence:
+- A PID 358301; B PID 358302.
+- B waited on transactionid; pg_blocking_pids(B) included A.
+- After A committed, B received SQLSTATE 23505 and exact message:
+  Conversion identity or reviewed details conflict.
+- Inquiry: 7db1eba4-a47d-4156-bceb-9a21353fb27e.
+- Accepted request: cc5326e2-6062-427e-a54a-839603f175df.
+- Rejected request: 74a43df8-33f4-4d7f-9342-ba31282f9099.
+- Case: e0dc0ef5-e42d-4b58-bbb4-3702133b2ef4.
+- Original request ID, reviewed notes and case notes remained unchanged.
+- One linked case, one conversion audit and zero rejected-request owners.
+- Runner returned PASS; exit code 0.
+
+Synthetic inquiry/case/audit evidence remains in the isolated database.
+This is database-role testing, not browser authentication/JWT verification.
+Remaining eligibility/client checks, reviewed UI/action integration and
+coordinated production security cutover remain pending.
+Milestone incomplete; not release-ready.

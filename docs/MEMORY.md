@@ -2173,3 +2173,26 @@ coordinated production intake/anonymous INSERT permission cutover.
 No shared database changes or production deployment were performed here.
 Preserve all nine protected files. Encrypted offsite backup remains unverified.
 Milestone incomplete; not release-ready.
+
+## 23 October 2026: Concurrent Different Request IDs Passed
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Previous pushed checkpoint: adc488f.
+Isolated test project: tpfipndxhroliabwlgyb only.
+
+Same-inquiry concurrent conversion with different request IDs and otherwise
+identical reviewed payloads passed. B was observed blocked by A, then received
+expected SQLSTATE 23505 after A committed. Original request/review remained
+unchanged; one linked case, one audit and zero rejected-request owners.
+Owner-run exit code: 0.
+
+Runner and evidence:
+supabase/tests/atomic-inquiry-conversion/concurrent-different-request-ids.cjs
+supabase/tests/atomic-inquiry-conversion/README.md
+
+Remaining: eligibility/client checks, owner-reviewed UI and atomic RPC-backed
+Server Action integration, scoped application checks, coordinated production
+intake retirement and anonymous INSERT permission remediation.
+No shared database changes or production deployment were performed here.
+Preserve all nine protected files. Encrypted offsite backup remains unverified.
+Milestone incomplete; not release-ready.
