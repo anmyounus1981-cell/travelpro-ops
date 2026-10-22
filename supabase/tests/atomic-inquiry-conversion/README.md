@@ -192,3 +192,27 @@ This is database-role testing, not browser authentication/JWT verification.
 Remaining eligibility/client checks, reviewed UI/action integration and
 coordinated production security cutover remain pending.
 Milestone incomplete; not release-ready.
+
+## 23 October 2026: Individual Client Compatibility
+
+Isolated project: tpfipndxhroliabwlgyb.
+Previous pushed checkpoint: 001763c.
+Script: individual-client-compatibility.sql.
+
+Owner-run test returned exit code 0:
+- Created a synthetic individual client through create_client_with_review.
+- Corporate inquiry with individual client rejected with SQLSTATE 22023
+  and exact message: Selected client does not match the inquiry client type.
+- Rejection created no case, conversion linkage, review metadata or
+  inquiry.converted audit.
+- Personal inquiry with the individual client converted successfully.
+- Identical retry returned the original case.
+- Case fields, passenger counts, source, client linkage, reviewer metadata
+  and exactly one conversion audit assertions passed.
+- Script ended with ROLLBACK.
+
+This verifies database-role behavior, not browser authentication.
+Independent post-test cleanup readback has not been performed for this run.
+Owner-reviewed UI/action integration, remaining eligibility checks and
+coordinated production security cutover remain pending.
+Milestone incomplete; not release-ready.

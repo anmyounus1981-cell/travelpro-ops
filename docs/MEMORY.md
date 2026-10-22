@@ -2196,3 +2196,27 @@ intake retirement and anonymous INSERT permission remediation.
 No shared database changes or production deployment were performed here.
 Preserve all nine protected files. Encrypted offsite backup remains unverified.
 Milestone incomplete; not release-ready.
+
+## 23 October 2026: Individual Conversion Compatibility Passed
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Previous pushed checkpoint: 001763c.
+Isolated test project: tpfipndxhroliabwlgyb only.
+
+Individual-client compatibility test returned exit code 0.
+Corporate inquiry to individual client was rejected without conversion
+side effects. Personal inquiry to individual client succeeded; identical
+retry returned the original case and one conversion audit was verified.
+Synthetic individual client used create_client_with_review.
+Script ended with ROLLBACK; independent cleanup readback remains unverified.
+
+Script and evidence:
+supabase/tests/atomic-inquiry-conversion/individual-client-compatibility.sql
+supabase/tests/atomic-inquiry-conversion/README.md
+
+Remaining: eligibility checks, owner-reviewed UI and atomic RPC-backed action
+integration, scoped application verification and coordinated production
+legacy intake/anonymous INSERT permission cutover.
+No shared database changes or production deployment were performed here.
+Preserve all nine protected files. Encrypted offsite backup remains unverified.
+Milestone incomplete; not release-ready.
