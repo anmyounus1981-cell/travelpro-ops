@@ -216,3 +216,32 @@ Independent post-test cleanup readback has not been performed for this run.
 Owner-reviewed UI/action integration, remaining eligibility checks and
 coordinated production security cutover remain pending.
 Milestone incomplete; not release-ready.
+
+## 23 October 2026: Eligibility Guards
+
+Isolated project: tpfipndxhroliabwlgyb.
+Previous pushed checkpoint: c2ad202.
+Script: eligibility-guards.sql.
+Owner-run execution returned exit code 0.
+
+Eight scenarios rejected with exact expected SQLSTATE 22023 messages:
+- Dismissed inquiry.
+- Stored visa_support inquiry with a reviewed flight payload.
+- Stored package inquiry with a reviewed flight payload.
+- Stored consultation inquiry with a reviewed flight payload.
+- Legacy converted status without atomic conversion metadata.
+- Reviewed departure before the current Asia/Dhaka date.
+- Missing inquiry identity.
+- Missing client identity.
+
+Each rejection preserved the original inquiry snapshot, case count and
+audit count after exception-subtransaction rollback.
+The subsequent valid conversion, identical retry, case/linkage/review
+metadata and single conversion audit assertions passed.
+The script ended with ROLLBACK.
+Independent post-test cleanup readback was not performed for this run.
+
+These checks do not establish every possible database state or date/lock
+boundary. Owner-reviewed UI and atomic RPC-backed action integration,
+scoped application verification and coordinated production security
+cutover remain pending. Milestone incomplete; not release-ready.

@@ -2220,3 +2220,29 @@ legacy intake/anonymous INSERT permission cutover.
 No shared database changes or production deployment were performed here.
 Preserve all nine protected files. Encrypted offsite backup remains unverified.
 Milestone incomplete; not release-ready.
+
+## 23 October 2026: Scoped Eligibility Guards Passed
+
+Branch: feature/multi-channel-inquiry-ingestion.
+Previous pushed checkpoint: c2ad202.
+Isolated test project: tpfipndxhroliabwlgyb only.
+
+Eight eligibility scenarios passed exact SQLSTATE/message assertions:
+dismissed, three stored non-flight services, legacy converted state,
+past departure, missing inquiry and missing client.
+Rejected attempts preserved inquiry snapshot, case count and audit count.
+Subsequent valid conversion and identical retry assertions passed.
+Owner-run exit code 0; script ended with ROLLBACK.
+Independent cleanup readback was not performed for this run.
+
+Script and evidence:
+supabase/tests/atomic-inquiry-conversion/eligibility-guards.sql
+supabase/tests/atomic-inquiry-conversion/README.md
+
+Next implementation: explicit owner-reviewed Inbox UI and atomic RPC-backed
+Server Action, followed by scoped application verification.
+Production legacy intake retirement and anonymous INSERT remediation
+still require coordinated cutover.
+No shared database changes or production deployment were performed here.
+Preserve all nine protected files. Encrypted offsite backup remains unverified.
+Milestone incomplete; not release-ready.
