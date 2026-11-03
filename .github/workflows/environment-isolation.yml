@@ -1,0 +1,26 @@
+name: Environment isolation
+on:
+  pull_request:
+  push:
+    branches: [main]
+permissions:
+  contents: read
+jobs:
+  isolation:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - run: node --test tests/environment-isolation.test.mjs
+      - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: npm run typecheck
+      - run: npm run build
+        env:
+          VERCEL_ENV: preview
+          NEXT_PUBLIC_OPS_ENV: staging
+          NEXT_PUBLIC_SUPABASE_PROJECT_REF: abcdefghijklmnopqrst
+          NEXT_PUBLIC_SUPABASE_URL: https://abcdefghijklmnopqrst.supabase.co
+          NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_synthetic
+# No provider secrets, Supabase links, migrations or deployments in this job.
