@@ -15,6 +15,7 @@ jobs:
           node-version: '24'
       - run: node --test tests/environment-isolation.test.mjs
       - run: npm ci --ignore-scripts --no-audit --no-fund
+      - run: node --test tests/quotation-transition.test.mjs
       - run: npm run typecheck
       - run: npm run build
         env:

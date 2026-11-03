@@ -388,7 +388,73 @@ export async function addTravellerWithFeedback(
   }
 }
 export async function createQuotation(fd:FormData){const db=await createClient();const raw=text(fd,"itinerary_text"),segments=parseGdsItinerary(raw);const{data,error}=await db.from("quotations").insert({case_id:text(fd,"case_id"),itinerary_text:raw,parsed_segments:segments,parsed_segments_confidence:segments.length?.9:0,parsed_segments_source:"deterministic_parser",parsed_segments_review_status:"confirmed",base_fare:Number(text(fd,"base_fare")),taxes:Number(text(fd,"taxes")),service_fee:Number(text(fd,"service_fee")),baggage_info:text(fd,"baggage_info"),fare_conditions:text(fd,"fare_conditions"),expiry_date:text(fd,"expiry_date")}).select("id").single();if(error)throw error;await audit("quotation.created","quotation",data.id,{segments:segments.length});revalidatePath("/")}
-export async function transitionQuotation(fd:FormData){const db=await createClient(),id=text(fd,"id");const{data:quote}=await db.from("quotations").select("status,case_id").eq("id",id).single();if(!quote)throw new Error("Quotation not found");const requested=text(fd,"status"),status=requested||(quote.status==="draft"?"approved":"sent");if(status==="sent"&&quote.status!=="approved")throw new Error("Quotation must be approved before sending");const{error}=await db.from("quotations").update({status,approved_by:status==="approved"?"00000000-0000-0000-0000-000000000001":undefined}).eq("id",id);if(error)throw error;if(status==="approved")await db.from("cases").update({status:"quoted"}).eq("id",quote.case_id);await audit(`quotation.${status}`,"quotation",id);revalidatePath("/")}
+export async function transitionQuotation(fd: FormData) {
+  const db = await createClient();
+  const ownerId = await requireOwnerId(db);
+  const id = text(fd, "id");
+  if (!id) throw new Error("Quotation ID is required");
+
+  const { data: quote, error: readError } = await db
+    .from("quotations")
+    .select("id, status, case_id")
+    .eq("id", id)
+    .single();
+  if (readError) throw readError;
+  if (!quote) throw new Error("Quotation not found");
+
+  const requestedStatus = text(fd, "status");
+  const nextStatus = requestedStatus ||
+    (quote.status === "draft" ? "approved" :
+      quote.status === "approved" ? "sent" : "");
+  const validTransition =
+    (quote.status === "draft" && nextStatus === "approved") ||
+    (quote.status === "approved" && nextStatus === "sent");
+  if (!validTransition) throw new Error("Invalid quotation status transition");
+
+  const { data: updated, error: updateError } = await db
+    .from("quotations")
+    .update(nextStatus === "approved"
+      ? { status: nextStatus, approved_by: ownerId }
+      : { status: nextStatus })
+    .eq("id", id)
+    .eq("status", quote.status)
+    .select("id")
+    .maybeSingle();
+  if (updateError) throw updateError;
+  if (!updated) {
+    throw new Error("Quotation changed during review. Refresh before continuing.");
+  }
+
+  if (nextStatus === "approved") {
+    const { data: updatedCase, error: caseError } = await db
+      .from("cases")
+      .update({ status: "quoted" })
+      .eq("id", quote.case_id)
+      // Do not regress confirmed/booked/ticketed/closed cases.
+      .in("status", ["new", "in_progress", "quoted"])
+      .select("id")
+      .maybeSingle();
+    if (caseError || !updatedCase) {
+      throw new Error(
+        "Quotation approval was saved, but the case update did not complete. Review both records before retrying.",
+      );
+    }
+  }
+
+  try {
+    await audit(`quotation.${nextStatus}`, "quotation", id, {
+      previous_status: quote.status,
+      owner_id: ownerId,
+    });
+  } catch {
+    throw new Error(
+      "The status change was saved, but audit completion is unverified. Review the records before retrying.",
+    );
+  }
+  revalidatePath("/");
+  revalidatePath("/quotations");
+  revalidatePath("/audit-log");
+}
 async function requireOwnerId(
   db: Awaited<ReturnType<typeof createClient>>,
 ) {
@@ -1199,3 +1265,4 @@ export async function convertInquiryToCase(fd: FormData) {
   revalidatePath("/clients");
   revalidatePath("/");
 }
+
