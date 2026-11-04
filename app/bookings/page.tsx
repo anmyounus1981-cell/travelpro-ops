@@ -24,7 +24,9 @@ type Booking = {
   id: string;
   case_id: string;
   quotation_id: string | null;
-  pnr: string;
+  pnr: string | null;
+  simulation_reference?: string;
+  execution_mode?: string;
   pnr_source: string | null;
   quoted_amount: number | null;
   ttl: string;
@@ -76,6 +78,7 @@ function ttlState(value: string) {
 }
 
 export default async function BookingsPage() {
+  const simulation = process.env.NEXT_PUBLIC_OPS_ENV === "staging";
   const db = await createClient();
 
   const [bookingResult, caseResult, quotationResult] =
@@ -83,7 +86,7 @@ export default async function BookingsPage() {
       db
         .from("bookings")
         .select(
-          "id, case_id, quotation_id, pnr, pnr_source, quoted_amount, ttl, ttl_source, status, created_at",
+          "id, case_id, quotation_id, pnr, pnr_source, quoted_amount, ttl, ttl_source, status, created_at" + (simulation ? ", execution_mode, simulation_reference" : ""),
         )
         .order("created_at", { ascending: false }),
 
@@ -222,8 +225,7 @@ export default async function BookingsPage() {
         </h2>
 
         <p style={{ margin: "0 0 20px", color: "#52647a" }}>
-          Enter the PNR only after it has been created manually in the
-          GDS or approved supplier system.
+          {simulation ? "Use synthetic data only. No GDS booking or external message will be created." : "Enter the PNR only after creating it manually in the GDS or approved supplier system."}
         </p>
 
         <form action={createBooking}>
@@ -268,6 +270,7 @@ export default async function BookingsPage() {
               Approved quotation
               <select
                 name="quotation_id"
+                required={simulation}
                 defaultValue=""
                 style={{
                   display: "block",
@@ -306,13 +309,13 @@ export default async function BookingsPage() {
             </label>
 
             <label>
-              PNR
+              {simulation ? "Simulation reference (not a PNR)" : "PNR"}
               <input
-                name="pnr"
+                name={simulation ? "simulation_reference" : "pnr"}
                 required
                 minLength={5}
                 maxLength={10}
-                placeholder="ABC123"
+                placeholder={simulation ? "TEST99" : "ABC123"}
                 style={{
                   display: "block",
                   width: "100%",
@@ -330,7 +333,7 @@ export default async function BookingsPage() {
               <select
                 name="pnr_source"
                 required
-                defaultValue="manual_gds"
+                defaultValue={simulation ? "practice_simulation" : "gds"}
                 style={{
                   display: "block",
                   width: "100%",
@@ -341,13 +344,15 @@ export default async function BookingsPage() {
                   background: "#ffffff",
                 }}
               >
-                <option value="manual_gds">Manual GDS entry</option>
-                <option value="manual_supplier">
+                {simulation ? <option value="practice_simulation">Practice simulation</option> : <>
+                <option value="gds">Manual GDS entry</option>
+                <option value="supplier">
                   Manual supplier entry
                 </option>
-                <option value="manual_lcc">
+                <option value="airline">
                   Manual LCC entry
                 </option>
+                </>}
               </select>
             </label>
 
@@ -392,7 +397,7 @@ export default async function BookingsPage() {
               <select
                 name="ttl_source"
                 required
-                defaultValue="manual_gds"
+                defaultValue={simulation ? "manual_practice_simulation" : "manual_gds"}
                 style={{
                   display: "block",
                   width: "100%",
@@ -403,12 +408,14 @@ export default async function BookingsPage() {
                   background: "#ffffff",
                 }}
               >
+                {simulation ? <option value="manual_practice_simulation">Manual practice simulation</option> : <>
                 <option value="manual_gds">
                   Manually verified from GDS
                 </option>
                 <option value="manual_supplier">
                   Manually verified from supplier
                 </option>
+                </>}
               </select>
             </label>
           </div>
@@ -429,7 +436,7 @@ export default async function BookingsPage() {
               opacity: cases.length === 0 ? 0.55 : 1,
             }}
           >
-            Record manual booking
+            {simulation ? "Save simulation booking" : "Record manual booking"}
           </button>
         </form>
       </section>
@@ -525,7 +532,7 @@ export default async function BookingsPage() {
                         letterSpacing: "0.08em",
                       }}
                     >
-                      {booking.pnr}
+                      {booking.execution_mode === "simulation" ? `SIMULATION ${booking.simulation_reference}` : booking.pnr}
                     </h3>
 
                     <p style={{ margin: 0, color: "#52647a" }}>

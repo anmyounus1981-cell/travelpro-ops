@@ -6,6 +6,7 @@ import {
   dhakaToday,
   validatePassportDates,
 } from "@/lib/passport-date-validation";
+import { bookingMode, simulationReference } from "@/lib/booking-mode.mjs";
 import { quickCreateClient } from "@/app/travellers/client-selection-actions";
 
 const text=(fd:FormData,key:string)=>String(fd.get(key)??"").trim();
@@ -487,6 +488,21 @@ export async function createBooking(fd: FormData) {
 
   const caseId = text(fd, "case_id");
   const quotationId = text(fd, "quotation_id") || null;
+  const mode = bookingMode(process.env.NEXT_PUBLIC_OPS_ENV, process.env.NEXT_PUBLIC_SUPABASE_PROJECT_REF);
+  if (mode === "simulation") {
+    const ttl = parseDhakaDateTime(text(fd, "ttl"));
+    if (Number.isNaN(ttl.getTime()) || ttl.getTime() <= Date.now()) throw new Error("Future simulation deadline required");
+    const amount = Number(text(fd, "quoted_amount"));
+    if (!Number.isFinite(amount) || amount < 0) throw new Error("Valid simulation amount required");
+    const { error } = await db.rpc("create_simulation_booking", {
+      p_case_id: caseId, p_quotation_id: quotationId,
+      p_reference: simulationReference(text(fd, "simulation_reference")),
+      p_amount: amount, p_ttl: ttl.toISOString(),
+    });
+    if (error) throw error;
+    revalidatePath("/"); revalidatePath("/bookings"); revalidatePath("/reminders");
+    return;
+  }
   const pnr = text(fd, "pnr").toUpperCase();
   const ttlSource = text(fd, "ttl_source");
   const quotedAmount = Number(text(fd, "quoted_amount"));
@@ -519,6 +535,7 @@ export async function createBooking(fd: FormData) {
     const { data: quotation, error: quotationError } = await db
       .from("quotations")
       .select("id,status")
+      .eq("case_id", caseId)
       .eq("id", quotationId)
       .in("status", ["approved", "sent", "accepted"])
       .maybeSingle();
@@ -593,6 +610,8 @@ export async function createBooking(fd: FormData) {
 }
 
 export async function uploadPayment(fd: FormData) {
+  if (process.env.NEXT_PUBLIC_OPS_ENV !== "production") throw new Error("Payments, ticketing and after-sales actions are disabled in simulation.");
+
   const db = await createClient();
   const ownerId = await requireOwnerId(db);
   const bookingId = text(fd, "booking_id");
@@ -690,6 +709,8 @@ export async function uploadPayment(fd: FormData) {
 }
 
 export async function verifyPayment(fd: FormData) {
+  if (process.env.NEXT_PUBLIC_OPS_ENV !== "production") throw new Error("Payments, ticketing and after-sales actions are disabled in simulation.");
+
   const db = await createClient();
   const ownerId = await requireOwnerId(db);
   const id = text(fd, "id");
@@ -753,6 +774,8 @@ export async function verifyPayment(fd: FormData) {
 }
 
 export async function recordTicket(fd: FormData) {
+  if (process.env.NEXT_PUBLIC_OPS_ENV !== "production") throw new Error("Payments, ticketing and after-sales actions are disabled in simulation.");
+
   const db = await createClient();
   const ownerId = await requireOwnerId(db);
   const bookingId = text(fd, "booking_id");
@@ -1003,8 +1026,12 @@ export async function updateOwnerAlert(fd: FormData) {
   revalidatePath("/reminders");
 }
 
-export async function createServiceCase(fd:FormData){const db=await createClient();const bookingId=text(fd,"booking_id");const{data,error}=await db.from("service_cases").insert({booking_id:bookingId||null,case_id:text(fd,"case_id")||null,type:text(fd,"type"),request_details:text(fd,"request_details"),status:"requested"}).select("id").single();if(error)throw error;await audit("service_case.requested","service_case",data.id,{type:text(fd,"type")});revalidatePath("/")}
-export async function transitionServiceCase(fd:FormData){const db=await createClient(),id=text(fd,"id");const{data:serviceCase}=await db.from("service_cases").select("status").eq("id",id).single();if(!serviceCase)throw new Error("Service case not found");const status=text(fd,"status")||(serviceCase.status==="requested"?"in_review":"completed");const{error}=await db.from("service_cases").update({status,result_summary:text(fd,"result_summary")||null}).eq("id",id);if(error)throw error;await audit(`service_case.${status}`,"service_case",id);revalidatePath("/")}
+export async function createServiceCase(fd:FormData){
+  if (process.env.NEXT_PUBLIC_OPS_ENV !== "production") throw new Error("Payments, ticketing and after-sales actions are disabled in simulation.");
+const db=await createClient();const bookingId=text(fd,"booking_id");const{data,error}=await db.from("service_cases").insert({booking_id:bookingId||null,case_id:text(fd,"case_id")||null,type:text(fd,"type"),request_details:text(fd,"request_details"),status:"requested"}).select("id").single();if(error)throw error;await audit("service_case.requested","service_case",data.id,{type:text(fd,"type")});revalidatePath("/")}
+export async function transitionServiceCase(fd:FormData){
+  if (process.env.NEXT_PUBLIC_OPS_ENV !== "production") throw new Error("Payments, ticketing and after-sales actions are disabled in simulation.");
+const db=await createClient(),id=text(fd,"id");const{data:serviceCase}=await db.from("service_cases").select("status").eq("id",id).single();if(!serviceCase)throw new Error("Service case not found");const status=text(fd,"status")||(serviceCase.status==="requested"?"in_review":"completed");const{error}=await db.from("service_cases").update({status,result_summary:text(fd,"result_summary")||null}).eq("id",id);if(error)throw error;await audit(`service_case.${status}`,"service_case",id);revalidatePath("/")}
 export async function createCaseFromInquiry(fd: FormData) {
   const db = await createClient();
   const ownerId = await requireOwnerId(db);
