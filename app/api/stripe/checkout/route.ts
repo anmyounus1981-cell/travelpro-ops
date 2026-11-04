@@ -10,6 +10,9 @@ import { NextResponse } from "next/server";
  * Respects Connect platform fee if STRIPE_PLATFORM_FEE_PERCENT is set.
  */
 export async function POST(request: Request) {
+  if (process.env.NEXT_PUBLIC_OPS_ENV !== 'production') {
+    return NextResponse.json({ error: 'Billing is disabled in practice.' }, { status: 403 });
+  }
   try {
     const supabase = await createClient();
     const {
@@ -54,3 +57,4 @@ export async function POST(request: Request) {
     return NextResponse.json({ error: "Internal server error" }, { status: 500 });
   }
 }
+

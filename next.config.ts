@@ -1,4 +1,7 @@
 import type { NextConfig } from "next";
+import { validateDeploymentEnvironment } from "./lib/environment.mjs";
+
+validateDeploymentEnvironment(process.env);
 
 const nextConfig: NextConfig = {
   // AI-generated apps should deploy even if the template has strict type or
@@ -9,3 +12,4 @@ const nextConfig: NextConfig = {
 };
 
 export default nextConfig;
+
