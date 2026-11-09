@@ -1,3 +1,4 @@
+import { isPracticeEnvironment } from "@/lib/environment.mjs";
 import type { Metadata } from "next";
 import "./globals.css";
 import "./components.css";
@@ -14,7 +15,14 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="antialiased">{children}</body>
+      <body className="antialiased">
+        {isPracticeEnvironment(process.env.NEXT_PUBLIC_OPS_ENV) && (
+          <div role="status" style={{padding: "12px", background: "#fff0c7", color: "#633b00", fontWeight: 800, textAlign: "center"}}>
+            SIMULATION — NOT A CONFIRMED BOOKING. No payments, ticketing or client messaging.
+          </div>
+        )}
+        {children}
+      </body>
     </html>
   );
 }

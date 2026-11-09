@@ -1,7 +1,13 @@
-// These values identify the public Supabase Data API used by the browser and
-// server-rendered pages. They are intentionally fixed so a stale Vercel value
-// cannot silently point production at another project. Neither value grants
-// service-role access; authorization remains enforced by RLS.
-export const supabaseUrl = "https://zhqdssbysdebgeijscvm.supabase.co";
-export const supabasePublishableKey =
-  "sb_publishable_YodJo1G7Vj90Vtm7e2JmqQ_ZXO3AxQl";
+import { validatePublicEnvironment } from '../environment.mjs';
+
+// Direct references ensure Next.js browser build-time substitution.
+const config = validatePublicEnvironment({
+  mode: process.env.NEXT_PUBLIC_OPS_ENV,
+  projectRef: process.env.NEXT_PUBLIC_SUPABASE_PROJECT_REF,
+  url: process.env.NEXT_PUBLIC_SUPABASE_URL,
+  key: process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
+});
+
+export const opsEnvironment = config.mode;
+export const supabaseUrl = config.url;
+export const supabasePublishableKey = config.key;

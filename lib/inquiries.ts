@@ -291,7 +291,7 @@ function mergeParsedInquiry(
   const model = process.env.OPENAI_MODEL;
 
   // The app remains functional without AI credentials.
-  if (!apiKey || !model) {
+  if (process.env.NEXT_PUBLIC_OPS_ENV !== 'production' || !apiKey || !model) {
     return fallback;
   }
 

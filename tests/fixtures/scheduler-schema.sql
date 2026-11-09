@@ -1,0 +1,26 @@
+-- Minimal local PostgreSQL contract fixture, not a full production restore.
+create role anon; create role authenticated; create role service_role bypassrls;
+create schema auth; grant usage on schema public,auth to anon,authenticated,service_role;
+create function auth.uid() returns uuid language sql stable as $$ select nullif(current_setting('request.jwt.claim.sub',true),'')::uuid $$;
+create table public.app_users(id uuid primary key,auth_user_id uuid,role text);
+create table public.bookings(id uuid primary key,case_id uuid,quotation_id uuid,pnr text not null,pnr_source text,ttl timestamptz,status text,user_id uuid);
+create table public.reminder_rules(id uuid primary key,reminder_type text,threshold_minutes int,channel text,audience text,enabled bool,max_attempts int);
+create table public.reminders(id uuid primary key default gen_random_uuid(),rule_id uuid,entity_type text,entity_id uuid,reminder_type text,due_at timestamptz,status text,message text,channel text,audience text,attempt_count int,max_attempts int,next_attempt_at timestamptz,dedupe_key text unique,user_id uuid,cancelled_at timestamptz,updated_at timestamptz default now(),last_attempt_at timestamptz,sent_at timestamptz,delivered_at timestamptz);
+create table public.owner_alerts(id uuid default gen_random_uuid(),alert_type text,severity text,entity_type text,entity_id uuid,title text not null,message text,status text,due_at timestamptz,dedupe_key text unique,user_id uuid);
+create table public.reminder_attempts(id uuid default gen_random_uuid(),reminder_id uuid,attempt_number int,channel text,status text,attempted_at timestamptz,completed_at timestamptz,user_id uuid);
+create table public.audit_logs(id uuid primary key,action text);
+create table public.proposal_versions(id uuid primary key,quotation_id uuid,proposal_number text,version_number int,snapshot jsonb);
+grant select on app_users to authenticated;
+grant select,insert,update,delete on bookings,reminders,reminder_rules to authenticated;
+grant all on all tables in schema public to service_role;
+alter table app_users enable row level security;
+create policy self_owner on app_users to authenticated using(auth_user_id=auth.uid() and role='owner');
+alter table bookings enable row level security;
+create policy owner_all on bookings to authenticated using(exists(select 1 from app_users where auth_user_id=auth.uid() and role='owner'));
+alter table reminders enable row level security;
+create policy owner_all on reminders to authenticated using(exists(select 1 from app_users where auth_user_id=auth.uid() and role='owner'));
+alter table reminder_rules enable row level security;
+create policy owner_all on reminder_rules to authenticated using(exists(select 1 from app_users where auth_user_id=auth.uid() and role='owner'));
+insert into app_users values('00000000-0000-4000-8000-000000000001','00000000-0000-4000-8000-000000000002','owner');
+insert into bookings values('00000000-0000-4000-8000-000000000003',null,null,'REAL01','gds',now()+interval '3 days','unticketed','00000000-0000-4000-8000-000000000001');
+insert into reminder_rules select gen_random_uuid(),'ttl',minutes,'in_app','owner',true,3 from unnest(array[1440,720,120,60]) minutes;

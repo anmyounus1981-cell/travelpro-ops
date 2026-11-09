@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { NextResponse, type NextRequest } from "next/server";
+import { validateDeploymentEnvironment } from "../environment.mjs";
 import { supabasePublishableKey, supabaseUrl } from "./config";
 
 type CookieWrite = {
@@ -52,6 +53,7 @@ function forbiddenResponse(request: NextRequest) {
 }
 
 export async function updateSession(request: NextRequest) {
+  validateDeploymentEnvironment(process.env);
   const pathname = request.nextUrl.pathname;
   const routeIsPublic = isPublicRoute(pathname);
 

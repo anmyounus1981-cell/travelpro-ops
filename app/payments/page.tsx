@@ -1,3 +1,4 @@
+import { isPracticeEnvironment } from "@/lib/environment.mjs";
 import Link from "next/link";
 import {
   uploadPayment,
@@ -47,6 +48,9 @@ function formatDateTime(value: string) {
 }
 
 export default async function PaymentsPage() {
+  if (isPracticeEnvironment(process.env.NEXT_PUBLIC_OPS_ENV)) {
+    return <main><Link href="/">Back to dashboard</Link><h1>Payments</h1><p role="status">SIMULATION ONLY: Payment recording and ticket issuance are disabled. No booking can be selected for these actions.</p></main>;
+  }
   const db = await createClient();
 
   const [paymentResult, bookingResult, caseResult] =

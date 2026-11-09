@@ -1,3 +1,4 @@
+import { isPracticeEnvironment } from "@/lib/environment.mjs";
 import Link from "next/link";
 import { recordTicket } from "@/app/actions";
 import { createClient } from "@/lib/supabase/server";
@@ -52,6 +53,9 @@ function formatDate(value: string) {
 }
 
 export default async function TicketsPage() {
+  if (isPracticeEnvironment(process.env.NEXT_PUBLIC_OPS_ENV)) {
+    return <main><Link href="/">Back to dashboard</Link><h1>Tickets</h1><p role="status">SIMULATION ONLY: Payment recording and ticket issuance are disabled. No booking can be selected for these actions.</p></main>;
+  }
   const db = await createClient();
 
   const [ticketResult, bookingResult, paymentResult, caseResult] =
