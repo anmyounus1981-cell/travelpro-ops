@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { bookingReference } from "@/lib/booking-reference.mjs";
 import { createReminder, updateOwnerAlert } from "@/app/actions";
 import { createClient } from "@/lib/supabase/server";
 
@@ -14,7 +15,9 @@ type TravelCase = {
 type Booking = {
   id: string;
   case_id: string;
-  pnr: string;
+  pnr: string | null;
+  execution_mode?: string;
+  simulation_reference?: string | null;
   status: string | null;
 };
 
@@ -23,6 +26,8 @@ type Reminder = {
   entity_type: string;
   entity_id: string;
   reminder_type: string;
+  channel: string | null;
+  audience: string | null;
   due_at: string;
   message: string;
   status: string | null;
@@ -95,6 +100,7 @@ function reminderState(value: string, status: string | null) {
 }
 
 export default async function RemindersPage() {
+  const simulation = process.env.NEXT_PUBLIC_OPS_ENV === "staging";
   const db = await createClient();
 
   const [reminderResult, caseResult, bookingResult, alertResult] =
@@ -102,7 +108,7 @@ export default async function RemindersPage() {
       db
         .from("reminders")
         .select(
-          "id, entity_type, entity_id, reminder_type, due_at, message, status, created_at",
+          "id, entity_type, entity_id, reminder_type, channel, audience, due_at, message, status, created_at",
         )
         .order("due_at", { ascending: true }),
 
@@ -113,7 +119,7 @@ export default async function RemindersPage() {
 
       db
         .from("bookings")
-        .select("id, case_id, pnr, status")
+        .select(simulation ? "id, case_id, pnr, status, execution_mode, simulation_reference" : "id, case_id, pnr, status")
         .order("created_at", { ascending: false }),
 
       db
@@ -235,7 +241,7 @@ export default async function RemindersPage() {
         <strong>Reminder-only automation</strong>
 
         <p style={{ margin: "7px 0 0", color: "#29466f" }}>
-          Reminders may notify clients or operators. They must never
+          Manual reminders here use in_app / owner only. They must never
           trigger payment approval, ticket issuance, reissue, void, or
           refund automatically.
         </p>
@@ -413,7 +419,7 @@ export default async function RemindersPage() {
 
                   return (
                     <option value={booking.id} key={booking.id}>
-                      {booking.pnr} —{" "}
+                      {bookingReference(booking)} —{" "}
                       {travelCase?.case_number || "Unknown case"}
                     </option>
                   );
@@ -610,7 +616,7 @@ export default async function RemindersPage() {
                 reminder.entity_type === "case"
                   ? linkedCase?.case_number || "Unknown case"
                   : linkedBooking
-                    ? `PNR ${linkedBooking.pnr} · ${
+                    ? `${bookingReference(linkedBooking)} · ${
                         bookingCase?.case_number || "Unknown case"
                       }`
                     : "Unknown booking";
@@ -655,6 +661,8 @@ export default async function RemindersPage() {
 
                     <p style={{ margin: 0, color: "#52647a" }}>
                       Due {formatDateTime(reminder.due_at)}
+                    </p>
+                    <p>Channel: {reminder.channel || "Unknown"} · Audience: {reminder.audience || "Unknown"}
                     </p>
                   </div>
 

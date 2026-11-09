@@ -1,10 +1,12 @@
 import { createServerClient } from "@supabase/ssr";
 import { cookies } from "next/headers";
+import { validateDeploymentEnvironment } from "../environment.mjs";
 import { supabasePublishableKey, supabaseUrl } from "./config";
 
 type CookieWrite = { name: string; value: string; options?: Record<string, unknown> };
 
 export async function createClient() {
+  validateDeploymentEnvironment(process.env);
   const cookieStore = await cookies();
 
   return createServerClient(
@@ -28,3 +30,4 @@ export async function createClient() {
     },
   );
 }
+
