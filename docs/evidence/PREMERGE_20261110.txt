@@ -1,0 +1,152 @@
+Pre-merge isolated verification, 2026-11-10
+Baseline: 7ca72561a6d15f701129db19b7fecedb7967f90d
+No hosted writes or deployment performed.
+
+
+Setup
+APPLIED 20260917192641_travelpro_core_schema.sql
+APPLIED 20260917192901_secure_audit_function_and_api_grants.sql
+APPLIED 20260922183902_phase1_inquiries.sql
+APPLIED 20260924163450_phase3_quote_proposals.sql
+APPLIED 20260925111606_owner_rls_security_cutover.sql
+APPLIED 20260925195707_phase4_booking_reminder_engine.sql
+APPLIED 20260927193900_phase4_reminder_dispatcher.sql
+APPLIED 20260928094545_phase4_case_followup_alerts.sql
+APPLIED 20260928191702_passport_extraction_drafts.sql
+APPLIED 20261001114520_confirm_passport_draft.sql
+APPLIED 20261002204708_traveller_passport_duplicate_guard.sql
+APPLIED 20261004101858_correct_traveller_details.sql
+APPLIED 20261004182030_create_traveller_atomic.sql
+APPLIED 20261005090142_passport_name_fields.sql
+APPLIED 20261005173208_case_passenger_classification.sql
+APPLIED 20261006112730_passport_date_safeguards.sql
+APPLIED 20261006182022_passport_expiry_current_date_guard.sql
+APPLIED 20261006204203_owner_role_write_enforcement.sql
+APPLIED 20261006205613_traveller_review_write_enforcement.sql
+PASS preparation compatibility at its intended pre-cutover checkpoint
+APPLIED 20261007191905_traveller_review_permission_cutover.sql
+APPLIED 20261007200438_harden_internal_trigger_functions.sql
+APPLIED 20261008100234_client_selection_and_quick_creation.sql
+APPLIED 20261008201359_corporate_client_identity_enforcement.sql
+APPLIED 20261010173316_returning_corporate_passport_draft_review.sql
+APPLIED 20261011084315_individual_returning_travellers.sql
+PASS exact candidate migration on complete application migration chain
+PostgreSQL PostgreSQL 17.11 (Debian 17.11-0+deb13u1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+
+
+Production table contract
+PASS app_users columns
+PASS app_users constraints
+PASS app_users rls
+PASS app_users policies
+PASS audit_logs columns
+PASS audit_logs constraints
+PASS audit_logs rls
+PASS audit_logs policies
+PASS bookings columns
+PASS bookings constraints
+PASS bookings rls
+PASS bookings policies
+PASS cases columns
+PASS cases constraints
+PASS cases rls
+PASS cases policies
+PASS clients columns
+PASS clients constraints
+PASS clients rls
+PASS clients policies
+PASS owner_alerts columns
+PASS owner_alerts constraints
+PASS owner_alerts rls
+PASS owner_alerts policies
+PASS payments columns
+PASS payments constraints
+PASS payments rls
+PASS payments policies
+PASS quotations columns
+PASS quotations constraints
+PASS quotations rls
+PASS quotations policies
+PASS reminder_attempts columns
+PASS reminder_attempts constraints
+PASS reminder_attempts rls
+PASS reminder_attempts policies
+PASS reminder_rules columns
+PASS reminder_rules constraints
+PASS reminder_rules rls
+PASS reminder_rules policies
+PASS reminders columns
+PASS reminders constraints
+PASS reminders rls
+PASS reminders policies
+PASS tickets columns
+PASS tickets constraints
+PASS tickets rls
+PASS tickets policies
+
+
+Historical SQL regression
+PASS returning-traveller/individual-account-checks.sql + returning-traveller/individual-multitrip-checks.sql
+PASS returning-traveller/returning-individual-draft-checks.sql + returning-traveller/returning-individual-draft-negative-checks.sql + returning-traveller/returning-individual-draft-audit-rollback-checks.sql
+PASS returning-traveller/returning-corporate-draft-checks.sql + returning-traveller/returning-corporate-draft-negative-checks.sql + returning-traveller/returning-corporate-draft-audit-rollback-checks.sql
+PASS returning-traveller/linked-nonowner-checks.sql
+PASS review-write-enforcement/internal-trigger-hardening-checks.sql
+PASS review-write-enforcement/review-assignment-checks.sql
+PASS review-write-enforcement/review-audit-checks.sql
+PASS review-write-enforcement/review-audit-rollback-checks.sql
+PASS review-write-enforcement/review-correction-checks.sql
+PASS review-write-enforcement/review-creation-checks.sql
+PASS review-write-enforcement/review-deletion-guard-checks.sql
+PASS review-write-enforcement/review-direct-write-checks.sql
+PASS review-write-enforcement/review-document-creation-checks.sql
+PASS review-write-enforcement/review-document-negative-checks.sql
+PASS review-write-enforcement/review-document-positive-checks.sql
+PASS review-write-enforcement/review-document-rollback-checks.sql
+PASS review-write-enforcement/review-draft-checks.sql
+PASS review-write-enforcement/review-extraction-checks.sql
+PASS review-write-enforcement/review-extraction-rollback-checks.sql
+PASS review-write-enforcement/review-nonowner-checks.sql
+PASS review-write-enforcement/review-permissions-checks.sql
+PASS review-write-enforcement/review-rpc-checks.sql
+PASS client-selection/review-client-audit-rollback-checks.sql
+PASS client-selection/review-client-creation-checks.sql
+PASS client-selection/review-client-security-checks.sql
+PASS corporate-identity/corporate-identity-checks.sql
+PASS corporate-identity/corporate-multitrip-checks.sql
+PASS corporate-identity/corporate-traveller-lookup-checks.sql
+{"passed":28,"failed":0,"groups":28}
+
+
+Multi-session concurrency
+PASS TTL A-B-A restores original cancelled IDs in production-shaped PostgreSQL
+PASS scheduler holds reminder locks; dispatcher SKIP LOCKED; delivery resumes once
+PASS dispatcher holds lock; scheduler waits, then preserves committed delivery
+PASS concurrent same-booking schedulers serialize with no duplicate insert
+PASS concurrent dispatchers create exactly one alert/attempt per due reminder
+
+
+Server Action workflow
+PASS owner Client -> Case -> Quotation Approval -> non-null PNR Booking -> TTL -> Payment Evidence -> Verification -> Ticket Record using actual Server Actions and PostgreSQL
+PASS unverified payment cannot issue ticket record; ticketed booking cancels reminders; owner attribution and audit persisted within test transaction
+
+
+Rollback round trip
+PASS exact rollback restores all four function hashes and original effective grants
+PASS candidate reapplication after rollback; candidate scheduler MD5 cfb74b01277f9a8f1299228e6fa7e975
+
+
+Node tests
+✔ cancelled overdue keys are not replayed on reversal (506.275311ms)
+ℹ tests 72
+ℹ suites 0
+ℹ pass 72
+ℹ fail 0
+ℹ cancelled 0
+ℹ skipped 0
+ℹ todo 0
+ℹ duration_ms 6985.960857
+
+TypeScript: npm run typecheck exit 0.
+Optimized Next.js production build: exit 0, synthetic publishable key.
+Lint: not run; existing build skips lint.
+Browser/HTTP/Storage E2E: not performed.

@@ -9,7 +9,8 @@ const id='00000000-0000-4000-8000-000000000003', owner='00000000-0000-4000-8000-
 const call=`select public.schedule_booking_ttl_reminders('${id}') n`;
 async function setup(){
  const db=new PGlite(); await db.exec(sql('./fixtures/scheduler-schema.sql'));
- for(const f of ['schedule_booking_ttl_reminders','prevent_audit_change','prevent_proposal_snapshot_change','dispatch_due_ttl_reminders']) await db.exec(sql(`./fixtures/${f}.sql`));
+ // JSON preserves the exact production pg_get_functiondef CRLF bytes for drift checks.
+ for(const f of JSON.parse(sql('./fixtures/production-function-catalog.json'))) await db.exec(f.definition);
  await db.exec(`grant execute on function schedule_booking_ttl_reminders(uuid),prevent_audit_change(),prevent_proposal_snapshot_change() to anon,authenticated,service_role;
  revoke execute on function dispatch_due_ttl_reminders(integer) from public,anon,authenticated; grant execute on function dispatch_due_ttl_reminders(integer) to service_role;
  create trigger audit_immutable before update or delete on audit_logs for each row execute function prevent_audit_change();
@@ -64,5 +65,41 @@ test('schema drift blocks the migration before grant changes',async()=>{
  // A second application sees changed scheduler definition and must stop.
  await assert.rejects(()=>db.exec(fs.readFileSync(`supabase/migrations/${migration}`,'utf8')),/Reviewed function drift/);
  await db.exec('rollback');
+ }finally{await db.close();}
+});
+
+test('TTL A to B to A reactivates original cancelled IDs and preserves retry history',async()=>{
+ const db=await setup();try{
+ await asOwner(db);assert.equal(await n(db),4);
+ const original=(await db.query('select id,dedupe_key,due_at from reminders order by id')).rows;
+ await db.exec("update reminders set attempt_count=3,max_attempts=3,last_attempt_at=now(),error_code='retry',error_message='old failure'");
+ await db.exec("update bookings set ttl=ttl+interval '1 day'");assert.equal(await n(db),4);
+ await db.exec("update bookings set ttl=ttl-interval '1 day'");assert.equal(await n(db),4);
+ assert.deepEqual((await db.query("select id,dedupe_key,due_at from reminders where status='scheduled' order by id")).rows,original);
+ assert.equal((await db.query("select count(*)::int n from reminders where status='scheduled' and cancelled_at is null and next_attempt_at=due_at and attempt_count=3 and max_attempts=6 and last_attempt_at is not null and error_code is null and error_message is null")).rows[0].n,4);
+ const before=await fingerprint(db);assert.equal(await n(db),0);assert.equal(await fingerprint(db),before);
+ }finally{await db.close();}
+});
+for(const terminal of ['sent','delivered','acknowledged','dismissed'])test(`TTL reversal preserves ${terminal} rows`,async()=>{
+ const db=await setup();try{
+ await asOwner(db);await n(db);await db.exec(`update reminders set status='${terminal}'`);
+ const before=await fingerprint(db);
+ await db.exec("update bookings set ttl=ttl+interval '1 day'");await n(db);
+ await db.exec("update bookings set ttl=ttl-interval '1 day'");assert.equal(await n(db),0);
+ assert.equal((await db.query(`select count(*)::int n from reminders where status='${terminal}'`)).rows[0].n,4);
+ assert.equal((await db.query(`select md5(jsonb_agg(to_jsonb(r) order by id)::text) f from reminders r where status='${terminal}'`)).rows[0].f,before);
+ }finally{await db.close();}
+});
+for(const marker of ['sent_at','delivered_at','acknowledged_at'])test(`cancelled rows with ${marker} are never reactivated`,async()=>{
+ const db=await setup();try{
+ await asOwner(db);await n(db);await db.exec(`update reminders set status='cancelled',${marker}=now()`);
+ const before=await fingerprint(db);assert.equal(await n(db),0);assert.equal(await fingerprint(db),before);
+ }finally{await db.close();}
+});
+test('cancelled overdue keys are not replayed on reversal',async()=>{
+ const db=await setup();try{
+ await asOwner(db);await n(db);await db.exec("update bookings set ttl=ttl+interval '1 day'");await n(db);
+ await db.exec("update bookings set ttl=now()-interval '1 day'");assert.equal(await n(db),0);
+ assert.equal((await db.query("select count(*)::int n from reminders where status='scheduled'")).rows[0].n,0);
  }finally{await db.close();}
 });

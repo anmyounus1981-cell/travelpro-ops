@@ -39,7 +39,7 @@ supabase/migrations/20261109174031_production_ttl_security_reliability.sql
 - Revokes scheduler EXECUTE from PUBLIC/anon/service_role; authenticated callers must pass the owner guard. postgres still needs owner claims to call this owner-facing function.
 - Revokes trigger-function EXECUTE from PUBLIC/anon/authenticated. Does not disable immutability.
 
-Limits requiring explicit review: cancelled/dismissed historical dedupe keys are not resurrected. Reverting to an old TTL can therefore leave no new reminder for that historical key. Existing epoch-to-bigint key rounding is retained; subsecond TTL changes are not a newly supported workflow. A multi-session scheduler/dispatcher stress test has not been performed. Changes to booking TTL in separate transactions can still race delivery of an already-due reminder; this migration does not make the entire booking/ticket workflow atomic.
+TTL reversal fix: future cancelled keys without sent/delivered/acknowledged markers are reactivated in place. Attempt numbering is retained, with a fresh rule-sized retry budget. Sent, delivered, acknowledged and dismissed records remain unchanged. Overdue cancelled keys are not replayed. Existing epoch-to-bigint key rounding is retained; subsecond TTL changes are not a newly supported workflow. Deterministic multi-session scheduler/dispatcher lock-order and duplicate-delivery checks pass; this is not an extended load/stress benchmark. Changes to booking TTL in separate transactions can still race delivery of an already-due reminder; this migration does not make the entire booking/ticket workflow atomic.
 
 ## Application diff
 
@@ -56,7 +56,7 @@ Limits requiring explicit review: cancelled/dismissed historical dedupe keys are
 
 Excluded: staging baseline, simulation table columns/constraints, simulation RPC, production financial-table permission revocations, TEST99 fixtures/data, staging Auth users, cleanup SQL, cron changes, staging credentials.
 
-## Verification evidence
+## Original candidate verification evidence (7ca7256)
 
 - 63 tests PASS: environment isolation, origin validation, rendered production/practice UI, dynamic quotation approval, actual booking/payment/ticket Server Actions with mocked Supabase boundaries, and local PostgreSQL scheduler integration.
 - TypeScript: npm run typecheck PASS.
@@ -72,11 +72,105 @@ Reproduce Node tests: install @electric-sql/pglite@0.3.14 in a separate test-too
 
 1. Review SQL and application diff independently; do not merge PR #17 wholesale.
 2. Verify production variable inventory and actual project-specific publishable key securely. Required: NEXT_PUBLIC_OPS_ENV=production, NEXT_PUBLIC_SUPABASE_PROJECT_REF=zhqdssbysdebgeijscvm, NEXT_PUBLIC_SUPABASE_URL=https://zhqdssbysdebgeijscvm.supabase.co, NEXT_PUBLIC_APP_URL=https://travelpro-ops.vercel.app, NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY from that project. Do not reuse the historical mismatched URL variable.
-3. Confirm a verified production recovery copy and rollback procedure before any production migration. This review did not establish one.
-4. Run candidate against a production-shaped isolated test database without the staging simulation overlay; run existing SQL fixture suites and multi-session scheduler/dispatcher concurrency tests. Review TTL reversal behavior explicitly.
+3. Function/grant rollback is captured and locally round-trip tested at supabase/rollback/20261110_restore_pre_pr18_functions.sql. A full production data recovery copy is still not established.
+4. PASS: production-shaped isolated SQL regression, actual multi-session locking and TTL reversal tests. See the 10 November follow-up below.
 5. Inventory external scheduler callers; resolve any service_role caller before revocation. Preserve existing trusted dispatcher and financial workflows.
 6. Perform owner browser regression for live-mode booking, payment evidence/verification and ticket recording using synthetic data only in the isolated production-shaped test environment.
 7. Obtain scoped production migration/configuration/deployment authorization. Capture catalog hashes again immediately before applying. No automatic production release.
 8. After authorized deployment, verify target SHA, routing, owner access and cron health. No automatic financial/GDS action is part of verification.
 
 Existing limitations: main's booking/ticket writes are multi-request and can partially succeed; this candidate does not claim transactional repair of all operations. Production recovery readiness, externally hosted integrations, actual hosted preview behavior of this new branch, and live writes are not verified here.
+
+
+## Pre-merge follow-up: 10 November 2026
+
+Status: NOT MERGE-READY. Existing Draft PR #18 and release branch are retained.
+No production/staging writes, migrations, environment edits, merges or promotions.
+
+### Completed checks
+
+- Exact GitHub candidate tree 88b488373011d762a131f4bba688d497185e13ab and
+  commit 7ca72561a6d15f701129db19b7fecedb7967f90d verified before edits.
+- TTL A-B-A reversal revives the original cancelled reminder IDs. It clears
+  cancellation/error fields and refreshes rule/message/due time. Historical
+  attempt count/last attempt remain; max_attempts becomes count + rule budget.
+  Same-key repeats do not change row fingerprints or extend the retry budget.
+- Fixed reproducibility: original GitHub SQL fixtures had LF bodies while the
+  production pg_get_functiondef hash included CRLF. Exact captured JSON is now
+  used, without weakening or bypassing migration drift checks.
+- 72 Node tests PASS, zero skipped/failed; TypeScript PASS; production build PASS
+  using synthetic public configuration and no requests to production.
+- PostgreSQL 17.11: all 25 main migrations and exact candidate applied locally.
+  No staging simulation columns, locks or financial restrictions are present.
+- 12 tables match production columns/types/nullability, constraints, RLS flags
+  and policy expressions (48 comparisons). Defaults/indexes/table grants and
+  managed Auth/Storage internals are not included in that comparison.
+- 33 historical SQL files pass in 28 transaction-isolated groups; the separate
+  preparation compatibility file passes at its pre-cutover checkpoint.
+- Real multi-session tests PASS in both scheduler/dispatcher lock orders,
+  same-booking scheduler contention, concurrent dispatchers and TTL reversal.
+  Actual pg_stat_activity lock waits are observed. Exactly one alert and attempt
+  are recorded per delivered test reminder. No stress/load claim.
+- Actual Server Actions against PostgreSQL PASS for Client -> Case -> Quotation
+  Approval -> non-null PNR Booking -> TTL -> Payment Evidence -> Verification ->
+  Ticket Record. Unverified payments are rejected; ticketing cancels schedules;
+  owner IDs and immutable audit records are checked. Synthetic data only.
+- Exact rollback restores the original function hashes and effective grants;
+  repeated rollback refuses drift; candidate reapplication passes.
+
+### Caller inventory
+
+The only runtime scheduler call sites in the repository are createBooking and
+recordTicket in app/actions.ts. Both call requireOwnerId, which validates
+Supabase auth.getUser() and the linked owner mapping before the RPC. Their
+client is cookie-backed createServerClient, not a service-role client. The
+historical migration backfill is not an ongoing runtime caller.
+
+Production catalog search finds no other function body invoking the scheduler.
+Active cron commands call dispatch_due_ttl_reminders(100) and
+ dispatch_due_owner_followups(100), as postgres. Dispatcher remains unchanged.
+Separately hosted n8n/other external services cannot be excluded from repository
+and database-catalog inspection alone. Their inventory remains a release gate.
+
+### Verified Vercel blocker and prepared configuration
+
+Shared Production/Preview/Development NEXT_PUBLIC_SUPABASE_URL currently names
+ayyuevwobdjnniwyvfbu. The legacy anon JWT also identifies that same project.
+Thus they pair with each other, but do not target approved production
+zhqdssbysdebgeijscvm. Main has committed production defaults; this candidate
+removes them and requires explicit configuration. Do not merge with the current
+Vercel inventory. No raw keys are included in this report.
+
+Production lacks NEXT_PUBLIC_OPS_ENV, NEXT_PUBLIC_SUPABASE_PROJECT_REF and
+NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY. The only practice overrides belong to
+review/environment-isolation-20261103; there are no release-branch overrides.
+
+Prepared production scope, NOT applied:
+
+| Variable | Required value |
+| --- | --- |
+| NEXT_PUBLIC_OPS_ENV | production |
+| NEXT_PUBLIC_SUPABASE_PROJECT_REF | zhqdssbysdebgeijscvm |
+| NEXT_PUBLIC_SUPABASE_URL | https://zhqdssbysdebgeijscvm.supabase.co |
+| NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY | Enabled modern key from that exact project; retrieve securely |
+| NEXT_PUBLIC_APP_URL | https://travelpro-ops.vercel.app |
+
+Preview must receive its own nonproduction project/key/origin and explicit
+staging mode, without privileged provider credentials. Do not copy production
+values into shared scopes. Existing staging simulation overlays are unsuitable
+for proving production financial workflow compatibility.
+
+### Remaining release gates and limits
+
+1. Authorize and apply reviewed environment changes separately from this PR;
+   verify target-specific key pairing and preview isolation before deployment.
+2. Complete authenticated browser/HTTP/Storage regression in an isolated
+   production-shaped environment. The PostgreSQL adapter tests do not verify
+   session cookies, PostgREST, actual file uploads or browser navigation.
+3. Confirm the separately hosted scheduler caller inventory.
+4. Establish full production data recovery readiness. This function/grant
+   artifact is not a database/data backup and does not undo reminder data.
+5. Obtain scoped production migration/deployment authorization, then recapture
+   catalog drift checks immediately before execution. No automatic release.
+
+Reproduction and exact test boundaries: tests/isolated/README.md.

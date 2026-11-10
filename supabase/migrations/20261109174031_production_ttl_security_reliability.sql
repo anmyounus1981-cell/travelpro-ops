@@ -120,7 +120,27 @@ begin
     and rule.enabled = true
     and booking_record.ttl
       - (rule.threshold_minutes * interval '1 minute') > now()
-  on conflict (dedupe_key) do nothing;
+  on conflict (dedupe_key) do update
+  set status = 'scheduled',
+      rule_id = excluded.rule_id,
+      due_at = excluded.due_at,
+      message = excluded.message,
+      next_attempt_at = excluded.next_attempt_at,
+      cancelled_at = null,
+      error_code = null,
+      error_message = null,
+      -- Keep immutable attempt numbering; grant a fresh rule-sized retry budget.
+      max_attempts = public.reminders.attempt_count + excluded.max_attempts,
+      updated_at = now()
+  where public.reminders.status = 'cancelled'
+    and public.reminders.sent_at is null
+    and public.reminders.delivered_at is null
+    and public.reminders.acknowledged_at is null
+    and public.reminders.entity_type = excluded.entity_type
+    and public.reminders.entity_id = excluded.entity_id
+    and public.reminders.reminder_type = excluded.reminder_type
+    and public.reminders.channel = excluded.channel
+    and public.reminders.audience = excluded.audience;
 
   get diagnostics inserted_count = row_count;
 
