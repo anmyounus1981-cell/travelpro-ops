@@ -1,0 +1,1 @@
+{"buildCommand":"node scripts/pr18-temporary-overlay.cjs && npm run build"}
