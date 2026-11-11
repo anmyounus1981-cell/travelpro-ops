@@ -17,6 +17,9 @@ import type Stripe from "stripe";
  *   - invoice.payment_failed
  */
 export async function POST(request: Request) {
+  if (process.env.NEXT_PUBLIC_OPS_ENV !== 'production') {
+    return NextResponse.json({ error: 'Billing is disabled in practice.' }, { status: 403 });
+  }
   const payload = await request.text();
   const signature = request.headers.get("stripe-signature");
 

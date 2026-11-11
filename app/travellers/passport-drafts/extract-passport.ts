@@ -10,6 +10,9 @@ import {
 export async function extractPassportFields(
   imageDataUrl: string,
 ): Promise<PassportFields> {
+  if (process.env.NEXT_PUBLIC_OPS_ENV !== 'production') {
+    throw new Error('External OCR is disabled in practice environments.');
+  }
   const apiKey = process.env.OPENAI_API_KEY;
 
   if (!apiKey) {
