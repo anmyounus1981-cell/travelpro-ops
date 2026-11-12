@@ -2,6 +2,7 @@
 
 import Script from "next/script";
 import { useEffect, useRef, useState, type FormEvent } from "react";
+import { offerService, type PublicOffer } from "@/lib/offers";
 import { submitLandingInquiry } from "./actions";
 import styles from "./page.module.css";
 
@@ -21,7 +22,7 @@ function turnstile() {
   return (window as Window & { turnstile?: Widget }).turnstile;
 }
 
-export default function InquiryForm({ siteKey }: { siteKey: string }) {
+export default function InquiryForm({ siteKey, offer }: { siteKey: string; offer?: PublicOffer }) {
   const container = useRef<HTMLDivElement>(null);
   const widgetId = useRef<string | null>(null);
   const requestId = useRef<string | null>(null);
@@ -30,7 +31,8 @@ export default function InquiryForm({ siteKey }: { siteKey: string }) {
   const [scriptReady, setScriptReady] = useState(false);
   const [token, setToken] = useState("");
   const [company, setCompany] = useState(false);
-  const [service, setService] = useState("flight_booking");
+  const initialService = offer ? offerService(offer.category) : "flight_booking";
+  const [service, setService] = useState(initialService);
   const [submitting, setSubmitting] = useState(false);
   const [retry, setRetry] = useState(false);
   const [message, setMessage] = useState("");
@@ -71,7 +73,7 @@ export default function InquiryForm({ siteKey }: { siteKey: string }) {
         pending.current = null;
         setRetry(false);
         setCompany(false);
-        setService("flight_booking");
+        setService(initialService);
         form.reset();
       } else if (result.outcome === "rejected" && !retry) {
         pending.current = null;
@@ -101,12 +103,15 @@ export default function InquiryForm({ siteKey }: { siteKey: string }) {
               <option value="individual">Individual / Retail</option><option value="corporate">Corporate</option>
             </select>
           </label>
-          <label className={styles.field}>Service
+          {offer ? <>
+            <input type="hidden" name="offerId" value={offer.id} />
+            <input type="hidden" name="serviceType" value={initialService} />
+          </> : <label className={styles.field}>Service
             <select name="serviceType" onChange={e => setService(e.target.value)}>
               <option value="flight_booking">Flight booking</option><option value="visa_support">Visa support</option>
               <option value="package">Travel package</option><option value="consultation">Consultation</option>
             </select>
-          </label>
+          </label>}
         </div>
         {company && <label className={styles.field}>Company name<input name="corporateClient" maxLength={200} required /></label>}
         <label className={styles.field}>{company ? "Contact person" : "Full name"}<input name="contactName" autoComplete="name" maxLength={200} required /></label>

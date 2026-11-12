@@ -1,5 +1,7 @@
 "use server";
 
+import { isOfferId } from "@/lib/offers";
+
 import { createHmac } from "node:crypto";
 import { createClient } from "@supabase/supabase-js";
 import { supabasePublishableKey, supabaseUrl } from "@/lib/supabase/config";
@@ -195,6 +197,7 @@ function readTravelFields(formData: FormData, serviceType: string) {
 function buildCompleteLandingPayload(formData: FormData) {
   const allowedFields = new Set([
     "requestId",
+    "offerId",
     "clientType",
     "serviceType",
     "corporateClient",
@@ -223,6 +226,8 @@ function buildCompleteLandingPayload(formData: FormData) {
     throw new Error("Unable to accept this submission.");
   }
 
+  const offerId = readText(formData, "offerId", 36).toLowerCase();
+  if (offerId && !isOfferId(offerId)) throw new Error("Invalid offer reference.");
   const base = buildLandingPayload(formData);
   const travel = readTravelFields(formData, base.serviceType);
 
@@ -236,6 +241,7 @@ function buildCompleteLandingPayload(formData: FormData) {
     ...base,
     travel,
     rawMessage,
+    ...(offerId ? { metadata: { offerId } } : {}),
   };
 
   if (Buffer.byteLength(JSON.stringify(payload), "utf8") > 64 * 1024) {
@@ -264,7 +270,7 @@ export async function submitLandingInquiry(
   try {
     payload = buildCompleteLandingPayload(formData);
   } catch (error) {
-        return fail(
+    return fail(
       error instanceof Error
         ? error.message
         : "Invalid inquiry submission.",
@@ -304,7 +310,11 @@ export async function submitLandingInquiry(
         code: error.code,
       });
 
-            if (error.code === "23505") {
+      if (error.code === "22023" && error.message === "Offer is no longer available") {
+        return fail("This offer is no longer available. Open a general inquiry to continue.", "rejected");
+      }
+
+      if (error.code === "23505") {
         return fail(
           "This submission reference was already used with different details.",
           "conflict",
@@ -316,7 +326,7 @@ export async function submitLandingInquiry(
           error.code,
         )
       ) {
-                return fail(
+        return fail(
           "Check your inquiry details and travel dates.",
           "rejected",
         );
@@ -345,7 +355,7 @@ export async function submitLandingInquiry(
 
     return {
       success: true,
-            outcome: "accepted",
+      outcome: "accepted",
       message: data.duplicate
         ? "Your inquiry was already received."
         : "Your inquiry was received successfully.",

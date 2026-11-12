@@ -11,6 +11,7 @@ const navItems = [
   { label: "Dashboard", href: "/" },
   { label: "Cases", href: "/#cases" },
   { label: "Inquiry inbox", href: "/inbox" },
+  { label: "Offers", href: "/offers" },
   { label: "Clients", href: "/clients" },
   { label: "Travellers", href: "/travellers" },
   { label: "Quotations", href: "/quotations" },

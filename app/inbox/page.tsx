@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase/server";
 import { convertInquiryToCase } from "@/app/actions";
+import { offerCategories, type OfferCategory } from "@/lib/offers";
 import styles from "./page.module.css";
 
 export const dynamic = "force-dynamic";
@@ -17,6 +18,7 @@ type Inquiry = {
   raw_message: string;
   submitted_fields: { travel?: Record<string, string | number> } | null;
   parsed_fields: Record<string, unknown> | null;
+  offer_snapshot: { title: string; category: OfferCategory; destination: string; details: string; priceLabel: string | null } | null;
   status: string;
   created_at: string;
 };
@@ -45,7 +47,7 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
   const db = await createClient();
   const { review } = await searchParams;
   const [inquiries, clients] = await Promise.all([
-    db.from("inquiries").select("id,source,client_type,service_type,corporate_client_name,contact_name,contact_email,contact_phone,raw_message,submitted_fields,parsed_fields,status,created_at").order("created_at", { ascending: false }).limit(50),
+    db.from("inquiries").select("id,source,client_type,service_type,corporate_client_name,contact_name,contact_email,contact_phone,raw_message,submitted_fields,parsed_fields,offer_snapshot,status,created_at").order("created_at", { ascending: false }).limit(50),
     db.from("clients").select("id,client_type,company_name,contact_name,contact_email,contact_phone").order("company_name"),
   ]);
 
@@ -78,6 +80,13 @@ export default async function InboxPage({ searchParams }: { searchParams: Promis
                 <span className={styles.statusBadge}>{inquiry.status}</span>
               </header>
               <p>{inquiry.service_type?.replaceAll("_", " ") || "Legacy inquiry"} · {new Date(inquiry.created_at).toLocaleString("en-BD", {timeZone:"Asia/Dhaka"})}</p>
+              {inquiry.offer_snapshot && (
+                <section className={styles.offerSnapshot} aria-label="Offer at submission">
+                  <strong>Offer: {inquiry.offer_snapshot.title}</strong>
+                  <p>{offerCategories[inquiry.offer_snapshot.category]} · {inquiry.offer_snapshot.destination}{inquiry.offer_snapshot.priceLabel && ` · ${inquiry.offer_snapshot.priceLabel}`}</p>
+                  <p>{inquiry.offer_snapshot.details}</p>
+                </section>
+              )}
               <p>{inquiry.contact_email} {inquiry.contact_phone}</p>
               <pre style={{ whiteSpace: "pre-wrap", overflowWrap: "anywhere" }}>{inquiry.raw_message}</pre>
               {inquiry.status === "new" && !flight && <p>Review this request here. Case conversion is available for flight inquiries.</p>}

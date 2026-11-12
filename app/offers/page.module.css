@@ -1,0 +1,16 @@
+.page { max-width: 62rem; margin: auto; padding: clamp(1rem, 4vw, 3rem); }
+.header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1rem; }
+.card { padding: 1.2rem; border: 1px solid #cdd9df; border-radius: .65rem; background: #fff; }
+.form { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 1rem; }
+.form label { display: flex; flex-direction: column; gap: .35rem; }
+.form input, .form select, .form textarea { width: 100%; min-width: 0; }
+.wide { grid-column: 1 / -1; }
+.form .check, .check { display: flex; flex-direction: row; align-items: center; gap: .5rem; }
+.check input { width: auto; }
+.primary { justify-self: start; background: #14392f; color: white; }
+.list { display: grid; gap: .8rem; margin-top: 1.5rem; }
+.list summary { cursor: pointer; overflow-wrap: anywhere; }
+.list summary span { margin-inline-start: .65rem; font-size: .9rem; color: #37504e; }
+.list details[open] summary { margin-bottom: 1.2rem; }
+.delete { display: flex; flex-wrap: wrap; align-items: center; gap: .8rem; margin-top: 1rem; padding-top: .8rem; border-top: 1px solid #cdd9df; }
+@media (max-width: 560px) { .form { grid-template-columns: 1fr; } }

@@ -7,7 +7,7 @@ import ts from 'typescript';
 // Exercise the actual Server Action with an in-memory database boundary.
 // This tests orchestration, not live Postgres transactions/RLS.
 const source = readFileSync(new URL('../app/actions.ts', import.meta.url), 'utf8');
-const action = source.slice(source.indexOf('export async function transitionQuotation('), source.indexOf('async function requireOwnerId('));
+const action = source.slice(source.indexOf('export async function transitionQuotation('), source.indexOf('export async function createBooking('));
 const javascript = ts.transpileModule(action.replace('export async', 'async'), {
   compilerOptions: { target: ts.ScriptTarget.ES2022 },
 }).outputText;

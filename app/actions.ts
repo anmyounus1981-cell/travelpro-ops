@@ -1,4 +1,6 @@
 "use server";
+
+import { requireOwnerId } from "@/lib/supabase/owner";
 import { assertLiveOperations } from "@/lib/environment.mjs";
 import { revalidatePath } from "next/cache"; import { redirect } from "next/navigation"; import { createClient } from "@/lib/supabase/server"; import { audit } from "@/lib/data/operations";
 import { parseGdsItinerary, triageInquiry } from "@/lib/ai/tools";
@@ -456,32 +458,6 @@ export async function transitionQuotation(fd: FormData) {
   revalidatePath("/quotations");
   revalidatePath("/audit-log");
 }
-async function requireOwnerId(
-  db: Awaited<ReturnType<typeof createClient>>,
-) {
-  const {
-    data: { user },
-    error: userError,
-  } = await db.auth.getUser();
-
-  if (userError || !user) {
-    throw new Error("Authentication required");
-  }
-
-  const { data: owner, error: ownerError } = await db
-    .from("app_users")
-    .select("id")
-    .eq("auth_user_id", user.id)
-    .eq("role", "owner")
-    .single();
-
-  if (ownerError || !owner) {
-    throw new Error("Owner access required");
-  }
-
-  return owner.id;
-}
-
 export async function createBooking(fd: FormData) {
   assertLiveOperations(process.env.NEXT_PUBLIC_OPS_ENV);
   const db = await createClient();

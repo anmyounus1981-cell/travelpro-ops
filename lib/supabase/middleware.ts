@@ -12,6 +12,7 @@ type CookieWrite = {
 const publicRoutes = new Set([
   "/login",
   "/inquire",
+  "/travel",
   "/api/health",
   "/api/v1/inquiry",
   "/api/stripe/webhooks",

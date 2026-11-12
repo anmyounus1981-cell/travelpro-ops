@@ -306,3 +306,5 @@
     width: 100%;
   }
 }
+.offerSnapshot { padding: .85rem; border-left: 3px solid #9a7545; background: #f8f4eb; overflow-wrap: anywhere; }
+.offerSnapshot p { margin: .35rem 0 0; white-space: pre-wrap; }

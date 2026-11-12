@@ -16,3 +16,10 @@ Baseline: main at `6ef6b5903e497c79dbd69afff65fe44c8c328564`. Validate each modu
 - Prefer Resend over personal Gmail/SMTP for a dedicated transactional sender and signed event callbacks. DNS and sender setup are prerequisites. A direct provider integration has fewer components. Use n8n when reusable routing justifies operating another service. Give the bridge a scoped ingress credential and keep DB service credentials in TravelPro Ops.
 - Module 1 replaces the legacy inquiry POST route. Inventory clients of that route and coordinate their switch before promotion. Compare production migration history and function definitions before deployment. The intake and rate-limit routines already exist in production; do not replay their DDL blindly.
 - Configure `INQUIRY_TURNSTILE_SITE_KEY`, `INQUIRY_TURNSTILE_SECRET` and `INQUIRY_WEB_HMAC_SECRET` on the relevant deployment. Match the HMAC value to the `travelpro_web_intake_hmac_v1` Vault entry in the same environment. Preview test keys are staging-only. Production requires a real widget restricted to its domain.
+
+## Public storefront
+
+- The storefront is at `/travel`. The Ops dashboard stays at `/`. `/offers` is Owner-only. Its form saves drafts by default, publishes explicitly, and uses the Dhaka calendar for expiry. Use the optional server environment variables `TRAVEL_WHATSAPP_NUMBER` and `TRAVEL_CALL_NUMBER` (E.164 format) to display the matching contact links.
+- The public offer page and form read published, unexpired rows using the anonymous client. The form sends an offer UUID. The database validates category and publication, and stores a snapshot on the inquiry when it is first accepted. Editing or deleting an offer preserves the original inquiry snapshot and does not invalidate its identical retry.
+- Holiday and Umrah use the package inquiry service. Visa uses visa support. These requests stay in the inbox because the existing case schema requires reviewed flight details.
+- Storefront photograph: [Maldives aerial photograph on Unsplash](https://unsplash.com/photos/aerial-view-of-green-trees-and-body-of-water-u94aG1t4xPE). Font license files are shipped alongside the local font assets.

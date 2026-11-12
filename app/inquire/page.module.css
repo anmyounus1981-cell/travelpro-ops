@@ -188,3 +188,6 @@
     grid-template-columns: 1fr;
   }
 }
+.offer { margin-bottom: 1.25rem; padding: 1rem; background: #f6f2e8; border: 1px solid #d8c7ab; border-radius: .45rem; overflow-wrap: anywhere; }
+.offer h2 { margin: .4rem 0; }
+.offer p { white-space: pre-wrap; }
