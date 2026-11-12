@@ -70,7 +70,7 @@ export default function InquiryForm({ siteKey, offer, language }: { siteKey: str
     setStatus(null);
     try {
       const result = await submitLandingInquiry(payload);
-      if (result.success) {
+      if (result.success && result.receiptId) {
         setStatus({ kind: "success", message: result.message, receipt: result.receiptId });
         requestId.current = null;
         pending.current = null;
