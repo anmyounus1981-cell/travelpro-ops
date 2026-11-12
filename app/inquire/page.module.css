@@ -191,3 +191,14 @@
 .offer { margin-bottom: 1.25rem; padding: 1rem; background: #f6f2e8; border: 1px solid #d8c7ab; border-radius: .45rem; overflow-wrap: anywhere; }
 .offer h2 { margin: .4rem 0; }
 .offer p { white-space: pre-wrap; }
+
+.page { background: radial-gradient(ellipse at 15% 10%, #1d2e4c, #080e1c 65%); }
+.page:lang(bn) { font-family: "Noto Sans Bengali", system-ui, sans-serif; }
+.header { background: linear-gradient(138deg, #111b2f, #1c2b45); margin-bottom: 0; }
+.headerTop { display: flex; align-items: center; justify-content: space-between; gap: .65rem; margin-bottom: 1rem; flex-wrap: wrap; }
+.brand { color: #edcea0; font-weight: 700; text-decoration: none; }
+.header .tagline { color: #edcea0; }
+.noticeBox { padding: 1rem 1.5rem; }
+.offer { margin: 1rem clamp(1rem, 4vw, 2.5rem) 0; }
+.submitButton { background: #192942; }
+.field input:focus, .field select:focus, .field textarea:focus { border-color: #86602f; box-shadow: 0 0 0 3px #edcea088; }
