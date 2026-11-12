@@ -1087,106 +1087,46 @@ export async function createCaseFromInquiry(fd: FormData) {
 }
 
 export async function convertInquiryToCase(fd: FormData) {
+  const db = await createClient();
+  await requireOwnerId(db);
   const inquiryId = text(fd, "inquiry_id");
   const clientId = text(fd, "client_id");
 
-  if (!inquiryId) {
-    throw new Error("Inquiry is required");
+  let counts;
+  try {
+    counts = readPassengerCounts(fd);
+  } catch {
+    redirect("/inbox?review=invalid");
   }
 
-  if (!clientId) {
-    throw new Error("Please select a client");
-  }
-
-  const db = await createClient();
-  const ownerId = await requireOwnerId(db);
-  const counts = readPassengerCounts(fd);
-
-  const { data: inquiry, error: inquiryError } = await db
-    .from("inquiries")
-    .select(
-      "id, source, raw_message, parsed_fields, status, converted_case_id"
-    )
-    .eq("id", inquiryId)
-    .single();
-
-  if (inquiryError || !inquiry) {
-    throw inquiryError ?? new Error("Inquiry not found");
-  }
-
-  if (inquiry.status === "converted" || inquiry.converted_case_id) {
-    throw new Error("This inquiry has already been converted");
-  }
-
-  const parsed = (inquiry.parsed_fields ?? {}) as Record<string, unknown>;
-
-  const origin = String(parsed.origin ?? "").trim().toUpperCase();
-  const destination = String(parsed.destination ?? "").trim().toUpperCase();
-  const departureDate = String(parsed.departureDate ?? "").trim();
-  const returnDate = String(parsed.returnDate ?? "").trim();
-  const passengerCount = Number(parsed.passengerCount ?? 1);
-  const cabinClass = String(parsed.cabinClass ?? "economy").toLowerCase();
-
-  if (!origin || !destination || !departureDate) {
-    throw new Error(
-      "Origin, destination, and departure date must be confirmed before conversion"
-    );
-  }
-
-  const caseNumber =
-    `TP-${new Date().toISOString().slice(2, 10).replaceAll("-", "")}-` +
-    crypto.randomUUID().slice(0, 4).toUpperCase();
-
-  const { data: newCase, error: caseError } = await db
-    .from("cases")
-    .insert({
-      case_number: caseNumber,
-      client_id: clientId,
-      assigned_to: ownerId,
-      user_id: ownerId,
-      origin,
-      destination,
-      departure_date: departureDate,
-      return_date: returnDate || null,
-      trip_type: returnDate ? "roundtrip" : "oneway",
-      ...counts,
-      cabin_class: cabinClass,
-      notes: `Converted from ${inquiry.source} inquiry.\n\n${inquiry.raw_message}`,
-      status: "new",
-      intake_source: inquiry.source,
-      next_action: "Prepare fare options",
-      next_action_deadline: new Date(
-        Date.now() + 24 * 60 * 60 * 1000
-      ).toISOString(),
-    })
-    .select("id")
-    .single();
-
-  if (caseError || !newCase) {
-    throw caseError ?? new Error("Case could not be created");
-  }
-
-  const { error: updateError } = await db
-    .from("inquiries")
-    .update({
-      status: "converted",
-      converted_case_id: newCase.id,
-    })
-    .eq("id", inquiryId);
-
-  if (updateError) {
-    throw updateError;
-  }
-
-  await audit("inquiry.converted", "inquiry", inquiryId, {
-    case_id: newCase.id,
-    case_number: caseNumber,
-    ...counts,
+  const { error } = await db.rpc("convert_inquiry_to_case", {
+    p_review: {
+      version: 1,
+      requestId: inquiryId,
+      inquiryId,
+      clientId,
+      serviceType: "flight_booking",
+      reviewConfirmed: fd.get("review_confirmed") === "on",
+      origin: text(fd, "origin").toUpperCase(),
+      destination: text(fd, "destination").toUpperCase(),
+      departureDate: text(fd, "departure_date"),
+      returnDate: text(fd, "return_date"),
+      tripType: text(fd, "return_date") ? "roundtrip" : "oneway",
+      cabinClass: text(fd, "cabin_class"),
+      adultCount: counts.adult_count,
+      childCount: counts.child_count,
+      infantCount: counts.infant_count,
+      notes: text(fd, "notes"),
+    },
   });
 
+  if (error) redirect("/inbox?review=invalid");
   revalidatePath("/inbox");
   revalidatePath("/");
-}export async function updateClientRecord(fd: FormData) {
+  redirect("/inbox?review=converted");
+}
+
+export async function updateClientRecord(fd: FormData) {
   const id = text(fd, "id");
   const companyName = text(fd, "company_name");
   const contactName = text(fd, "contact_name");

@@ -10,6 +10,7 @@ const statuses=["new","in_progress","quoted","confirmed","booked","ticketed","cl
 const navItems = [
   { label: "Dashboard", href: "/" },
   { label: "Cases", href: "/#cases" },
+  { label: "Inquiry inbox", href: "/inbox" },
   { label: "Clients", href: "/clients" },
   { label: "Travellers", href: "/travellers" },
   { label: "Quotations", href: "/quotations" },
